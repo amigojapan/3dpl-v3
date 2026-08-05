@@ -1,0 +1,10 @@
+for(vars["x"]=-5;vars["x"]<0;vars["x"]++) {
+  for(vars["y"]=0;vars["y"]<4;vars["y"]=vars["y"]+2) {     
+    qb("blueblock",vars["x"],vars["y"],1);
+  }
+}cl("blueblock", Color.blue);
+for(vars["x"]=0;vars["x"]<5;vars["x"]++) {
+  for(vars["y"]=0;vars["y"]<4;vars["y"]++) {     
+    qb("redblock",vars["x"],vars["y"],1);
+  }
+}cl("redblock", Color.red);
