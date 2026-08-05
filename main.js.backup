@@ -1,0 +1,225 @@
+import * as THREE from 'three';
+
+// --- State Variables ---
+let cubes = [];
+let vars = {};
+let isExecuting = false;
+let clock = new THREE.Clock();
+
+// --- Three.js Setup ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdddddd); // Overcast default
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const resetCamera = () => {
+    camera.position.set(0, 1, 10);
+    camera.lookAt(0, 0, 0);
+};
+resetCamera();
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
+
+const baseGeometry = new THREE.BoxGeometry(1, 1, 1);
+const textureLoader = new THREE.TextureLoader();
+
+// --- CodeMirror Editor Setup ---
+// Initialize the syntax-highlighted editors over the textareas
+const editorOptions = {
+    mode: "javascript",
+    theme: "dracula",
+    lineNumbers: true,
+    tabSize: 4
+};
+
+const editorDeclarations = CodeMirror.fromTextArea(document.getElementById('code-declarations'), editorOptions);
+const editorUpdate = CodeMirror.fromTextArea(document.getElementById('code-update'), editorOptions);
+
+// --- 3DPL Emulation Environment ---
+window.Input = {
+    _keys: {},
+    GetKey: function(keyCode) { return !!this._keys[keyCode]; }
+};
+window.KeyCode = {
+    RightArrow: 'ArrowRight', LeftArrow: 'ArrowLeft',
+    UpArrow: 'ArrowUp', DownArrow: 'ArrowDown',
+    Space: 'Space', A: 'KeyA', Z: 'KeyZ', W: 'KeyW', S: 'KeyS'
+};
+window.addEventListener('keydown', e => window.Input._keys[e.code] = true);
+window.addEventListener('keyup', e => window.Input._keys[e.code] = false);
+
+window.Color = {
+    white: 0xffffff, black: 0x000000, blue: 0x0000ff, 
+    green: 0x00ff00, red: 0xff0000, yellow: 0xffff00
+};
+window.Time = { deltaTime: 0 };
+window.Mathf = Math;
+
+window.qb = function(name, x, y, z) {
+    const material = new THREE.MeshStandardMaterial({ color: 0x888888, transparent: true, opacity: 1.0 });
+    const mesh = new THREE.Mesh(baseGeometry, material);
+    mesh.position.set(x, y, z);
+    mesh.name = name;
+    scene.add(mesh);
+    cubes.push(mesh);
+    return mesh;
+};
+
+window.cl = function(name, colorHex) {
+    cubes.forEach(c => {
+        if (c.name === name) c.material.color.setHex(colorHex);
+    });
+};
+
+window.alpha = function(name, alphaVal) {
+    cubes.forEach(c => {
+        if (c.name === name) c.material.opacity = alphaVal;
+    });
+};
+
+window.mv = function(name, x, y, z) {
+    const v = new THREE.Vector3(x, y, z).multiplyScalar(window.Time.deltaTime);
+    if (name === "camera") {
+        camera.position.add(v);
+        return;
+    }
+    cubes.forEach(c => {
+        if (c.name === name) c.position.add(v);
+    });
+};
+
+window.rt = function(name, x, y, z) {
+    const rx = THREE.MathUtils.degToRad(x * window.Time.deltaTime);
+    const ry = THREE.MathUtils.degToRad(y * window.Time.deltaTime);
+    const rz = THREE.MathUtils.degToRad(z * window.Time.deltaTime);
+    if (name === "camera") {
+        camera.rotation.x += rx; camera.rotation.y += ry; camera.rotation.z += rz;
+        return;
+    }
+    cubes.forEach(c => {
+        if (c.name === name) {
+            c.rotation.x += rx; c.rotation.y += ry; c.rotation.z += rz;
+        }
+    });
+};
+
+window.tx = function(name, url) {
+    const tex = textureLoader.load(url);
+    cubes.forEach(c => {
+        if (c.name === name) {
+            c.material.map = tex;
+            c.material.needsUpdate = true;
+        }
+    });
+};
+
+window.dl = function(name) {
+    for (let i = cubes.length - 1; i >= 0; i--) {
+        if (cubes[i].name === name) {
+            scene.remove(cubes[i]);
+            cubes[i].material.dispose();
+            cubes.splice(i, 1);
+        }
+    }
+};
+
+window.cd = function(nameA, nameB) {
+    const boxA = new THREE.Box3();
+    const boxB = new THREE.Box3();
+    
+    let objA = nameA === "camera" ? camera : cubes.find(c => c.name === nameA);
+    let objB = nameB === "camera" ? camera : cubes.find(c => c.name === nameB);
+
+    if (!objA || !objB) return false;
+
+    if (nameA === "camera" || nameB === "camera") {
+        return objA.position.distanceTo(objB.position) <= 1.3;
+    }
+
+    boxA.setFromObject(objA);
+    boxB.setFromObject(objB);
+    return boxA.intersectsBox(boxB);
+};
+
+window.cs = function() {
+    cubes.forEach(c => {
+        scene.remove(c);
+        c.material.dispose();
+    });
+    cubes = [];
+    vars = {};
+};
+
+window.ex = function(name) {
+    return cubes.some(c => c.name === name);
+};
+
+// --- Execution & Loop ---
+function evalDeclarations() {
+    window.cs();
+    try {
+        const rawDecl = editorDeclarations.getValue(); // Read from CodeMirror
+        eval(rawDecl); 
+    } catch (e) {
+        console.error("Declaration Error:", e);
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    window.Time.deltaTime = clock.getDelta();
+
+    if (isExecuting) {
+        try {
+            const updCode = editorUpdate.getValue(); // Read from CodeMirror
+            eval(updCode);
+        } catch (e) {
+            console.error("Update Error:", e);
+            isExecuting = false; 
+        }
+    }
+    
+    renderer.render(scene, camera);
+}
+
+// --- UI Binding ---
+document.getElementById('btn-3dpl').onclick = () => {
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('ide-panel').style.display = 'flex';
+    // CodeMirror sometimes needs a refresh when its container goes from display:none to block
+    setTimeout(() => {
+        editorDeclarations.refresh();
+        editorUpdate.refresh();
+    }, 10);
+};
+
+document.getElementById('btn-run').onclick = () => {
+    isExecuting = !isExecuting;
+    if (!isExecuting) {
+        resetCamera();
+        evalDeclarations();
+    }
+};
+
+// Listen for live typing in the CodeMirror Declarations box
+editorDeclarations.on('change', () => {
+    if (!isExecuting) {
+        evalDeclarations();
+    }
+});
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Start rendering
+animate();
