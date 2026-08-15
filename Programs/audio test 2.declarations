@@ -1,0 +1,7 @@
+vars["obj"] = qb("a",0,0,0);
+vars["obj"].AddComponent("AudioSource");
+var www : WWW = new WWW("file://"+Application.dataPath+"/"+"testsound.wav");
+vars["obj"].audio.clip = www.audioClip;
+//UnityEngine.Resources.Load("testsound") as AudioClip;
+vars["obj"].audio.volume=1;
+if(vars["obj"].audio.clip==null) debugString="null";

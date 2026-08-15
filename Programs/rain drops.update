@@ -1,0 +1,20 @@
+function sphere(id) {
+var sphere=GameObject.CreatePrimitive(PrimitiveType.Sphere);
+sphere.name=id;
+sphere.renderer.material = CubeMaterial;
+cubes.push(sphere);
+}
+var x:float = vars["random"].NextDouble()*20;
+var y:float = vars["random"].NextDouble()*20;
+x=x-10;
+y=y-10;
+do {
+var size :float= vars["random"].NextDouble();
+}while(size<0.5);
+debugString=size.ToString();;
+vars["dropID"]=vars["random"].Next(100000).ToString();
+sphere(vars["dropID"]);
+sp(vars["dropID"],x,y,0);
+sc(vars["dropID"],-size,-size,-size);
+cl(vars["dropID"],Color.blue);
+alpha(vars["dropID"],0.3);

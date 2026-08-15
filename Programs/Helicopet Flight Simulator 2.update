@@ -1,0 +1,45 @@
+//Move the car using arrow keys adn WASD
+function move_camera() {
+  sp("camera",vars["car"].transform.position.x-5,vars["car"].transform.position.y+4,vars["car"].transform.position.z-7);//set camera to ten positions behind car
+  sr("camera",22,10,0);//set the rotation of the camera so it sees the car at an angle
+}
+function rotate_tires() {
+sr("tire1",vars["tire1"].transform.eulerAngles.x,vars["tire1"].transform.eulerAngles.y+100,vars["tire1"].transform.eulerAngles.z);
+}
+
+//Get user input
+if (Input.GetKey (KeyCode.RightArrow))
+    rt("car0",0,100,0);
+if (Input.GetKey (KeyCode.LeftArrow))
+    rt("car0",0,-100,0);
+if (Input.GetKey (KeyCode.Space)) mv("car0",0,100,0);
+if (Input.GetKey (KeyCode.DownArrow)&&!cdcm(vars["car"],"collider_bottom")) {//colliders are fliped due to the helicopter being drawn opposite
+    mv("car0",0,-10,0);
+}
+if (Input.GetKey (KeyCode.UpArrow)){
+    mv("car0",0,10,0);
+}
+if (Input.GetKey (KeyCode.W)&&!cdcm(vars["car"],"collider_front")) {//colliders are fliped due to the helicopter being drawn opposite
+    mv("car0",0,0,-10);
+}
+if (Input.GetKey (KeyCode.S)&&!cdcm(vars["car"],"collider_back")) {//colliders are fliped due to the helicopter being drawn opposite
+    mv("car0",0,0,10);
+}
+if (Input.GetKey (KeyCode.A)&&!cdcm(vars["car"],"collider_right")) {//colliders are fliped due to the helicopter being drawn opposite
+    mv("car0",-10,0,0);
+}
+if (Input.GetKey (KeyCode.D)&&!cdcm(vars["car"],"collider_left")) {//colliders are fliped due to the helicopter being drawn opposite
+    mv("car0",10,0,0);
+}
+
+if (Input.GetKey (KeyCode.Z)){//&&!cdcm(vars["car"],"collider_back")) {
+		    	Camera.main.gameObject.transform.rotation = Quaternion.Euler(Camera.main.gameObject.transform.rotation.eulerAngles.x,Camera.main.gameObject.transform.rotation.eulerAngles.y,Camera.main.gameObject.transform.rotation.eulerAngles.z+2);
+}
+if (Input.GetKey (KeyCode.X)){//&&!cdcm(vars["car"],"collider_back")) {
+		    	Camera.main.gameObject.transform.rotation = Quaternion.Euler(Camera.main.gameObject.transform.rotation.eulerAngles.x,Camera.main.gameObject.transform.rotation.eulerAngles.y,Camera.main.gameObject.transform.rotation.eulerAngles.z-2);
+}
+
+
+rotate_tires();
+move_camera();
+//debugString=vars["car"].transform.position.x.ToString()+","+vars["car"].transform.position.y.ToString()+","+vars["car"].transform.position.z.ToString();

@@ -1,0 +1,2 @@
+XMLObj("picasso.xml","p1",3,0,0);
+XMLObj("picasso.xml","p2",-3,0,0);

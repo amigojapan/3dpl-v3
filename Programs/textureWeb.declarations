@@ -1,0 +1,3 @@
+qb("brick",0,0,0);
+tx("brick", "http://upload.wikimedia.org/wikipedia/commons/2/2b/Clouds.JPG", "Web",1);
+alpha("brick",0.5);

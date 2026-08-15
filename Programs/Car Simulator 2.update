@@ -1,0 +1,29 @@
+//Move the car using arrow keys
+function move_camera() {
+  sp("camera",vars["car"].transform.position.x-5,vars["car"].transform.position.y+4,vars["car"].transform.position.z-7);//set camera to ten positions behind car
+  sr("camera",22,10,0);//set the rotation of the camera so it sees the car at an angle
+}
+function rotate_tires() {
+sr("tire1",vars["tire1"].transform.eulerAngles.x+45,vars["tire1"].transform.eulerAngles.y,vars["tire1"].transform.eulerAngles.z);
+sr("tire2",vars["tire2"].transform.eulerAngles.x+45,vars["tire2"].transform.eulerAngles.y,vars["tire2"].transform.eulerAngles.z);
+sr("tire3",vars["tire3"].transform.eulerAngles.x+45,vars["tire3"].transform.eulerAngles.y,vars["tire3"].transform.eulerAngles.z);
+sr("tire4",vars["tire4"].transform.eulerAngles.x+45,vars["tire4"].transform.eulerAngles.y,vars["tire4"].transform.eulerAngles.z);
+
+}
+
+//Get user input
+if (Input.GetKey (KeyCode.RightArrow))
+    rt("car0",0,100,0);
+if (Input.GetKey (KeyCode.LeftArrow))
+    rt("car0",0,-100,0);
+if (Input.GetKey (KeyCode.Space)) mv("car0",0,100,0);
+if (Input.GetKey (KeyCode.UpArrow)&&!cdcm(vars["car"],"collider_front")) {
+    mv("car0",0,0,10);
+    rotate_tires();
+}
+if (Input.GetKey (KeyCode.DownArrow)&&!cdcm(vars["car"],"collider_back")) {
+    mv("car0",0,0,-10);
+    rotate_tires();
+
+}
+move_camera();

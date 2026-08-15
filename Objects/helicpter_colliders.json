@@ -1,0 +1,62 @@
+[
+  {
+    "name": "collider_bottom",
+    "x": 0,
+    "y": 1,
+    "z": 8,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0
+  },
+  {
+    "name": "collider_front",
+    "x": 0,
+    "y": 9,
+    "z": -9,
+    "r": 0,
+    "g": 255,
+    "b": 0,
+    "alpha": 0
+  },
+  {
+    "name": "collider_top",
+    "x": 0,
+    "y": 18,
+    "z": 8,
+    "r": 255,
+    "g": 255,
+    "b": 0,
+    "alpha": 0
+  },
+  {
+    "name": "collider_back",
+    "x": 0,
+    "y": 9,
+    "z": 29,
+    "r": 255,
+    "g": 0,
+    "b": 0,
+    "alpha": 0
+  },
+  {
+    "name": "collider_left",
+    "x": -10,
+    "y": 9,
+    "z": 8,
+    "r": 255,
+    "g": 0,
+    "b": 255,
+    "alpha": 0
+  },
+  {
+    "name": "collider_right",
+    "x": 10,
+    "y": 9,
+    "z": 8,
+    "r": 0,
+    "g": 255,
+    "b": 255,
+    "alpha": 0
+  }
+]

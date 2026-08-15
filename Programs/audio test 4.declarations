@@ -1,0 +1,6 @@
+qb("a",0,0,0);
+AttachSound("a","testsound.wav");//attaches a sound to a cube
+qb("b",0,0,0);
+AttachSound("b","car.wav");
+SetPitch("b",2);
+PlaySoundLoop("b");

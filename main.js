@@ -7,11 +7,16 @@ let sounds = {}; // Dictionary to store loaded audio objects
 let isExecuting = false;
 let clock = new THREE.Clock();
 
+// Object Cache
+const loadedObjectCache = {};
+
 // Editor States
 let objectEditorMode = false;
 let mapEditorMode = false;
 let editorPointer = null;
 let actionCooldown = 0;
+let selectedObjectTexture = "";
+let selectedObjectColliderName = "";
 
 // Mouse Look States
 let mouseLookEnabled = false;
@@ -20,7 +25,8 @@ let camYaw = 0;
 
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xdddddd);
+const mapBuilderBackground = new THREE.Color(0xdddddd);
+scene.background = mapBuilderBackground;
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const resetCamera = () => {
@@ -38,6 +44,7 @@ const audioLoader = new THREE.AudioLoader();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.tabIndex = 0;
 document.body.appendChild(renderer.domElement);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -48,8 +55,144 @@ scene.add(dirLight);
 
 const baseGeometry = new THREE.BoxGeometry(1, 1, 1);
 const textureLoader = new THREE.TextureLoader();
+let skyBackgroundTexture = null;
 
-// Pointer Mesh (Red wireframe box for editors)
+function setSkyboxVisible(visible) {
+    scene.background = (visible && skyBackgroundTexture)
+        ? skyBackgroundTexture
+        : mapBuilderBackground;
+}
+
+textureLoader.load(
+    'Skyboxes/sunflowers_puresky_2k.jpg',
+    texture => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        skyBackgroundTexture = texture;
+        setSkyboxVisible(!mapEditorMode);
+    },
+    undefined,
+    error => {
+        console.error('Skybox load error:', error);
+        setDebugError('Skybox load error: Skyboxes/sunflowers_puresky_2k.jpg');
+    }
+);
+
+function get_object_position(target) {
+    if (!target) return null;
+    
+    // If target is a string ID, look it up in vars
+    if (typeof target === 'string') {
+        if (vars[target] && vars[target].transform) {
+            return vars[target].transform.position;
+        }
+        return null;
+    }
+    
+    // If target is an object reference
+    if (target.transform && target.transform.position) {
+        return target.transform.position;
+    }
+    if (target.position) {
+        return target.position;
+    }
+    
+    return null;
+}
+
+/**
+ * Resolves the string name identifier required for built-in collision checks like cd().
+ */
+function get_object_name(target, fallbackName) {
+    if (typeof target === 'string') return target;
+    if (target && target.name) return target.name;
+    
+    // Search the global vars map for a matching object reference
+    for (var key in vars) {
+        if (vars[key] === target) return key;
+    }
+    
+    return fallbackName || "";
+}
+
+/**
+ * Checks if an entity is colliding with solid voxel ground/map geometry.
+ * Combines bounding box checks with height evaluation to prevent false collisions when airborne.
+ * 
+ * @param {Object|string} landObj - The map object or string identifier (e.g., vars["land"] or "land")
+ * @param {Object|string} carObj - The moving entity or string identifier (e.g., vars["car"] or "car0")
+ * @param {number} [heightThreshold=1.0] - Maximum Y-axis height offset to consider as ground contact
+ * @returns {boolean} True if the entity is within ground altitude AND intersecting the map bounds
+ */
+function is_touching_voxel(landObj, colliderObj, colliderName) {
+    var land = typeof landObj === "string" ? vars[landObj] : landObj;
+    var colliders = typeof colliderObj === "string" ? vars[colliderObj] : colliderObj;
+
+    if (!land || !colliders) {
+        return false;
+    }
+
+    scene.updateMatrixWorld(true);
+
+    var collider = null;
+
+    // Find ONLY the requested collider.
+    colliders.traverse(function(obj) {
+        if (obj.isMesh && obj.name === colliderName) {
+            collider = obj;
+        }
+    });
+
+    if (!collider) {
+        return false;
+    }
+
+    var colliderBox = new THREE.Box3().setFromObject(collider);
+
+    // Check this collider against every land voxel.
+    var touching = false;
+
+    land.traverse(function(voxel) {
+        if (touching || !voxel.isMesh) {
+            return;
+        }
+
+        var landBox = new THREE.Box3().setFromObject(voxel);
+
+        if (colliderBox.intersectsBox(landBox)) {
+            touching = true;
+        }
+    });
+
+    return touching;
+}
+
+// --- 3DPL Texture UV Unwrapping ---
+window.apply3DPLWrap1 = function(geometry) {
+    const uvAttribute = geometry.attributes.uv;
+
+    const setFace = (faceIdx, col, row) => {
+        const w = 1/3, h = 1/2;
+        const u = col * w, v = row * h;
+        const idx = faceIdx * 4;
+
+        uvAttribute.setXY(idx + 0, u, v + h);     
+        uvAttribute.setXY(idx + 1, u + w, v + h); 
+        uvAttribute.setXY(idx + 2, u, v);         
+        uvAttribute.setXY(idx + 3, u + w, v);     
+    };
+
+    setFace(4, 0, 1); // Front  
+    setFace(5, 1, 1); // Back   
+    setFace(2, 2, 1); // Top    
+    setFace(3, 0, 0); // Bottom 
+    setFace(1, 1, 0); // Left   
+    setFace(0, 2, 0); // Right  
+
+    uvAttribute.needsUpdate = true;
+};
+
+// Pointer Mesh
 const pointerGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
 const pointerMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
 editorPointer = new THREE.Mesh(pointerGeo, pointerMat);
@@ -60,6 +203,463 @@ editorPointer.visible = false;
 const editorOptions = { mode: "javascript", theme: "dracula", lineNumbers: true, tabSize: 4 };
 const editorDeclarations = CodeMirror.fromTextArea(document.getElementById('code-declarations'), editorOptions);
 const editorUpdate = CodeMirror.fromTextArea(document.getElementById('code-update'), editorOptions);
+
+// Sets the name saved on newly placed Object Editor blocks. Using the same
+// name for several blocks lets them act as one logical collider probe.
+const objectColliderNameInput = document.getElementById('obj-collider-name');
+const clearColliderNameButton = document.getElementById('btn-clear-collider-name');
+
+window.SetColliderName = function(name) {
+    selectedObjectColliderName = String(name || '').trim();
+    objectColliderNameInput.value = selectedObjectColliderName;
+    return selectedObjectColliderName;
+};
+
+objectColliderNameInput.oninput = () => {
+    selectedObjectColliderName = objectColliderNameInput.value.trim();
+};
+clearColliderNameButton.onclick = () => window.SetColliderName('');
+
+// --- Object Editor Texture Picker ---
+const texturePicker = document.getElementById('texture-picker');
+const textureGrid = document.getElementById('texture-grid');
+const textureSearch = document.getElementById('texture-search');
+const selectedTextureName = document.getElementById('selected-texture-name');
+const selectTextureButton = document.getElementById('btn-select-texture');
+const clearTextureButton = document.getElementById('btn-clear-texture');
+const availableTextureNames = [
+    "1flowercube.png",
+    "16x16_1.png",
+    "16x16_2.png",
+    "16x16_3.png",
+    "16x16_4.png",
+    "16x16_5.png",
+    "16x16_6.png",
+    "16x16_7.png",
+    "16x16_8.png",
+    "16x16_9.png",
+    "16x16_10.png",
+    "16x16_11.png",
+    "16x16_12.png",
+    "16x16_13.png",
+    "16x16_14.png",
+    "16x16_15.png",
+    "16x16_16.png",
+    "16x16_17.png",
+    "16x16_18.png",
+    "16x16_newbrick.png",
+    "16x16_newbrick1.png",
+    "16x16_newbrick2.png",
+    "16x16_newbrick3.png",
+    "16x16_tree_leaves.png",
+    "16x16_tree_leaves2.png",
+    "16x16_tree_leaves3.png",
+    "16x16_window.png",
+    "16x16_wood.png",
+    "32x32_grass1.png",
+    "32x32_grass2.png",
+    "32x32_grass3.png",
+    "32x32_grass4.png",
+    "32x32_grass5.png",
+    "32x32_grass6.png",
+    "32x32_grass7.png",
+    "64x64_grass1.png",
+    "64x64_grass2.png",
+    "64x64_grassandcoconut.png",
+    "64x64brick1.png",
+    "64x64wood1.png",
+    "64x64wood2.png",
+    "64x64wood3.png",
+    "64x64wood4.png",
+    "beach_sand_with_bluestarfish.png",
+    "beach_sand_with_butterfly.png",
+    "beach_sand_with_butterfly1.png",
+    "beach_sand_with_butterfly2.png",
+    "beach_sand_with_crustacea1.png",
+    "beach_sand_with_pinkstarfish.png",
+    "beach_sand_with_shell.png",
+    "beach_sand_with_shell1.png",
+    "beach_sand_with_silverstarfish.png",
+    "beach_sand.png",
+    "beach_sand2.png",
+    "coconut_wood.png",
+    "coconut_wood2.png",
+    "doorbtn.png",
+    "doorbtn1.png",
+    "doorsbuton1.png",
+    "doorswitch1.png",
+    "dotted_box.png",
+    "dotted_box1.png",
+    "dotted_box3.png",
+    "dotted_box4.png",
+    "dotted_box5.png",
+    "dotted_box6.png",
+    "dotted_box7.png",
+    "dotted_box8.png",
+    "dungeonkeyss.png",
+    "fence2.png",
+    "fenceA.png",
+    "fenceback.png",
+    "flower_right.png",
+    "flower2.png",
+    "grass.png",
+    "grass1.png",
+    "grass2.png",
+    "grass3.png",
+    "grass4.png",
+    "grass5.png",
+    "ground1.png",
+    "ground2.png",
+    "leafs1.png",
+    "leafs2.png",
+    "leafs3.png",
+    "leafs4.png",
+    "leafs5.png",
+    "material1.png",
+    "material2.png",
+    "material3.png",
+    "Medieval_cube.png",
+    "new_flower.png",
+    "newfence.png",
+    "OneSIdeBark.png",
+    "OneSideGreenery.png",
+    "picasso.png",
+    "red_vines.png",
+    "room_lamp.png",
+    "SixSideCube_Grass.png",
+    "SixSideCube_Grass2.png",
+    "SixSideCube_grass7.png",
+    "SixSideCube_grass8.png",
+    "SixSideCubeTemplate.jpg",
+    "SixSideCubeTemplate1.png",
+    "SixSideGround.png",
+    "stone1.png",
+    "stone2.png",
+    "stone3.png",
+    "stone4.png",
+    "stonetype1.png",
+    "stonetype2.png",
+    "stonetype3.png",
+    "stonetype4.png",
+    "stonetype5.png",
+    "stonetype6.png",
+    "stonetype7.png",
+    "stonetype8.png",
+    "stonetype9.png",
+    "stonetype10.png",
+    "stonetype11.png",
+    "stonetype12.png",
+    "stonetype13.png",
+    "stonetype14.png",
+    "stonetype15.png",
+    "stonetype16.png",
+    "stonetype17.png",
+    "stonetype18.png",
+    "stonetype19.png",
+    "stonetype20.png",
+    "stonetype21a.png",
+    "stonetype22.png",
+    "stonetype23.png",
+    "stonetype24.png",
+    "stonetype25.png",
+    "stonetype26.png",
+    "stonetype27.png",
+    "stonetype28.png",
+    "stonetype29.png",
+    "stonetype30.png",
+    "stonetype31.png",
+    "texture_wall3.png",
+    "texture_wall4.png",
+    "texture_wall6.png",
+    "texture_wall7.png",
+    "texture_wall8.png",
+    "tree_leaves.png",
+    "tree_leaves2.png",
+    "tree_leaves3.png",
+    "tree_wood.png",
+    "Untitled-1.png",
+    "water.png",
+    "water2.png",
+    "water3.png",
+    "water4.png",
+    "water5.png",
+    "water6.png",
+    "window1.png",
+    "wood1.png",
+    "wood2.png",
+    "wood3.png",
+    "wood4.png",
+    "wood5.png",
+    "wood7.png",
+    "woodtype1.png",
+    "woodtype2.png",
+    "woodtype3.png",
+    "woodtype4.png",
+    "woodtype5.png",
+    "woodtype6.png",
+    "woodtype7.png",
+    "woodtype8.png",
+    "woodtype9.png",
+    "woodtype10.png",
+    "woodtype11.png",
+    "working_fence.png"
+];
+
+function selectObjectEditorTexture(textureName) {
+    selectedObjectTexture = textureName;
+    selectedTextureName.textContent = textureName
+        ? `Selected: ${textureName}`
+        : 'Selected: None (color only)';
+    selectTextureButton.textContent = textureName ? 'Change Texture' : 'Select Texture';
+    textureGrid.querySelectorAll('.texture-option').forEach(option => {
+        option.classList.toggle('selected', option.dataset.texture === textureName);
+    });
+    texturePicker.style.display = 'none';
+}
+
+function renderTextureChoices(filterText = '') {
+    const filter = filterText.trim().toLowerCase();
+    const fragment = document.createDocumentFragment();
+    textureGrid.innerHTML = '';
+
+    availableTextureNames
+        .filter(textureName => textureName.toLowerCase().includes(filter))
+        .forEach(textureName => {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'texture-option';
+            option.dataset.texture = textureName;
+            option.title = textureName;
+            option.classList.toggle('selected', textureName === selectedObjectTexture);
+
+            const preview = document.createElement('img');
+            preview.src = `Textures/${encodeURIComponent(textureName)}`;
+            preview.alt = textureName;
+            preview.loading = 'lazy';
+
+            const label = document.createElement('span');
+            label.textContent = textureName;
+            option.append(preview, label);
+            option.onclick = () => selectObjectEditorTexture(textureName);
+            fragment.appendChild(option);
+        });
+
+    textureGrid.appendChild(fragment);
+}
+
+selectTextureButton.onclick = () => {
+    const opening = texturePicker.style.display !== 'block';
+    texturePicker.style.display = opening ? 'block' : 'none';
+    if (opening) {
+        renderTextureChoices(textureSearch.value);
+        textureSearch.focus();
+    }
+};
+
+clearTextureButton.onclick = () => selectObjectEditorTexture('');
+textureSearch.oninput = () => renderTextureChoices(textureSearch.value);
+
+renderTextureChoices();
+
+// --- Bird's-eye Map Editor ---
+const availableMapObjectNames = [
+    "car_colliders.json",
+    "heli_no_proeller.json",
+    "helicpter_colliders.json",
+    "propeller.json",
+    "sports-car-tires.json",
+    "sports-car.json"
+];
+let selectedMapObject = '';
+let mapObjectPreview = null;
+
+const mapObjectPicker = document.getElementById('map-object-picker');
+const mapObjectGrid = document.getElementById('map-object-grid');
+const mapObjectSearch = document.getElementById('map-object-search');
+const selectedMapObjectLabel = document.getElementById('selected-map-object');
+const selectMapObjectButton = document.getElementById('btn-select-map-object');
+const mapObjectYInput = document.getElementById('map-object-y');
+const mapObjectRotationInput = document.getElementById('map-object-rotation');
+const mapObjectScaleInput = document.getElementById('map-object-scale');
+const rotateMapObjectButton = document.getElementById('btn-rotate-map-object');
+const mapObjectCount = document.getElementById('map-object-count');
+
+function updateMapObjectCount() {
+    const count = cubes.filter(object => object.userData.mapEditorObject).length;
+    mapObjectCount.textContent = `Placed objects: ${count}`;
+}
+
+function removeMapObjectPreview() {
+    if (!mapObjectPreview) return;
+    mapObjectPreview.removeFromParent();
+    mapObjectPreview.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => material.dispose());
+    });
+    mapObjectPreview = null;
+}
+
+function createMapObjectPreview() {
+    removeMapObjectPreview();
+    if (!mapEditorMode || !selectedMapObject) return;
+
+    const previewName = `map_preview_${generateId()}`;
+    mapObjectPreview = window.Obj(selectedMapObject, previewName, 0, 0, 0);
+
+    // Loaders normally register objects as scene content. The preview is temporary.
+    const cubeIndex = cubes.indexOf(mapObjectPreview);
+    if (cubeIndex !== -1) cubes.splice(cubeIndex, 1);
+    mapObjectPreview.userData.mapEditorPreview = true;
+    syncMapObjectPreview();
+}
+
+function syncMapObjectPreview() {
+    if (!mapObjectPreview) return;
+
+    const scale = Math.max(0.01, Number(mapObjectScaleInput.value) || 1);
+    const rotationY = Number(mapObjectRotationInput.value) || 0;
+    mapObjectPreview.visible = mapEditorMode;
+    mapObjectPreview.position.copy(editorPointer.position);
+    mapObjectPreview.scale.set(scale, scale, scale);
+    mapObjectPreview.rotation.set(0, THREE.MathUtils.degToRad(-rotationY), 0, 'YXZ');
+
+    // This also styles children that arrive later from asynchronous JSON loading.
+    mapObjectPreview.traverse(child => {
+        if (!child.isMesh || child.userData.mapPreviewStyled) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => {
+            material.color.setHex(0x00ffff);
+            material.map = null;
+            material.wireframe = true;
+            material.transparent = true;
+            material.opacity = 0.45;
+            material.depthTest = false;
+            material.depthWrite = false;
+            material.needsUpdate = true;
+        });
+        child.renderOrder = 999;
+        child.userData.mapPreviewStyled = true;
+    });
+}
+
+function selectMapEditorObject(filename) {
+    selectedMapObject = filename;
+    selectedMapObjectLabel.textContent = `Selected: ${filename}`;
+    selectMapObjectButton.textContent = 'Change JSON Object';
+    mapObjectGrid.querySelectorAll('.map-object-option').forEach(option => {
+        option.classList.toggle('selected', option.dataset.filename === filename);
+    });
+    mapObjectPicker.style.display = 'none';
+    createMapObjectPreview();
+}
+
+function renderMapObjectChoices(filterText = '') {
+    const filter = filterText.trim().toLowerCase();
+    const fragment = document.createDocumentFragment();
+    mapObjectGrid.innerHTML = '';
+
+    availableMapObjectNames
+        .filter(filename => filename.toLowerCase().includes(filter))
+        .forEach(filename => {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'map-object-option';
+            option.dataset.filename = filename;
+            option.title = filename;
+            option.textContent = filename;
+            option.classList.toggle('selected', filename === selectedMapObject);
+            option.onclick = () => selectMapEditorObject(filename);
+            fragment.appendChild(option);
+        });
+
+    mapObjectGrid.appendChild(fragment);
+}
+
+function placeMapEditorObject(entry) {
+    const filename = entry.file;
+    if (!filename || !/\.json$/i.test(filename)) {
+        throw new Error(`Map objects must be JSON files: ${filename || '(missing filename)'}`);
+    }
+
+    const instanceName = entry.name || `map_object_${generateId()}`;
+    const x = Number(entry.x) || 0;
+    const y = Number(entry.y) || 0;
+    const z = Number(entry.z) || 0;
+    const rotationY = Number(entry.rotationY) || 0;
+    const scale = Number(entry.scale) || 1;
+    const object = window.Obj(filename, instanceName, x, y, z);
+
+    object.scale.set(scale, scale, scale);
+    object.rotation.set(0, THREE.MathUtils.degToRad(-rotationY), 0, 'YXZ');
+    object.userData.mapEditorObject = true;
+    object.userData.sourceFile = filename;
+    updateMapObjectCount();
+    return object;
+}
+
+function exportMapEditorJSON() {
+    const objects = cubes
+        .filter(object => object.userData.mapEditorObject)
+        .map(object => ({
+            file: object.userData.sourceFile,
+            name: object.name,
+            x: object.position.x,
+            y: object.position.y,
+            z: object.position.z,
+            rotationY: -THREE.MathUtils.radToDeg(object.rotation.y),
+            scale: object.scale.x
+        }));
+    const mapData = { format: '3dpl-map-v1', objects };
+    const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const download = document.createElement('a');
+    download.href = url;
+    download.download = 'my_map.json';
+    download.click();
+    URL.revokeObjectURL(url);
+}
+
+selectMapObjectButton.onclick = () => {
+    const opening = mapObjectPicker.style.display !== 'block';
+    mapObjectPicker.style.display = opening ? 'block' : 'none';
+    if (opening) {
+        renderMapObjectChoices(mapObjectSearch.value);
+        mapObjectSearch.focus();
+    }
+};
+mapObjectSearch.oninput = () => renderMapObjectChoices(mapObjectSearch.value);
+rotateMapObjectButton.onclick = () => {
+    const currentRotation = Number(mapObjectRotationInput.value) || 0;
+    mapObjectRotationInput.value = ((currentRotation + 90) % 360 + 360) % 360;
+    syncMapObjectPreview();
+};
+document.getElementById('btn-export-map').onclick = exportMapEditorJSON;
+document.getElementById('btn-load-map').onclick = () => document.getElementById('file-input-map').click();
+document.getElementById('file-input-map').onchange = event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = loadEvent => {
+        try {
+            const mapData = JSON.parse(loadEvent.target.result);
+            const objects = Array.isArray(mapData) ? mapData : mapData.objects;
+            if (!Array.isArray(objects)) throw new Error('Map JSON has no objects array.');
+            removeMapObjectPreview();
+            window.cs();
+            objects.forEach(placeMapEditorObject);
+            createMapObjectPreview();
+            updateMapObjectCount();
+        } catch (error) {
+            setDebugError(`Map load error: ${error.message}`);
+            console.error('Map load error:', error);
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+};
+
+renderMapObjectChoices();
 
 // --- Debug UI Helpers ---
 const setDebugError = (msg) => {
@@ -79,25 +679,30 @@ window.Input = {
 };
 window.KeyCode = { 
     RightArrow: 'ArrowRight', LeftArrow: 'ArrowLeft', UpArrow: 'ArrowUp', DownArrow: 'ArrowDown',
-    Space: 'Space', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF' 
+    Space: 'Space', LeftControl: 'ControlLeft', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF' 
 };
+
+const gameplayKeyCodes = new Set(Object.values(window.KeyCode));
 
 window.addEventListener('keydown', e => {
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
     const isTyping = activeTag === 'input' || activeTag === 'textarea';
 
-    if (e.code === 'Space' && !isTyping) e.preventDefault();
+    if ((e.code === 'Space' && !isTyping) || (isExecuting && gameplayKeyCodes.has(e.code))) {
+        e.preventDefault();
+    }
     if (e.code === 'KeyQ' && document.pointerLockElement) document.exitPointerLock();
+    if (isTyping) return;
     
     window.Input._keys[e.code] = true;
-});
+}, true);
 
 window.addEventListener('keyup', e => {
     window.Input._keys[e.code] = false;
-});
+}, true);
 
-// --- Mouse Look (Pointer Lock) ---
 renderer.domElement.addEventListener('mousedown', () => {
+    if (document.activeElement) document.activeElement.blur();
     if (objectEditorMode) document.body.requestPointerLock();
 });
 
@@ -121,43 +726,95 @@ window.Color = { white: 0xffffff, black: 0x000000, blue: 0x0000ff, green: 0x00ff
 window.Time = { deltaTime: 0 };
 window.Mathf = Math;
 
+// Injects Unity-like properties into Three.js objects to support legacy math
+function injectUnityCompatibility(mesh) {
+    mesh.transform = mesh; // Fixes the vars.car.transform is undefined error
+    Object.defineProperty(mesh, 'eulerAngles', {
+        get: function() {
+            return {
+                x: -this.rotation.x * (180 / Math.PI),
+                y: -this.rotation.y * (180 / Math.PI),
+                z: -this.rotation.z * (180 / Math.PI)
+            };
+        }
+    });
+}
+
+function forEachObjectMaterial(object, callback) {
+    object.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => callback(material, child));
+    });
+}
+
+function disposeObjectMaterials(object) {
+    forEachObjectMaterial(object, material => material.dispose());
+}
+
 window.qb = function(name, x, y, z) {
     const material = new THREE.MeshStandardMaterial({ color: 0x888888, transparent: true, opacity: 1.0 });
     const mesh = new THREE.Mesh(baseGeometry, material);
     mesh.position.set(x, y, z);
     mesh.name = name;
+    injectUnityCompatibility(mesh);
     scene.add(mesh);
     cubes.push(mesh);
     return mesh;
 };
 
 window.cl = function(name, colorHex) {
-    cubes.forEach(c => { if (c.name === name) c.material.color.setHex(colorHex); });
-};
-
-window.alpha = function(name, alphaVal) {
-    cubes.forEach(c => { if (c.name === name) c.material.opacity = alphaVal; });
-};
-
-window.tx = function(name, textureName, source, wrap) {
-    const mapTexture = textureLoader.load('Textures/' + textureName, undefined, undefined, (err) => {
-        setDebugError(`Texture load error: Could not load Textures/${textureName}`);
-    });
-    mapTexture.colorSpace = THREE.SRGBColorSpace; 
     cubes.forEach(c => { 
         if (c.name === name) {
-            c.material.map = mapTexture;
-            c.material.needsUpdate = true;
+            forEachObjectMaterial(c, material => material.color.setHex(colorHex));
         }
     });
 };
 
-// Transforms - Adjusted to map Unity's Local space and Z-Forward to Three.js
+window.alpha = function(name, alphaVal) {
+    cubes.forEach(c => { 
+        if (c.name === name) {
+            forEachObjectMaterial(c, material => {
+                material.transparent = true;
+                material.opacity = alphaVal;
+                material.needsUpdate = true;
+            });
+        }
+    });
+};
+
+window.tx = function(name, textureName, source, wrap) {
+    wrap = wrap || 6;
+    const mapTexture = textureLoader.load('Textures/' + textureName, undefined, undefined, (err) => {
+        setDebugError(`Texture load error: Could not load Textures/${textureName}`);
+    });
+    mapTexture.colorSpace = THREE.SRGBColorSpace; 
+    
+    cubes.forEach(c => { 
+        if (c.name === name) {
+            forEachObjectMaterial(c, (material, mesh) => {
+                material.map = mapTexture;
+                material.needsUpdate = true;
+                mesh.userData.textureName = textureName;
+                mesh.userData.wrap = wrap;
+
+                if (wrap === 1 || wrap === "1") {
+                    if (mesh.geometry === baseGeometry) mesh.geometry = baseGeometry.clone();
+                    window.apply3DPLWrap1(mesh.geometry);
+                } else {
+                    if (mesh.geometry !== baseGeometry) mesh.geometry = baseGeometry;
+                }
+            });
+        }
+    });
+};
+
+// Transforms 
 window.mv = function(name, x, y, z) {
     if (name === "camera") {
         camera.translateX(x); 
         camera.translateY(y); 
-        camera.translateZ(-z); // Three.js uses -Z for forward
+        camera.translateZ(-z); 
         return;
     }
     cubes.forEach(c => { 
@@ -176,9 +833,9 @@ window.sp = function(name, x, y, z) {
 window.cp = window.sp;
 
 window.rt = function(name, x, y, z) {
-    const radX = x * (Math.PI / 180);
-    const radY = y * (Math.PI / 180);
-    const radZ = z * (Math.PI / 180);
+    const radX = -x * (Math.PI / 180);
+    const radY = -y * (Math.PI / 180);
+    const radZ = -z * (Math.PI / 180);
     if (name === "camera") {
         camera.rotateX(radX); 
         camera.rotateY(radY); 
@@ -195,20 +852,22 @@ window.rt = function(name, x, y, z) {
 };
 
 window.an = function(name, x, y, z) {
-    const radX = x * (Math.PI / 180);
-    const radY = y * (Math.PI / 180);
-    const radZ = z * (Math.PI / 180);
+    const radX = -x * (Math.PI / 180);
+    const radY = -y * (Math.PI / 180);
+    const radZ = -z * (Math.PI / 180);
     if (name === "camera") { camera.rotation.set(radX, radY, radZ, 'YXZ'); return; }
     cubes.forEach(c => {
         if (c.name === name) c.rotation.set(radX, radY, radZ, 'YXZ');
     });
 };
 
+window.sr = window.an;
+
 window.sc = function(name, x, y, z) {
     cubes.forEach(c => { if (c.name === name) c.scale.set(x, y, z); });
 };
 
-// State & Group Collision (Checks ALL objects sharing a name)
+// State & Group Collision 
 window.ex = function(name) {
     return cubes.some(c => c.name === name);
 };
@@ -229,36 +888,191 @@ window.eq = function(nameA, nameB) {
     }
 };
 
+function findCollisionObjects(target) {
+    if (target === "camera") return [camera];
+    if (target && target.isObject3D) return [target];
+    if (typeof target !== 'string') return [];
+
+    if (vars[target] && vars[target].isObject3D) return [vars[target]];
+
+    const topLevelMatches = [...new Set(
+        cubes.filter(object => object.name === target)
+    )];
+    if (topLevelMatches.length > 0) return topLevelMatches;
+
+    // Collider blocks loaded inside an Obj() group are not top-level cubes.
+    // Search descendants so names such as "collider_back" work with cd().
+    const nestedMatches = new Set();
+    cubes.forEach(root => {
+        root.traverse(child => {
+            if (child !== root && child.name === target) nestedMatches.add(child);
+        });
+    });
+    return [...nestedMatches];
+}
+
+function collisionBoxFor(object) {
+    if (object === camera) {
+        return new THREE.Box3().setFromCenterAndSize(
+            camera.position,
+            new THREE.Vector3(1, 1, 1)
+        );
+    }
+    return new THREE.Box3().setFromObject(object);
+}
+
 window.cd = function(nameA, nameB) {
-    let objsA = nameA === "camera" ? [camera] : cubes.filter(c => c.name === nameA);
-    let objsB = nameB === "camera" ? [camera] : cubes.filter(c => c.name === nameB);
+    const objsA = findCollisionObjects(nameA);
+    const objsB = findCollisionObjects(nameB);
     
     if (objsA.length === 0 || objsB.length === 0) return false;
 
-    // Iterate through all objects of group A and check against all objects of group B
     for (let a of objsA) {
-        let boxA = nameA === "camera" ? new THREE.Box3().setFromCenterAndSize(camera.position, new THREE.Vector3(1,1,1)) : new THREE.Box3().setFromObject(a);
+        const boxA = collisionBoxFor(a);
         for (let b of objsB) {
-            let boxB = nameB === "camera" ? new THREE.Box3().setFromCenterAndSize(camera.position, new THREE.Vector3(1,1,1)) : new THREE.Box3().setFromObject(b);
+            const boxB = collisionBoxFor(b);
             if (boxA.intersectsBox(boxB)) return true;
         }
     }
     return false;
 };
 
+/**
+ * Efficiently checks a named collider/object against a LoadMap() map.
+ * First it uses cd() against each placed map item. Only overlapping items
+ * receive the more expensive voxel-by-voxel is_touching_voxel() check.
+ *
+ * @param {Object|string} mapObject - LoadMap() result, variable key, or name.
+ * @param {Object|string} colliderObject - Object reference or collider name.
+ * @returns {boolean} True when one of the collider meshes touches a map voxel.
+ */
+window.is_object_colliding_with_map = function(mapObject, colliderObject) {
+    const maps = findCollisionObjects(mapObject);
+    const colliderRoots = findCollisionObjects(colliderObject);
+
+    if (maps.length === 0 || colliderRoots.length === 0) return false;
+
+    const colliderMeshes = [];
+    colliderRoots.forEach(root => {
+        if (root.isMesh) {
+            colliderMeshes.push(root);
+            return;
+        }
+        root.traverse(child => {
+            if (child.isMesh) colliderMeshes.push(child);
+        });
+    });
+
+    if (colliderMeshes.length === 0) return false;
+
+    for (const map of maps) {
+        // LoadMap() stores every placed object as a direct child. For another
+        // compatible group, treating its direct children as items also works.
+        const mapItems = map.children.length > 0 ? map.children : [map];
+
+        for (const mapItem of mapItems) {
+            for (const colliderMesh of colliderMeshes) {
+                if (!window.cd(mapItem, colliderMesh)) continue;
+
+                // mapItem, rather than the whole map, is deliberately supplied
+                // as landObj so only the broad-phase match scans its voxels.
+                if (is_touching_voxel(
+                    mapItem,
+                    colliderMesh,
+                    colliderMesh.name
+                )) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+};
+
+/**
+ * Moves an object in small steps and rolls back the first step that collides.
+ * This prevents fast objects from jumping completely through a thin map voxel.
+ * Coordinates follow mv(): positive z moves in the object's forward direction.
+ *
+ * @returns {boolean} True if the entire requested movement was completed.
+ */
+window.move_object_with_map_collision = function(
+    mapObject,
+    movingObject,
+    colliderObject,
+    x,
+    y,
+    z,
+    maxStep
+) {
+    const maps = findCollisionObjects(mapObject);
+    const movingObjects = findCollisionObjects(movingObject);
+
+    if (maps.length === 0 || movingObjects.length === 0) return false;
+
+    // Do not allow movement through an empty placeholder while LoadMap() or
+    // the collider JSON is still downloading.
+    if (maps.some(map => map.userData.is3DPLMap && !map.userData.loaded)) {
+        return false;
+    }
+    if (findCollisionObjects(colliderObject).length === 0) return false;
+
+    const dx = Number(x) || 0;
+    const dy = Number(y) || 0;
+    const dz = Number(z) || 0;
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (distance === 0) return true;
+
+    const safeStep = Math.max(0.01, Number(maxStep) || 0.2);
+    const steps = Math.max(1, Math.ceil(distance / safeStep));
+    const stepX = dx / steps;
+    const stepY = dy / steps;
+    const stepZ = dz / steps;
+
+    for (let step = 0; step < steps; step++) {
+        movingObjects.forEach(object => {
+            object.translateX(stepX);
+            object.translateY(stepY);
+            object.translateZ(-stepZ);
+        });
+        scene.updateMatrixWorld(true);
+
+        if (window.is_object_colliding_with_map(mapObject, colliderObject)) {
+            movingObjects.forEach(object => {
+                object.translateX(-stepX);
+                object.translateY(-stepY);
+                object.translateZ(stepZ);
+            });
+            scene.updateMatrixWorld(true);
+            return false;
+        }
+    }
+
+    return true;
+};
+
+window.cdcm = function(obj, colliderName) {
+    const o = typeof obj === 'string' ? cubes.find(c => c.name === obj) : obj;
+    return o ? window.cd(o.name, colliderName) : false;
+};
+
 // Deletion
 window.dl = function(name) {
     for (let i = cubes.length - 1; i >= 0; i--) {
         if (cubes[i].name === name) {
-            scene.remove(cubes[i]);
-            cubes[i].material.dispose();
+            cubes[i].removeFromParent();
+            disposeObjectMaterials(cubes[i]);
             cubes.splice(i, 1);
         }
     }
 };
 
 window.cs = function() {
-    cubes.forEach(c => { scene.remove(c); c.material.dispose(); });
+    cubes.forEach(c => { 
+        c.removeFromParent(); 
+        disposeObjectMaterials(c);
+    });
     cubes = [];
     vars = {}; 
     
@@ -268,9 +1082,466 @@ window.cs = function() {
     sounds = {};
 };
 
-// --- PreProcessor ---
+// Audio Engine
+window.AttachSound = function(cubeName, fileName) {
+    const sound = new THREE.Audio(listener);
+    audioLoader.load('Sounds/' + fileName, (buffer) => {
+        sound.setBuffer(buffer);
+        sound.setVolume(1.0);
+    }, undefined, () => setDebugError(`Audio load error: Sounds/${fileName}`));
+    sounds[cubeName] = sound;
+};
+
+window.PlaySound = function(cubeName) {
+    if (sounds[cubeName] && !sounds[cubeName].isPlaying) sounds[cubeName].play();
+};
+
+window.PlaySoundLoop = function(cubeName) {
+    if (sounds[cubeName]) {
+        sounds[cubeName].setLoop(true);
+        if (!sounds[cubeName].isPlaying) sounds[cubeName].play();
+    }
+};
+
+window.StopSound = function(cubeName) {
+    if (sounds[cubeName] && sounds[cubeName].isPlaying) sounds[cubeName].stop();
+};
+
+window.SetPitch = function(cubeName, pitch) {
+    if (sounds[cubeName]) sounds[cubeName].setPlaybackRate(pitch);
+};
+
+window.SetVolume = function(cubeName, vol) {
+    if (sounds[cubeName]) sounds[cubeName].setVolume(vol);
+};
+
+// --- Object and XML Loading ---
+window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
+    if (!filenameOrUrl) return null;
+    x = x || 0; y = y || 0; z = z || 0;
+    instanceName = instanceName || ("obj_" + Math.random().toString(36).substr(2, 5));
+
+    const axisGroup = new THREE.Group();
+    axisGroup.position.set(x, y, z);
+    axisGroup.name = instanceName;
+    axisGroup.userData.loaded = false;
+    injectUnityCompatibility(axisGroup);
+    scene.add(axisGroup);
+    cubes.push(axisGroup);
+
+    const buildVoxels = (voxelData) => {
+voxelData.forEach(cords => {
+    var voxelName = cords.cubename || cords.name;
+    if (voxelName === "AxisPoint") return;
+                const mat = new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color(cords.r/255, cords.g/255, cords.b/255), 
+                transparent: true, 
+                opacity: cords.alpha !== undefined ? cords.alpha : 1.0 
+            });
+            
+            let geom = baseGeometry;
+            if (cords.TextureName) {
+                const tex = textureLoader.load('Textures/' + cords.TextureName);
+                tex.colorSpace = THREE.SRGBColorSpace;
+                mat.map = tex;
+                
+                if (cords.WrapOnSides == 1) {
+                    geom = baseGeometry.clone();
+                    window.apply3DPLWrap1(geom);
+                }
+            }
+            
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(cords.x, cords.y, cords.z);
+            //mesh.name = cords.cubename;
+            mesh.name = voxelName;
+            mesh.userData.textureName = cords.TextureName || "";
+            mesh.userData.wrap = cords.WrapOnSides || 6;
+            axisGroup.add(mesh); 
+        });
+    };
+
+    const finishObjectLoad = data => {
+        let voxelData = null;
+        if (Array.isArray(data)) {
+            voxelData = data;
+        } else if (Array.isArray(data.voxels)) {
+            voxelData = data.voxels;
+        } else if (Array.isArray(data.objects)) {
+            voxelData = data.objects;
+        }
+
+        if (!voxelData) throw new Error('Unknown voxel JSON format.');
+        buildVoxels(voxelData);
+        axisGroup.userData.loaded = true;
+        return axisGroup;
+    };
+
+    if (loadedObjectCache[filenameOrUrl]) {
+        finishObjectLoad(loadedObjectCache[filenameOrUrl]);
+        axisGroup.userData.ready = Promise.resolve(axisGroup);
+    } else {
+        const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
+        axisGroup.userData.ready = fetch(url)
+            .then(res => { if (!res.ok) throw new Error("File not found"); return res.json(); })
+            .then(data => {
+                loadedObjectCache[filenameOrUrl] = data;
+                return finishObjectLoad(data);
+            })
+            .catch(err => {
+                axisGroup.userData.loadError = err.message;
+                setDebugError(`Failed to load JSON object: ${url}`);
+                console.error(err);
+                return axisGroup;
+            });
+    }
+    return axisGroup;
+};
+
+window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
+    if (!filenameOrUrl) {
+        setDebugError("XMLObj Error: Missing filename argument.");
+        return null;
+    }
+    x = x || 0; y = y || 0; z = z || 0;
+    instanceName = instanceName || ("xml_obj_" + Math.random().toString(36).substr(2, 5));
+
+    const axisGroup = new THREE.Group();
+    axisGroup.position.set(x, y, z);
+    axisGroup.name = instanceName;
+    injectUnityCompatibility(axisGroup);
+    scene.add(axisGroup);
+    cubes.push(axisGroup);
+
+    const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
+    fetch(url)
+        .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+        .then(str => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(str, "text/xml");
+            
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                setDebugError(`XML Syntax Error in ${url}`);
+                return;
+            }
+
+            let nodes = xmlDoc.getElementsByTagName("Coordinates");
+            if (nodes.length === 0) nodes = xmlDoc.getElementsByTagName("Object");
+
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                const cubename = n.getAttribute("cubename") || "cube";
+                if (cubename === "AxisPoint" || cubename.startsWith("collider")) continue;
+
+                const bx = parseFloat(n.getAttribute("x") || 0);
+                const by = parseFloat(n.getAttribute("y") || 0);
+                const bz = parseFloat(n.getAttribute("z") || 0);
+                const r = parseFloat(n.getAttribute("r") || 255);
+                const g = parseFloat(n.getAttribute("g") || 255);
+                const b = parseFloat(n.getAttribute("b") || 255);
+                const alpha = parseFloat(n.getAttribute("alpha") || 1.0);
+                const texName = n.getAttribute("TextureName") || "";
+                
+                const wrapStr = n.getAttribute("WrapOnSides");
+                const wrap = wrapStr ? parseInt(wrapStr) : 6;
+
+                const mat = new THREE.MeshStandardMaterial({ 
+                    color: new THREE.Color(r/255, g/255, b/255), 
+                    transparent: true, opacity: alpha 
+                });
+
+                let geom = baseGeometry;
+                if (texName) {
+                    const tex = textureLoader.load('Textures/' + texName);
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    mat.map = tex;
+                    
+                    if (wrap === 1) {
+                        geom = baseGeometry.clone();
+                        window.apply3DPLWrap1(geom);
+                    }
+                }
+
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.position.set(bx, by, bz);
+                mesh.name = cubename;
+                mesh.userData.textureName = texName;
+                mesh.userData.wrap = wrap;
+                axisGroup.add(mesh);
+            }
+        })
+        .catch(err => {
+            setDebugError(`Cannot fetch ${url}. (Use HTTP Server)`);
+            console.error(err);
+        });
+
+    return axisGroup;
+};
+
+function createInlineMapCube(entry, instanceName) {
+    const group = new THREE.Group();
+    group.name = instanceName;
+    group.userData.loaded = true;
+    injectUnityCompatibility(group);
+
+    let color = new THREE.Color(0x888888);
+    if (Array.isArray(entry.color) && entry.color.length >= 3) {
+        color = new THREE.Color(
+            Number(entry.color[0]) / 255,
+            Number(entry.color[1]) / 255,
+            Number(entry.color[2]) / 255
+        );
+    } else if (entry.color !== undefined) {
+        color = new THREE.Color(entry.color);
+    }
+
+    const opacity = entry.alpha !== undefined ? Number(entry.alpha) : 1;
+    const material = new THREE.MeshStandardMaterial({
+        color,
+        transparent: opacity < 1,
+        opacity
+    });
+    const mesh = new THREE.Mesh(baseGeometry, material);
+    mesh.name = entry.voxelName || `${instanceName}_voxel`;
+    group.add(mesh);
+
+    scene.add(group);
+    cubes.push(group);
+    group.userData.ready = Promise.resolve(group);
+    return group;
+}
+
+/**
+ * Loads a JSON map exported by the Creative Mode Map Editor.
+ * The returned group is registered like any other 3DPL object, so its
+ * objectName can be passed to mv(), sp(), rt(), sr(), sc(), dl(), cd(), etc.
+ * Local filenames are loaded from the Maps/ subdirectory.
+ */
+window.LoadMap = function(mapJsonFile, objectName) {
+    if (!mapJsonFile) {
+        setDebugError('LoadMap Error: Missing map JSON filename.');
+        return null;
+    }
+
+    // Accept an optional leading "Maps/", but never load map files from
+    // outside that directory.
+    const normalizedMapFile = String(mapJsonFile).replace(/\\/g, '/');
+    const relativeMapFile = normalizedMapFile.startsWith('Maps/')
+        ? normalizedMapFile.substring('Maps/'.length)
+        : normalizedMapFile;
+
+    if (!relativeMapFile ||
+        relativeMapFile.startsWith('/') ||
+        relativeMapFile.split('/').includes('..') ||
+        !relativeMapFile.toLowerCase().endsWith('.json')) {
+        setDebugError('LoadMap Error: The map must be a JSON file inside Maps/.');
+        return null;
+    }
+
+    const mapUrl = `Maps/${relativeMapFile}`;
+
+    objectName = objectName || (`map_${Math.random().toString(36).substr(2, 5)}`);
+
+    const mapGroup = new THREE.Group();
+    mapGroup.name = objectName;
+    mapGroup.userData.mapFile = relativeMapFile;
+    mapGroup.userData.is3DPLMap = true;
+    mapGroup.userData.loaded = false;
+    injectUnityCompatibility(mapGroup);
+    scene.add(mapGroup);
+    cubes.push(mapGroup);
+
+    const fetchMapJSON = async () => {
+        const response = await fetch(mapUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    };
+
+    mapGroup.userData.ready = fetchMapJSON()
+        .then((data) => {
+            // Do not resurrect a map that was deleted while its file was loading.
+            if (!cubes.includes(mapGroup)) return mapGroup;
+
+            const entries = Array.isArray(data) ? data : data.objects;
+            if (!Array.isArray(entries)) {
+                throw new Error('Map JSON has no objects array.');
+            }
+
+            const mapParts = [];
+            entries.forEach((entry, index) => {
+                const isInlineCube = entry.primitive === 'cube';
+                const hasJSONFile = entry.file && /\.json$/i.test(entry.file);
+                if (!isInlineCube && !hasJSONFile) {
+                    throw new Error(
+                        `Map entry ${index + 1} must contain a JSON object file or cube primitive.`
+                    );
+                }
+
+                const partName = entry.name || `${objectName}_part_${index + 1}`;
+                const part = isInlineCube
+                    ? createInlineMapCube(entry, partName)
+                    : window.Obj(entry.file, partName, 0, 0, 0);
+
+                // Only the parent map should be registered as a top-level 3DPL object.
+                const partIndex = cubes.indexOf(part);
+                if (partIndex !== -1) cubes.splice(partIndex, 1);
+                mapGroup.add(part);
+
+                part.position.set(
+                    Number(entry.x) || 0,
+                    Number(entry.y) || 0,
+                    Number(entry.z) || 0
+                );
+                part.rotation.set(
+                    0,
+                    THREE.MathUtils.degToRad(-(Number(entry.rotationY) || 0)),
+                    0,
+                    'YXZ'
+                );
+                const partScale = Math.max(0.01, Number(entry.scale) || 1);
+                part.scale.set(partScale, partScale, partScale);
+                part.userData.mapEntry = entry;
+                mapParts.push(part);
+            });
+
+            mapGroup.userData.resolvedMapUrl = mapUrl;
+            return Promise.all(mapParts.map(part => part.userData.ready))
+                .then(() => {
+                    if (!cubes.includes(mapGroup)) return mapGroup;
+
+                    const failedPart = mapParts.find(part => part.userData.loadError);
+                    if (failedPart) {
+                        throw new Error(
+                            `${failedPart.name}: ${failedPart.userData.loadError}`
+                        );
+                    }
+
+                    // Collision checks can now safely inspect every part's voxels.
+                    mapGroup.userData.loaded = true;
+                    return mapGroup;
+                });
+        })
+        .catch(error => {
+            mapGroup.userData.loadError = error.message;
+            setDebugError(`LoadMap Error: ${mapUrl} - ${error.message}`);
+            console.error('LoadMap Error:', error);
+            return mapGroup;
+        });
+
+    return mapGroup;
+};
+
+// --- Object Editor File I/O ---
+document.getElementById('btn-save-json').onclick = () => {
+    const exportData = [];
+    cubes.forEach(c => {
+        if (c.name === "AxisPoint" || c.name === "guide" || c.name === "pointer") return;
+        if (c.material) {
+            exportData.push({
+                cubename: c.name,
+                x: c.position.x, y: c.position.y, z: c.position.z,
+                r: Math.round(c.material.color.r * 255), 
+                g: Math.round(c.material.color.g * 255), 
+                b: Math.round(c.material.color.b * 255),
+                alpha: c.material.opacity,
+                TextureName: c.userData.textureName || "",
+                WrapOnSides: c.userData.wrap || 6
+            });
+        }
+    });
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; 
+    a.download = "my_object.json"; 
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+document.getElementById('btn-load-json').onclick = () => document.getElementById('file-input-json').click();
+document.getElementById('file-input-json').onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            window.cs(); 
+            const axis = window.qb("AxisPoint", 0, 0, 0);
+            axis.material.color.setHex(0x00ff00);
+            axis.material.opacity = 0.5;
+
+            data.forEach(cords => {
+                const c = window.qb(cords.cubename, cords.x, cords.y, cords.z);
+                c.material.color.setRGB(cords.r/255, cords.g/255, cords.b/255);
+                c.material.opacity = cords.alpha !== undefined ? cords.alpha : 1.0;
+                
+                const wrap = cords.WrapOnSides || 6;
+                if(cords.TextureName) {
+                    window.tx(cords.cubename, cords.TextureName, "File", wrap);
+                }
+            });
+            e.target.value = '';
+        } catch(err) { console.error("Error loading JSON", err); }
+    };
+    reader.readAsText(file);
+};
+
+document.getElementById('btn-import-xml').onclick = () => document.getElementById('file-input-xml').click();
+document.getElementById('file-input-xml').onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(event.target.result, "text/xml");
+            let nodes = xmlDoc.getElementsByTagName("Coordinates");
+            if(nodes.length === 0) nodes = xmlDoc.getElementsByTagName("Object");
+            
+            window.cs(); 
+            const axis = window.qb("AxisPoint", 0, 0, 0);
+            axis.material.color.setHex(0x00ff00);
+            axis.material.opacity = 0.5;
+
+            for(let i=0; i<nodes.length; i++) {
+                const n = nodes[i];
+                const cubename = n.getAttribute("cubename") || generateId();
+                if (cubename === "AxisPoint" || cubename.startsWith("collider")) continue;
+
+                const x = parseFloat(n.getAttribute("x") || 0);
+                const y = parseFloat(n.getAttribute("y") || 0);
+                const z = parseFloat(n.getAttribute("z") || 0);
+                const r = parseFloat(n.getAttribute("r") || 255);
+                const g = parseFloat(n.getAttribute("g") || 255);
+                const b = parseFloat(n.getAttribute("b") || 255);
+                const alpha = parseFloat(n.getAttribute("alpha") || 1.0);
+                const texName = n.getAttribute("TextureName") || "";
+                
+                const wrapStr = n.getAttribute("WrapOnSides");
+                const wrap = wrapStr ? parseInt(wrapStr) : 6;
+                
+                const c = window.qb(cubename, x, y, z);
+                c.material.color.setRGB(r/255, g/255, b/255);
+                c.material.opacity = alpha;
+                if(texName) {
+                    window.tx(cubename, texName, "File", wrap);
+                }
+            }
+            e.target.value = '';
+        } catch(err) { console.error("Error loading XML", err); }
+    };
+    reader.readAsText(file);
+};
+
 function PreProcessor(code) {
     let processed = code;
+    processed = processed.replace(/\bMap\s*\(/g, "XMLObj(");
+
+    processed = processed.replace(/([a-zA-Z0-9_\[\]"']+)(?:\.transform)?\.parent\s*=\s*([a-zA-Z0-9_\[\]"']+)(?:\.transform)?;/g, "$2.attach($1);");
+    processed = processed.replace(/\.transform\b/g, "");
+
     processed = processed.replace(/(for\s*\([^)]+\)\s*)([^{\s][^;]+;?)/g, "$1 { $2 }");
     processed = processed.replace(/(while\s*\([^)]+\)\s*)([^{\s][^;]+;?)/g, "$1 { $2 }");
 
@@ -301,7 +1572,7 @@ function evalDeclarations() {
     }
 }
 
-// --- ALL 18 ORIGINAL TUTORIALS ---
+// --- ORIGINAL TUTORIALS + CAR SIMULATOR LESSONS ---
 const tutorials = {
     1: { decl: `//How to make a cube\nqb("mycube",0,0,0);`, upd: `` },
     2: { decl: `//Now change the coordinates of mycube so you can see it moves aroud\nqb("mycube",2,0,1);`, upd: `` },
@@ -317,8 +1588,6 @@ const tutorials = {
     12: { decl: `//Moving camera\nfor(var x=0;x<4;x++) {\n    qb("a",x,x,x);\n}`, upd: `mv("camera",0.05,0.05,0.05);` },
     13: { decl: `//Rotating camera\nfor(var x=0;x<4;x++) {\n    qb("a",x,x,x);\n}`, upd: `rt("camera",1,1,1);` },
     14: { decl: `//Deleting an object\nqb("a",3,0,0);\nqb("b",0,0,0);\ncl("a", Color.blue);\ncl("b", Color.red);`, upd: `//Move until crash\nif(!cd("a","b")) {\n    mv("b",0.05,0,0);\n} else { \n    dl("a");\n}` },
-    
-    // --- UPDATED TUTORIALS ---
     15: {
         decl: `//Input Detection\nqb("a",3,0,0);`,
         upd: `//Use arrow keys and [A] and [Z]\nif (Input.GetKey (KeyCode.RightArrow))\n    mv("a",0.2,0,0);\nif (Input.GetKey (KeyCode.LeftArrow))\n    mv("a",-0.2,0,0);\nif (Input.GetKey (KeyCode.UpArrow))\n    mv("a",0,0.2,0);\nif (Input.GetKey (KeyCode.DownArrow))\n    mv("a",0,-0.2,0);\nif (Input.GetKey (KeyCode.A))\n    mv("a",0,0,0.2);\nif (Input.GetKey (KeyCode.Z))\n    mv("a",0,0,-0.2);`
@@ -329,27 +1598,186 @@ const tutorials = {
     },
     17: {
         decl: `//Space travel\nfunction big_asteroid(name,x,y,z,color) {\n    qb(name,x,y,z);\n    qb(name,x-1,y,z);\n    qb(name,x,y-1,z);\n    qb(name,x,y,z-1);\n    qb(name,x+1,y,z);\n    qb(name,x,y+1,z);\n    qb(name,x,y,z+1);\n    cl(name, color);\n}\n//Asteroids\nbig_asteroid("Asteroid0",7,7,7, Color.red);\nbig_asteroid("Asteroid1",-7,-7,-7, Color.blue);\nbig_asteroid("Asteroid2",14,14,14, Color.green);\nbig_asteroid("Asteroid3",-14,-14,-14, Color.yellow);\nsp("camera", 0, 0, 0); // Start in center`,
-        upd: `//Use arrow keys and [A] and [Z] and Space\nif (Input.GetKey (KeyCode.RightArrow))\n    rt("camera",0,2,0);\nif (Input.GetKey (KeyCode.LeftArrow))\n    rt("camera",0,-2,0);\nif (Input.GetKey (KeyCode.UpArrow))\n    rt("camera",2,0,0);\nif (Input.GetKey (KeyCode.DownArrow))\n    rt("camera",-2,0,0);\nif (Input.GetKey (KeyCode.A))\n    mv("camera",0,0,0.5);\nif (Input.GetKey (KeyCode.Z))\n    mv("camera",0,0,-0.5);\nif (Input.GetKey (KeyCode.Space)) {\n    qb("bullet",0,0,0);\n    eq("bullet","camera"); // Takes rotation so local mv works\n}\nif (ex("bullet")) {\n   mv("bullet",0,0,0.5);\n}\nif(cd("bullet","Asteroid0")) \n    dl("Asteroid0");\nif(cd("bullet","Asteroid1")) \n    dl("Asteroid1");\nif(cd("bullet","Asteroid2")) \n    dl("Asteroid2");\nif(cd("bullet","Asteroid3")) \n    dl("Asteroid3");`
+        upd: `//Use arrow keys and [A] and [Z] and Left Control\nif (Input.GetKey (KeyCode.RightArrow))\n    rt("camera",0,2,0);\nif (Input.GetKey (KeyCode.LeftArrow))\n    rt("camera",0,-2,0);\nif (Input.GetKey (KeyCode.UpArrow))\n    rt("camera",2,0,0);\nif (Input.GetKey (KeyCode.DownArrow))\n    rt("camera",-2,0,0);\nif (Input.GetKey (KeyCode.A))\n    mv("camera",0,0,0.5);\nif (Input.GetKey (KeyCode.Z))\n    mv("camera",0,0,-0.5);\nif (Input.GetKey (KeyCode.LeftControl)) {\n    qb("bullet",0,0,0);\n    eq("bullet","camera"); // Takes rotation so local mv works\n}\nif (ex("bullet")) {\n   mv("bullet",0,0,0.5);\n}\nif(cd("bullet","Asteroid0")) \n    dl("Asteroid0");\nif(cd("bullet","Asteroid1")) \n    dl("Asteroid1");\nif(cd("bullet","Asteroid2")) \n    dl("Asteroid2");\nif(cd("bullet","Asteroid3")) \n    dl("Asteroid3");`
     },
     18: {
         decl: `//First person 3D platformer\n// Optimized floor to avoid lagging web browsers with 400 cubes\nqb("floor", 0, -5, 0);\nsc("floor", 40, 1, 40);\ncl("floor", Color.green);\n\n//trees\nfunction drawtree(x,y,z) {\n    var Brown = 0x8b45be; //Translated from Color(139,69,190)\n    qb("trunk",x,y,z);\n    qb("trunk",x,y+1,z);\n    qb("trunk",x,y+2,z);\n    qb("trunk",x,y+3,z);\n    cl("trunk", Brown);\n    qb("bush",x,y+4,z);\n    qb("bush",x+1,y+4,z);\n    qb("bush",x-1,y+4,z);\n    cl("bush", Color.green);\n}\n//trees in front\ndrawtree(0,-4,0);\ndrawtree(5,-4,5);\ndrawtree( -5,-4,15);\n//trees behind\ndrawtree(-3,-4,-10);\ndrawtree(-10,-4,-10);\ndrawtree(5,-4,-15);\n\nvars["gforce"]=-0.1;\nvars["isJumping"]=false;`,
-        upd: `//Use arrow keys to move, Space to jump\n//Implement gravity\nif(!cd("camera","floor") && !cd("camera","bush") && !vars["isJumping"]) {\n    mv("camera",0,vars["gforce"],0);\n}\nvars["isJumping"] = false;\n\n//Get user input\nif (Input.GetKey (KeyCode.RightArrow))\n    rt("camera",0,2,0);\nif (Input.GetKey (KeyCode.LeftArrow))\n    rt("camera",0,-2,0);\nif (Input.GetKey (KeyCode.Space)) {\n    mv("camera",0,0.3,0);\n    vars["isJumping"] = true;\n}\nif (Input.GetKey (KeyCode.UpArrow) && !cd("camera","trunk"))\n    mv("camera",0,0,0.2);\nif (Input.GetKey (KeyCode.DownArrow))\n    mv("camera",0,0,-0.2);`
+        upd: `//Use arrow keys to move, Left Control to jump\n//Implement gravity\nif(!cd("camera","floor") && !cd("camera","bush") && !vars["isJumping"]) {\n    mv("camera",0,vars["gforce"],0);\n}\nvars["isJumping"] = false;\n\n//Get user input\nif (Input.GetKey (KeyCode.RightArrow))\n    rt("camera",0,2,0);\nif (Input.GetKey (KeyCode.LeftArrow))\n    rt("camera",0,-2,0);\nif (Input.GetKey (KeyCode.LeftControl)) {\n    mv("camera",0,0.3,0);\n    vars["isJumping"] = true;\n}\nif (Input.GetKey (KeyCode.UpArrow) && !cd("camera","trunk"))\n    mv("camera",0,0,0.2);\nif (Input.GetKey (KeyCode.DownArrow))\n    mv("camera",0,0,-0.2);`
+    },
+    19: {
+        title: "tx: textures",
+        decl: `// tx(name, textureFile, source, wrap) adds a texture.\n// name: object name, textureFile: a file in Textures/.\n// source is kept for old 3DPL code; the web engine loads local files.\n// wrap 6 repeats one image on every face.\n// wrap 1 uses a 3-by-2 six-sided texture layout.\nqb("texturedCube", 0, 0, 0);\ntx("texturedCube", "stone1.png", "File", 6);`,
+        upd: ``
+    },
+    20: {
+        title: "alpha: transparency",
+        decl: `// alpha(name, value) changes opacity.\n// 1 is solid, 0 is invisible, and values between are transparent.\nqb("solid", -2, 0, 0);\nqb("glass", 0, 0, 0);\nqb("faint", 2, 0, 0);\ncl("solid", Color.blue);\ncl("glass", Color.blue);\ncl("faint", Color.blue);\nalpha("solid", 1);\nalpha("glass", 0.5);\nalpha("faint", 0.15);`,
+        upd: ``
+    },
+    21: {
+        title: "sp, mv, rt, and sr",
+        decl: `// The Car Simulator uses four transform functions.\nqb("car", 0, 0, 0);\nsc("car", 3, 1, 5); // sc sets x, y, z size multipliers.\ncl("car", Color.red);\n\n// sp sets an exact world position. cp is another name for sp.\nsp("car", 0, 0, 0);\n\n// sr sets an exact rotation in degrees. an is another name for sr.\nsr("car", 0, 25, 0);`,
+        upd: `// mv moves relative to the object's current local direction.\n// rt adds this many degrees to the current rotation.\nrt("car", 0, 0.5, 0);\nmv("car", 0, 0, 0.02);`
+    },
+    22: {
+        title: "Obj and XMLObj",
+        decl: `// Obj(jsonFile, instanceName, x, y, z) loads JSON voxel art.\nvars["car"] = Obj("sports-car.json", "car", -3, 0, 0);\nsc("car", 0.19, 0.19, 0.19);\n\n// XMLObj(xmlFile, instanceName, x, y, z) loads legacy XML art.\n// Map(...) in old programs is automatically translated to XMLObj(...).\nvars["tree"] = XMLObj("1tree.xml", "tree", 3, -2, 0);\n\n// Both loaders return a group immediately; its voxels load in the background.`,
+        upd: `rt("car", 0, 0.5, 0);\nrt("tree", 0, -0.25, 0);`
+    },
+    23: {
+        title: "vars and transform",
+        decl: `// vars keeps values and object references available every frame.\nvars["car"] = Obj("sports-car.json", "car", 0, 0, 0);\nsc("car", 0.19, 0.19, 0.19);\nvars["speed"] = 0.05;\n\n// Loaded objects have Unity-style transform and position properties.\n// Read coordinates with vars["car"].transform.position.x, .y, and .z.`,
+        upd: `mv("car", vars["speed"], 0, 0);\n\n// Turn around when the car reaches either side.\nif (Math.abs(vars["car"].transform.position.x) > 4) {\n    vars["speed"] = -vars["speed"];\n}`
+    },
+    24: {
+        title: "parenting objects",
+        decl: `// Parenting makes one object follow another.\nvars["car"] = Obj("sports-car.json", "car", 0, 0, 0);\nsc("car", 0.19, 0.19, 0.19);\nvars["tire"] = Obj("sports-car-tires.json", "tire", 0, 0, 0);\nsc("tire", 0.10, 0.10, 0.10);\n\n// The preprocessor converts this legacy .transform.parent syntax\n// into Three.js parenting while keeping the tire's world position.\nvars["tire"].transform.parent = vars["car"].transform;`,
+        upd: `// Both the car and its child tire now move together.\nrt("car", 0, 0.5, 0);`
+    },
+    25: {
+        title: "traverse loaded voxels",
+        decl: `// traverse(function(obj) {...}) visits a group and all its children.\nvars["car"] = Obj("sports-car.json", "car", 0, 0, 0);\nsc("car", 0.19, 0.19, 0.19);\nvars["painted"] = false;`,
+        upd: `// Obj loads asynchronously, so keep checking until meshes exist.\nif (!vars["painted"]) {\n    vars["car"].traverse(function(obj) {\n        if (obj.isMesh) {\n            obj.material.color.setHex(Color.yellow);\n            if (!vars["painted"])\n                console.log("First loaded voxel:", obj.name, obj.position);\n            vars["painted"] = true;\n        }\n    });\n}`
+    },
+    26: {
+        title: "car audio",
+        decl: `// AttachSound(objectName, fileName) loads a file from Sounds/.\n// PlaySoundLoop(objectName) starts it and repeats it.\n// SetVolume(objectName, value) uses 0 for silent and 1 for full volume.\n// Audio must start after the user presses START / STOP.\n\n// These are the exact calls used by Car Simulator 6:\n// AttachSound("car0", "car.wav");\n// PlaySoundLoop("car0");\n// AttachSound("camera", "NOW7.wav");\n// PlaySoundLoop("camera");\n// SetVolume("camera", 0.1);\n\n// They are commented because this project currently has no Sounds folder.\nqb("car0", 0, 0, 0);\nsc("car0", 3, 1, 5);\ncl("car0", Color.red);`,
+        upd: ``
+    },
+    27: {
+        title: "Input.GetKey driving",
+        decl: `// Input.GetKey(KeyCode...) is true while a key is held.\nqb("car", 0, 0, 0);\nsc("car", 2, 1, 4);\ncl("car", Color.red);`,
+        upd: `// Hold Up/Down to drive and Left/Right to steer.\nif (Input.GetKey(KeyCode.UpArrow))\n    mv("car", 0, 0, 0.1);\nif (Input.GetKey(KeyCode.DownArrow))\n    mv("car", 0, 0, -0.1);\nif (Input.GetKey(KeyCode.LeftArrow))\n    rt("car", 0, -2, 0);\nif (Input.GetKey(KeyCode.RightArrow))\n    rt("car", 0, 2, 0);`
+    },
+    28: {
+        title: "is_touching_voxel",
+        decl: `// is_touching_voxel(land, colliders, colliderName) checks one\n// named collider mesh against every voxel mesh in a map or obstacle.\nvars["wall"] = qb("wall", 0, 2, 0);\nsc("wall", 6, 6, 1);\ncl("wall", Color.green);\n\n// collider_front is 10 units in front of this moving collider group.\nvars["colliders"] = Obj("car_colliders.json", "colliders", 0, 0, -12);\nvars["colliderSpeed"] = 0.08;\nsp("camera", 10, 8, 24);\nan("camera", -15, 25, 0);`,
+        upd: `// The collider moves automatically after START is clicked.\nmv("colliders", 0, 0, -vars["colliderSpeed"]);\n\nvar touching = is_touching_voxel(\n    vars["wall"], vars["colliders"], "collider_front");\n\n// The wall turns red whenever collider_front touches it.\ncl("wall", touching ? Color.red : Color.green);\n\n// Reverse so the demonstration repeats.\nif (vars["colliders"].transform.position.z > 2)\n    vars["colliderSpeed"] = -0.08;\nif (vars["colliders"].transform.position.z < -12)\n    vars["colliderSpeed"] = 0.08;`
+    },
+    29: {
+        title: "reusable simulator functions",
+        decl: `// JavaScript functions group repeated simulator instructions.\nvars["car"] = qb("car", 0, 0, 0);\nsc("car", 2, 1, 4);\ncl("car", Color.red);\nvars["tire"] = qb("tire", 1.2, -0.6, 1);\nsc("tire", 0.5, 0.5, 0.5);\ncl("tire", Color.black);\nvars["tire"].transform.parent = vars["car"].transform;\n\n// Store functions in vars when the update editor must call them.\nvars["move_camera"] = function() {\n    sp("camera",\n        vars["car"].transform.position.x,\n        vars["car"].transform.position.y + 3,\n        vars["car"].transform.position.z + 10);\n};\n\nvars["rotate_tires"] = function() {\n    rt("tire", 10, 0, 0);\n};\n\nvars["drive"] = function(distance) {\n    mv("car", 0, 0, distance);\n    vars["rotate_tires"]();\n};`,
+        upd: `if (Input.GetKey(KeyCode.UpArrow))\n    vars["drive"](0.1);\nif (Input.GetKey(KeyCode.DownArrow))\n    vars["drive"](-0.1);\n\n// Run camera follow every frame, as Car Simulator 6 does.\nvars["move_camera"]();`
+    },
+    30: {
+        title: "Full Car Simulator 6",
+        decl: `// FULL CAR SIMULATOR 6\n// Arrow keys drive and steer. Space launches the car upward.\nvars["land"] = XMLObj("3DLP_MAP_ISLAND_extended.xml", "land", 0, 0, 0);\nvars["car"] = Obj("sports-car.json", "car0", -2, 0, -10);\nvars["car_colliders"] = Obj("car_colliders.json", "car_colliders", 0, 0, 0);\nvars["car_colliders"].transform.parent = vars["car"].transform;\n\nvars["car_colliders"].traverse(function(obj) {\n    if (obj.isMesh)\n        console.log("CAR COLLIDER:", obj.name, obj.position);\n});\n\nsr("land", 0, 180, 0);\nmv("land", 0, 0, -20);\nsc("car0", 0.19, 0.19, 0.19);\n\nvars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);\nvars["tire2"] = Obj("sports-car-tires.json", "tire2", 0, 0, 0);\nvars["tire3"] = Obj("sports-car-tires.json", "tire3", 0, 0, 0);\nvars["tire4"] = Obj("sports-car-tires.json", "tire4", 0, 0, 0);\nsc("tire1", 0.10, 0.10, 0.10);\nsc("tire2", 0.10, 0.10, 0.10);\nsc("tire3", 0.10, 0.10, 0.10);\nsc("tire4", 0.10, 0.10, 0.10);\n\nsp("tire1", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire2", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire3", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\nsp("tire4", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\n\nvars["tire1"].transform.parent = vars["car"].transform;\nvars["tire2"].transform.parent = vars["car"].transform;\nvars["tire3"].transform.parent = vars["car"].transform;\nvars["tire4"].transform.parent = vars["car"].transform;\n\n// Uncomment these when car.wav and NOW7.wav exist in Sounds/.\n// AttachSound("car0", "car.wav");\n// PlaySoundLoop("car0");\n// AttachSound("camera", "NOW7.wav");\n// PlaySoundLoop("camera");\n// SetVolume("camera", 0.1);\n\n// Functions are stored in vars so declarations and update share them.\nvars["move_camera"] = function() {\n    sp("camera", vars["car"].transform.position.x,\n        vars["car"].transform.position.y,\n        vars["car"].transform.position.z);\n    mv("camera", 3, 3, -30);\n};\n\nvars["rotate_tires"] = function() {\n    sr("tire1", vars["tire1"].transform.eulerAngles.x+45, vars["tire1"].transform.eulerAngles.y, vars["tire1"].transform.eulerAngles.z);\n    sr("tire2", vars["tire2"].transform.eulerAngles.x+45, vars["tire2"].transform.eulerAngles.y, vars["tire2"].transform.eulerAngles.z);\n    sr("tire3", vars["tire3"].transform.eulerAngles.x+45, vars["tire3"].transform.eulerAngles.y, vars["tire3"].transform.eulerAngles.z);\n    sr("tire4", vars["tire4"].transform.eulerAngles.x+45, vars["tire4"].transform.eulerAngles.y, vars["tire4"].transform.eulerAngles.z);\n};`,
+        upd: `// Get user input.\nif (Input.GetKey(KeyCode.RightArrow)) {\n    rt("car0", 0, 3, 0);\n    rt("camcol", 0, 3, 0);\n}\nif (Input.GetKey(KeyCode.LeftArrow)) {\n    rt("car0", 0, -3, 0);\n    rt("camcol", 0, -3, 0);\n}\nif (Input.GetKey(KeyCode.Space)) {\n    mv("car0", 0, 100, 0);\n    mv("camcol", 0, 100, 0);\n}\n\nif (Input.GetKey(KeyCode.DownArrow) &&\n    !is_touching_voxel(vars["land"], vars["car_colliders"], "collider_back")) {\n    mv("car0", 0, 0, 1);\n    mv("camcol", 0, 0, 1);\n    vars["rotate_tires"]();\n}\n\nif (Input.GetKey(KeyCode.UpArrow) &&\n    !is_touching_voxel(vars["land"], vars["car_colliders"], "collider_front")) {\n    mv("car0", 0, 0, -1);\n    mv("camcol", 0, 0, -1);\n    vars["rotate_tires"]();\n}\n\n// Follow the car every frame.\nvars["move_camera"]();`
+    },
+    31: {
+        title: "Helicopet Flight Simulator 3",
+        decl: "// HELICOPET FLIGHT SIMULATOR 3 - converted for 3DPL Web\n// W/S: up/down, A/D: turn, arrow keys: forward/back/sideways.\n\n// Use the same island as Car Simulator 6.\nvars[\"land\"] = XMLObj(\"3DLP_MAP_ISLAND_extended.xml\", \"land\", 0, 0, 0);\nsr(\"land\", 0, 180, 0);\nmv(\"land\", 0, 0, -20);\n\n// Load the complete helicopter and its separate rotor at the same origin.\nvars[\"helicopter\"] = Obj(\n    \"heli_no_proeller.json\", \"helicopter\", 0, 0, -10);\nvars[\"propeller\"] = Obj(\n    \"propeller.json\", \"propeller\", 0, 0, -10);\nsc(\"helicopter\", 0.25, 0.25, 0.25);\nsc(\"propeller\", 0.25, 0.25, 0.25);\nvars[\"propeller\"].transform.parent = vars[\"helicopter\"].transform;\n\n// Load four invisible collision probes, just like the car simulator.\nvars[\"helicopter_colliders\"] = Obj(\n    \"helicpter_colliders.json\", \"helicopter_colliders\", -2, 0, -10);\nsc(\"helicopter_colliders\", 0.25, 0.25, 0.25);\nvars[\"helicopter_colliders\"].transform.parent =\n    vars[\"helicopter\"].transform;\n\nvars[\"flightSpeed\"] = 1;\nvars[\"turnSpeed\"] = 5;\nvars[\"idleRotorSpeed\"] = 15\nvars[\"fastRotorSpeed\"] = 30\n\n// Follow from behind using the helicopter's current turning angle.\nvars[\"move_camera\"] = function() {\n    sp(\"camera\",\n        vars[\"helicopter\"].transform.position.x,\n        vars[\"helicopter\"].transform.position.y + 8,\n        vars[\"helicopter\"].transform.position.z);\n    sr(\"camera\", 18, vars[\"helicopter\"].transform.eulerAngles.y, 0);\n    mv(\"camera\", 3, 3, -30);\n};\n\n// Positive rt input becomes clockwise rotation in this web engine.\nvars[\"rotate_propeller\"] = function(amount) {\n    rt(\"propeller\", 0, amount, 0);\n};\n\n// Uncomment when these files exist in Sounds/.\n// AttachSound(\"helicopter\", \"helicopter.wav\");\n// PlaySoundLoop(\"helicopter\");\n// AttachSound(\"camera\", \"NOW1.wav\");\n// PlaySoundLoop(\"camera\");\n// SetVolume(\"camera\", 0.05);\n\nvars[\"move_camera\"]();",
+        upd: "var speed = vars[\"flightSpeed\"];\nvar colliders = vars[\"helicopter_colliders\"];\nvar land = vars[\"land\"];\nvar goingUp = Input.GetKey(KeyCode.W);\nvar goingDown = Input.GetKey(KeyCode.S);\n\n// W goes up; the top probe prevents entering terrain from below.\nif (goingUp &&\n    !is_touching_voxel(land, colliders, \"collider_top\"))\n    mv(\"helicopter\", 0, speed, 0);\n\n// S goes down; the bottom probe prevents entering the ground.\nif (goingDown &&\n    !is_touching_voxel(land, colliders, \"collider_bottom\"))\n    mv(\"helicopter\", 0, -speed, 0);\n\n// A turns counterclockwise; D turns clockwise.\nif (Input.GetKey(KeyCode.A))\n    rt(\"helicopter\", 0, -vars[\"turnSpeed\"], 0);\nif (Input.GetKey(KeyCode.D))\n    rt(\"helicopter\", 0, vars[\"turnSpeed\"], 0);\n\n// Arrow keys move in the helicopter's local directions.\nif (Input.GetKey(KeyCode.UpArrow) &&\n    !is_touching_voxel(land, colliders, \"collider_front\"))\n    mv(\"helicopter\", 0, 0, speed);\nif (Input.GetKey(KeyCode.DownArrow) &&\n    !is_touching_voxel(land, colliders, \"collider_back\"))\n    mv(\"helicopter\", 0, 0, -speed);\nif (Input.GetKey(KeyCode.LeftArrow))\n    mv(\"helicopter\", -speed, 0, 0);\nif (Input.GetKey(KeyCode.RightArrow))\n    mv(\"helicopter\", speed, 0, 0);\n\n// The rotor always spins clockwise and speeds up during ascent/descent.\nvar rotorSpeed = (goingUp || goingDown)\n    ? vars[\"fastRotorSpeed\"]\n    : vars[\"idleRotorSpeed\"];\nvars[\"rotate_propeller\"](rotorSpeed);\nvars[\"move_camera\"]();"
+    },
+    32: {
+        title: "Helicopter and LoadMap collisions",
+        decl: `// TUTORIAL 32: HELICOPTER COLLISION WITH A JSON MAP
+// W/S: up/down, A/D: turn, arrows: forward/back/sideways.
+// The green floor and orange walls are loaded from Maps/.
+vars["flight_map"] = LoadMap(
+    "tutorial32_helicopter_map.json", "flight_map");
+
+// Load the helicopter, rotor, and six invisible collision probes.
+vars["helicopter"] = Obj(
+    "heli_no_proeller.json", "helicopter", 0, 2, -8);
+vars["propeller"] = Obj(
+    "propeller.json", "propeller", 0, 2, -8);
+vars["helicopter_colliders"] = Obj(
+    "helicpter_colliders.json", "helicopter_colliders", 0, 2, -8);
+
+sc("helicopter", 0.25, 0.25, 0.25);
+sc("propeller", 0.25, 0.25, 0.25);
+sc("helicopter_colliders", 0.25, 0.25, 0.25);
+vars["propeller"].transform.parent = vars["helicopter"].transform;
+vars["helicopter_colliders"].transform.parent =
+    vars["helicopter"].transform;
+
+vars["flightSpeed"] = 1;
+vars["turnSpeed"] = 5;
+vars["idleRotorSpeed"] = 15;
+vars["fastRotorSpeed"] = 30;
+
+vars["move_camera"] = function() {
+    sp("camera",
+        vars["helicopter"].transform.position.x,
+        vars["helicopter"].transform.position.y + 8,
+        vars["helicopter"].transform.position.z);
+    sr("camera", 18, vars["helicopter"].transform.eulerAngles.y, 0);
+    mv("camera", 3, 3, -30);
+};
+
+vars["rotate_propeller"] = function(amount) {
+    rt("propeller", 0, amount, 0);
+};
+
+vars["move_camera"]();`,
+        upd: `var speed = vars["flightSpeed"];
+var goingUp = Input.GetKey(KeyCode.W);
+var goingDown = Input.GetKey(KeyCode.S);
+
+// Wait for both JSON files. This prevents movement through empty loading
+// placeholders before their voxel meshes are available for collision.
+var collisionReady =
+    vars["flight_map"].userData.loaded &&
+    vars["helicopter_colliders"].userData.loaded;
+
+if (collisionReady) {
+    // move_object_with_map_collision moves in 0.2-unit substeps and rolls
+    // back the first substep that touches a voxel. This prevents tunneling.
+    if (goingUp)
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_top", 0, speed, 0);
+    if (goingDown)
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_bottom", 0, -speed, 0);
+
+    if (Input.GetKey(KeyCode.UpArrow))
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_front", 0, 0, speed);
+    if (Input.GetKey(KeyCode.DownArrow))
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_back", 0, 0, -speed);
+    if (Input.GetKey(KeyCode.LeftArrow))
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_left", -speed, 0, 0);
+    if (Input.GetKey(KeyCode.RightArrow))
+        move_object_with_map_collision(
+            vars["flight_map"], vars["helicopter"],
+            "collider_right", speed, 0, 0);
+
+    if (Input.GetKey(KeyCode.A))
+        rt("helicopter", 0, -vars["turnSpeed"], 0);
+    if (Input.GetKey(KeyCode.D))
+        rt("helicopter", 0, vars["turnSpeed"], 0);
+}
+
+var rotorSpeed = (goingUp || goingDown)
+    ? vars["fastRotorSpeed"]
+    : vars["idleRotorSpeed"];
+vars["rotate_propeller"](rotorSpeed);
+vars["move_camera"]();`
     }
 };
 
-// Dynamically generate the 18 buttons in the UI (Removing old textual labels)
 const tutContainer = document.querySelector('.tutorial-row');
-tutContainer.innerHTML = ''; // Wipes out hardcoded "Tut 1: Basics" buttons
+tutContainer.innerHTML = ''; 
 
-for (let i = 1; i <= 18; i++) {
+for (let i = 1; i <= Object.keys(tutorials).length; i++) {
     const btn = document.createElement('button');
     btn.id = `tut-${i}`;
     btn.innerText = `${i}`;
+    btn.title = tutorials[i].title || `Tutorial ${i}`;
     btn.onclick = () => loadTutorial(i);
     tutContainer.appendChild(btn);
 }
 
 const loadTutorial = (num) => {
+    if (document.activeElement) document.activeElement.blur(); 
     isExecuting = false;
     document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
     editorDeclarations.setValue(tutorials[num].decl);
@@ -357,12 +1785,10 @@ const loadTutorial = (num) => {
     evalDeclarations();
 };
 
-
 function generateId() {
     return 'cube_' + Math.random().toString(36).substr(2, 9);
 }
 
-// --- Main Loop ---
 function animate() {
     requestAnimationFrame(animate);
     const dt = clock.getDelta();
@@ -382,10 +1808,8 @@ function animate() {
         }
     }
 
-    // --- Object Editor Logic ---
     if (objectEditorMode) {
         editorPointer.visible = true;
-        
         const moveSpeed = 10 * dt;
         const rotSpeed = 2 * dt;
         
@@ -406,8 +1830,8 @@ function animate() {
         editorPointer.position.set(Math.round(forward.x), Math.round(forward.y), Math.round(forward.z));
 
         if (actionCooldown <= 0) {
-            if (window.Input.GetKey(window.KeyCode.Space)) {
-                const id = generateId();
+            if (window.Input.GetKey(window.KeyCode.LeftControl)) {
+                const id = selectedObjectColliderName || generateId();
                 const c = window.qb(id, editorPointer.position.x, editorPointer.position.y, editorPointer.position.z);
                 const r = document.getElementById('obj-r').value / 255;
                 const g = document.getElementById('obj-g').value / 255;
@@ -415,6 +1839,9 @@ function animate() {
                 const a = document.getElementById('obj-a').value;
                 c.material.color.setRGB(r, g, b);
                 c.material.opacity = parseFloat(a);
+                if (selectedObjectTexture) {
+                    window.tx(id, selectedObjectTexture, "File", 6);
+                }
                 actionCooldown = 0.25; 
             }
             if (window.Input.GetKey(window.KeyCode.E)) {
@@ -427,11 +1854,13 @@ function animate() {
                 actionCooldown = 0.25;
             }
         }
+
     }
 
-    // --- Map Editor Logic ---
     if (mapEditorMode) {
         editorPointer.visible = true;
+        const placementY = Number(mapObjectYInput.value) || 0;
+        editorPointer.position.y = placementY;
         const panSpeed = 20 * dt;
         if (window.Input.GetKey(window.KeyCode.W)) camera.position.z -= panSpeed;
         if (window.Input.GetKey(window.KeyCode.S)) camera.position.z += panSpeed;
@@ -444,31 +1873,56 @@ function animate() {
             if (window.Input.GetKey(window.KeyCode.LeftArrow)) { editorPointer.position.x -= 1; actionCooldown = 0.15; }
             if (window.Input.GetKey(window.KeyCode.RightArrow)) { editorPointer.position.x += 1; actionCooldown = 0.15; }
 
-            if (window.Input.GetKey(window.KeyCode.Space)) {
-                window.qb(generateId(), editorPointer.position.x, 0, editorPointer.position.z);
+            if (window.Input.GetKey(window.KeyCode.Z)) {
+                mapObjectRotationInput.value = (Number(mapObjectRotationInput.value) || 0) - 15;
+                actionCooldown = 0.15;
+            }
+            if (window.Input.GetKey(window.KeyCode.X)) {
+                mapObjectRotationInput.value = (Number(mapObjectRotationInput.value) || 0) + 15;
+                actionCooldown = 0.15;
+            }
+
+            if (window.Input.GetKey(window.KeyCode.LeftControl)) {
+                if (selectedMapObject) {
+                    placeMapEditorObject({
+                        file: selectedMapObject,
+                        x: editorPointer.position.x,
+                        y: placementY,
+                        z: editorPointer.position.z,
+                        rotationY: Number(mapObjectRotationInput.value) || 0,
+                        scale: Math.max(0.01, Number(mapObjectScaleInput.value) || 1)
+                    });
+                } else {
+                    selectedMapObjectLabel.textContent = 'Select a JSON object first.';
+                }
                 actionCooldown = 0.25;
             }
             if (window.Input.GetKey(window.KeyCode.E)) {
                 for (let i = cubes.length - 1; i >= 0; i--) {
-                    if (cubes[i].position.distanceTo(editorPointer.position) < 0.5) {
+                    if (cubes[i].userData.mapEditorObject &&
+                        cubes[i].position.distanceTo(editorPointer.position) < 0.75) {
                         window.dl(cubes[i].name);
+                        updateMapObjectCount();
                         break;
                     }
                 }
                 actionCooldown = 0.25;
             }
         }
+
+        syncMapObjectPreview();
     }
 
     renderer.render(scene, camera);
 }
 
-// --- Menu Navigation ---
 const hideAllMenus = () => {
     if (document.activeElement) document.activeElement.blur();
     document.querySelectorAll('.menu-panel').forEach(el => el.style.display = 'none');
     objectEditorMode = false;
     mapEditorMode = false;
+    setSkyboxVisible(true);
+    removeMapObjectPreview();
     editorPointer.visible = false;
     isExecuting = false;
     document.getElementById('crosshair').style.display = 'none';
@@ -505,7 +1959,11 @@ document.getElementById('btn-map-editor').onclick = () => {
     camera.position.set(0, 50, 0);
     camera.rotation.set(-Math.PI / 2, 0, 0, 'YXZ');
     editorPointer.position.set(0, 0, 0);
+    actionCooldown = 0;
+    updateMapObjectCount();
     mapEditorMode = true;
+    setSkyboxVisible(false);
+    createMapObjectPreview();
 };
 
 const backToMain = () => {
@@ -518,17 +1976,20 @@ document.getElementById('btn-exit-obj').onclick = backToMain;
 document.getElementById('btn-exit-map').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
 
-document.getElementById('btn-run').onclick = () => {
+document.getElementById('btn-run').onclick = (e) => {
+    if (e.target) e.target.blur(); 
     isExecuting = !isExecuting;
+
+    if (isExecuting) {
+        renderer.domElement.focus({ preventScroll: true });
+    }
     
-    // Resume audio context to bypass browser auto-play restrictions on interaction
     if (listener.context.state === 'suspended') {
         listener.context.resume();
     }
 
     if (!isExecuting) {
         document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
-        // Only run declarations if the engine was completely stopped to avoid wiping out the game state
         evalDeclarations(); 
     } else {
         clearDebug();

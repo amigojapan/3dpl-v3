@@ -1,0 +1,4 @@
+//Move until crash
+if(!cd("a","b")) {
+    mv("a",1,0,0);
+}

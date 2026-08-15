@@ -1,0 +1,31 @@
+XMLObj("3DLP_MAP_ISLAND_extended.xml","land",0,0,0);
+vars["car"]=Obj("sports-car.json","car0",-2,0,-10);
+vars["car_colliders"]=Obj("camera_coliders.json","car0",-2,0,-10);
+sr("land", 0, 180,0);
+mv("land", 0, 0,-20);
+sc("car0", 0.19, 0.19, 0.19);
+sc("car_colliders", 0.19, 0.19, 0.19);
+vars["tire1"]=Obj("sports-car-tires.json","tire1",0,0,0);
+sc("tire1",0.10, 0.10, 0.10);
+vars["tire2"]=Obj("sports-car-tires.json","tire2",0,0,0);
+sc("tire2",0.10, 0.10, 0.10);
+vars["tire3"]=Obj("sports-car-tires.json","tire3",0,0,0);
+sc("tire3",0.10, 0.10, 0.10);
+vars["tire4"]=Obj("sports-car-tires.json","tire4",0,0,0);
+sc("tire4",0.10, 0.10, 0.10);
+sp("tire1",vars["car"].transform.position.x-0.7,vars["car"].transform.position.y,vars["car"].transform.position.z-1);
+sp("tire2",vars["car"].transform.position.x+0.7,vars["car"].transform.position.y,vars["car"].transform.position.z-1);
+sp("tire3",vars["car"].transform.position.x-0.7,vars["car"].transform.position.y,vars["car"].transform.position.z+1);
+sp("tire4",vars["car"].transform.position.x+0.7,vars["car"].transform.position.y,vars["car"].transform.position.z+1);
+vars["tire1"].transform.parent=vars["car"].transform;
+vars["tire2"].transform.parent=vars["car"].transform;
+vars["tire3"].transform.parent=vars["car"].transform;
+vars["tire4"].transform.parent=vars["car"].transform;
+
+//Attach Sound to car
+AttachSound("car0","car.wav");
+PlaySoundLoop("car0");
+//Ambient Music
+AttachSound("camera","NOW7.wav");
+PlaySoundLoop("camera");
+SetVolume("camera", 0.1);//Music is too loud, so lower volume

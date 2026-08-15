@@ -1,0 +1,48 @@
+// Move the camera to follow the car dynamically
+function move_camera() {
+    // 1. Snap camera exactly to the car's current position
+    sp("camera", vars["car"].transform.position.x, vars["car"].transform.position.y, vars["car"].transform.position.z);
+    
+    // 2. Sync the camera's rotation to the car so their local forward/back axes match perfectly
+   // sr("camera", vars["car"].transform.eulerAngles.x, vars["car"].transform.eulerAngles.y, vars["car"].transform.eulerAngles.z);
+    
+    // 3. Move the camera relatively along those synced local axes (-2 left, 2 up, -10 backward)
+    mv("camera", 3, 3, -30);
+    
+    // 4. Override the pitch to tilt the camera 22 degrees down, while keeping the car's turning angle (yaw)
+    //sr("camera", 22, vars["car"].transform.eulerAngles.y, 0);
+}
+
+function rotate_tires() {
+    sr("tire1", vars["tire1"].transform.eulerAngles.x+45, vars["tire1"].transform.eulerAngles.y, vars["tire1"].transform.eulerAngles.z);
+    sr("tire2", vars["tire2"].transform.eulerAngles.x+45, vars["tire2"].transform.eulerAngles.y, vars["tire2"].transform.eulerAngles.z);
+    sr("tire3", vars["tire3"].transform.eulerAngles.x+45, vars["tire3"].transform.eulerAngles.y, vars["tire3"].transform.eulerAngles.z);
+    sr("tire4", vars["tire4"].transform.eulerAngles.x+45, vars["tire4"].transform.eulerAngles.y, vars["tire4"].transform.eulerAngles.z);
+}
+
+// Get user input
+if (Input.GetKey(KeyCode.RightArrow))
+    rt("car0", 0, 3, 0);
+    
+if (Input.GetKey(KeyCode.LeftArrow))
+    rt("car0", 0, -3, 0);
+    
+if (Input.GetKey(KeyCode.Space)) 
+    mv("car0", 0, 100, 0);
+    
+if (Input.GetKey(KeyCode.DownArrow) && !cdcm(vars["car"], "collider_front")) {
+    mv("car0", 0, 0, 1);
+    mv("car_colliders", 0, 0, 1);
+    rotate_tires();
+}
+
+if (Input.GetKey(KeyCode.UpArrow) && !cdcm(vars["car"], "collider_back")) {
+    mv("car0", 0, 0, -1);    
+    mv("car_colliders", 0, 0, -1);
+    rotate_tires();
+}
+
+// Execute the camera follow function every frame
+move_camera();
+
+// debugString = vars["car"].transform.position.x.ToString() + "," + vars["car"].transform.position.y.ToString() + "," + vars["car"].transform.position.z.ToString();

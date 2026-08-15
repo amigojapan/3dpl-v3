@@ -1,0 +1,3 @@
+//Music
+AttachSound("camera","NOW1.wav");
+PlaySoundLoop("camera");

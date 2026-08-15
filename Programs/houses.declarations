@@ -1,0 +1,3 @@
+Obj("first_house.obj","house0",0,0,0);
+Obj("first_house.obj","house1",50,0,0);
+Obj("first_house.obj","house2",-50,0,0);

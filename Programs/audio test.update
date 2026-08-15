@@ -1,0 +1,2 @@
+if(vars["obj"].audio.time==0)
+vars["obj"].audio.Play();

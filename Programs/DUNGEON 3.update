@@ -1,0 +1,70 @@
+eq("Camera_Coliders0","camera");//make the camera colliders follow the camera
+if(cdcgo(vars["spider1"]))//if the spider still exists and the camera colides with the spider then:
+  sp("camera",0,1,-10);//set player to beginning of level(he died)
+rt("traps",0,0,100);
+//
+rt("keys",0,150,0);
+rt("spider1",0,50,0);
+rt("spider5",0,20,0);
+rt("spider6",0,190,0);
+//Use arrow keys and [W] and [S]  to Move
+if (Input.GetKey (KeyCode.D))
+    rt("camera",0,100,0);
+if (Input.GetKey (KeyCode.A))
+    rt("camera",0,-100,0);
+if (Input.GetKey (KeyCode.W)&&!cdcm(vars["Camera_Colliders"],"collider_front"))
+    mv("camera",0,0,10);
+if (Input.GetKey (KeyCode.S)&&!cdcm(vars["Camera_Colliders"],"collider_back"))
+    mv("camera",0,0,-10);
+if (Input.GetKey (KeyCode.Space)) {
+    qb("bullet",0,0,0);
+    eq("bullet","camera");//sets the bullet rotation and location to the same as the camera
+}
+if (ex("bullet")) {
+   mv("bullet",0,0,10);
+   rt("bullet",72,-2,500);
+}
+if(cd("bullet","btn0")) 
+    mv("door0",0,4,0);
+//
+if(cd("bullet","btn1")) 
+    mv("door1",0,4,0);
+//
+if(cd("bullet","btn2")) 
+    mv("door2",0,4,0);
+//
+if(cd("bullet","btn3")) 
+    mv("pillar",0,4,0);
+//
+if(cd("bullet","btn4")) 
+    mv("pillar",0,-4,0);
+//
+if(cd("bullet","btn5")) 
+    mv("ladder",-6,0,0);
+//
+if(cd("bullet","keys")) 
+    mv("door4",0,-100,0);
+//
+if(cd("bullet","spider1")) 
+    dl("spider1");
+//
+if(cd("bullet","spider2")) 
+    dl("spider2");
+//
+if(cd("bullet","spider3")) 
+    dl("spider3");
+//
+if(cd("bullet","spider4")) 
+    dl("spider4");
+//
+if(cd("bullet","spider5")) 
+    dl("spider5");
+//
+if(cd("bullet","spider6")) 
+    dl("spider6");
+//
+if(cd("bullet","spider7")) 
+    dl("spider7");
+//
+if(cd("bullet","spider8")) 
+    dl("spider8");

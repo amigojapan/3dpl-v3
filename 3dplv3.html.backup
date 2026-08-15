@@ -16,13 +16,18 @@
         .menu-panel {
             pointer-events: auto;
             position: absolute;
-            background: rgba(40, 40, 40, 0.9);
+            background: rgba(40, 40, 40, 0.8);
             color: white;
             padding: 15px;
             border-radius: 5px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+        }
+
+        /* IDE Panel specifically gets extra transparency */
+        #ide-panel {
+            background: rgba(30, 30, 30, 0.5);
         }
 
         .center-menu { top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
@@ -32,8 +37,45 @@
         button:hover { background: #777; }
         input { background: #222; color: white; border: 1px solid #555; padding: 5px; }
         
-        .CodeMirror { height: 150px; border: 1px solid #555; font-size: 14px; }
+        /* Force CodeMirror to be semi-transparent - Targeting Dracula specifically */
+        .CodeMirror, .cm-s-dracula.CodeMirror { 
+            height: 180px; 
+            border: 1px solid #555; 
+            font-size: 14px; 
+            background-color: rgba(40, 42, 54, 0.5) !important; 
+        }
+        .CodeMirror-gutters, .cm-s-dracula .CodeMirror-gutters {
+            background-color: transparent !important; 
+        }
+
+        #debug-console {
+            height: 60px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #aaaaaa;
+        }
         
+        /* Tutorial Button Row */
+        .tutorial-row {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
+        }
+        .tutorial-row button {
+            flex: 1;
+            padding: 5px;
+            font-size: 11px;
+            background: #4488ff;
+        }
+        .tutorial-row button:hover {
+            background: #66aaff;
+        }
+
         #crosshair {
             position: absolute;
             top: 50%;
@@ -75,7 +117,7 @@
         <!-- Object Editor UI -->
         <div id="obj-editor-ui" class="menu-panel side-menu" style="display: none;">
             <h3>Object Editor</h3>
-            <p><strong>Click the screen to look around. Press Q (or ESC) to show your mouse.</strong><br>Controls: WASD to move, Arrows to rotate.<br>Space to place, E to erase.</p>
+            <p><strong>Click the screen to look around. Press Q to show your mouse.</strong><br>Controls: WASD to move, Arrows to rotate.<br>Space to place, E to erase.</p>
             <label>Color (RGB)</label>
             <div style="display: flex; gap: 5px;">
                 <input type="number" id="obj-r" value="255" min="0" max="255" style="width: 30%;">
@@ -95,12 +137,24 @@
         </div>
 
         <!-- Programming Interface -->
-        <div id="ide-panel" class="menu-panel side-menu" style="display: none;">
+        <div id="ide-panel" class="menu-panel side-menu" style="display: none; width: 450px;">
+            
+            <div class="tutorial-row">
+                <button id="tut-1">Tut 1: Basics</button>
+                <button id="tut-2">Tut 2: Loops</button>
+                <button id="tut-3">Tut 3: Input</button>
+                <button id="tut-4">Tut 4: Collision</button>
+            </div>
+
             <label>Declarations</label>
             <textarea id="code-declarations"></textarea>
             <label>Update Function</label>
             <textarea id="code-update"></textarea>
-            <button id="btn-run">START / STOP</button>
+            <button id="btn-run" style="background: #28a745;">START / STOP</button>
+            
+            <label>Debug Console</label>
+            <div id="debug-console">Ready...</div>
+
             <button id="btn-exit-ide">Exit to Menu</button>
         </div>
     </div>

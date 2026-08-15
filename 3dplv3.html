@@ -25,11 +25,7 @@
             gap: 10px;
         }
 
-        /* IDE Panel specifically gets extra transparency */
-        #ide-panel {
-            background: rgba(30, 30, 30, 0.5);
-        }
-
+        #ide-panel { background: rgba(30, 30, 30, 0.5); }
         .center-menu { top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
         .side-menu { top: 10px; left: 10px; width: 350px; max-height: 90vh; overflow-y: auto; }
         
@@ -37,60 +33,122 @@
         button:hover { background: #777; }
         input { background: #222; color: white; border: 1px solid #555; padding: 5px; }
         
-        /* Force CodeMirror to be semi-transparent - Targeting Dracula specifically */
         .CodeMirror, .cm-s-dracula.CodeMirror { 
-            height: 180px; 
-            border: 1px solid #555; 
-            font-size: 14px; 
-            background-color: rgba(40, 42, 54, 0.5) !important; 
+            height: 180px; border: 1px solid #555; font-size: 14px; background-color: rgba(40, 42, 54, 0.5) !important; 
         }
-        .CodeMirror-gutters, .cm-s-dracula .CodeMirror-gutters {
-            background-color: transparent !important; 
-        }
+        .CodeMirror-gutters, .cm-s-dracula .CodeMirror-gutters { background-color: transparent !important; }
 
-        #debug-console {
-            height: 60px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #555;
-            padding: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #aaaaaa;
-        }
+        #debug-console { height: 60px; overflow-y: auto; background: rgba(0, 0, 0, 0.8); border: 1px solid #555; padding: 5px; font-family: monospace; font-size: 12px; color: #aaaaaa; }
         
-        /* Tutorial Button Row */
         .tutorial-row {
             display: flex;
             gap: 5px;
-            flex-wrap: wrap;
             margin-bottom: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
         }
+        .tutorial-row::-webkit-scrollbar { height: 6px; }
+        .tutorial-row::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .tutorial-row::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        
         .tutorial-row button {
-            flex: 1;
-            padding: 5px;
+            flex: 0 0 auto;
+            padding: 5px 10px;
             font-size: 11px;
             background: #4488ff;
         }
-        .tutorial-row button:hover {
-            background: #66aaff;
+        .tutorial-row button:hover { background: #66aaff; }
+
+        .file-ops-row { display: flex; gap: 5px; }
+        .file-ops-row button { flex: 1; font-size: 12px; background: #28a745; }
+        .file-ops-row button:hover { background: #218838; }
+        .file-ops-row button.alt { background: #17a2b8; }
+
+        .texture-picker-controls { display: flex; gap: 5px; }
+        .texture-picker-controls button:first-child { flex: 1; }
+        .collider-name-controls { display: flex; gap: 5px; }
+        #obj-collider-name { flex: 1; min-width: 0; }
+        #obj-collider-name-help { font-size: 11px; color: #cccccc; }
+        #selected-texture-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        #texture-picker {
+            display: none;
+            padding: 8px;
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid #666;
+            border-radius: 4px;
+        }
+        #texture-search { width: calc(100% - 12px); margin-bottom: 8px; }
+        #texture-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .texture-option {
+            min-width: 0;
+            padding: 4px;
+            background: #333;
+            border: 2px solid transparent;
+        }
+        .texture-option.selected { border-color: #55aaff; background: #224466; }
+        .texture-option img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+        .texture-option span {
+            display: block;
+            margin-top: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 9px;
+            font-weight: normal;
         }
 
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
+        #map-object-picker {
             display: none;
+            padding: 8px;
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid #666;
+            border-radius: 4px;
         }
-        #crosshair::before, #crosshair::after {
-            content: '';
-            position: absolute;
-            background: rgba(255, 255, 255, 0.8);
+        #map-object-search { width: calc(100% - 12px); margin-bottom: 8px; }
+        #map-object-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+            max-height: 260px;
+            overflow-y: auto;
         }
+        .map-object-option {
+            min-width: 0;
+            padding: 7px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: normal;
+            text-align: left;
+        }
+        .map-object-option.selected { outline: 2px solid #55aaff; background: #224466; }
+        .map-settings-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .map-settings-row label { min-width: 0; font-size: 11px; }
+        .map-settings-row input { box-sizing: border-box; width: 100%; margin-top: 3px; }
+        #selected-map-object { overflow-wrap: anywhere; font-size: 12px; color: #cccccc; }
+
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; display: none; }
+        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255, 255, 255, 0.8); }
         #crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
         #crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
     </style>
@@ -117,44 +175,92 @@
         <!-- Object Editor UI -->
         <div id="obj-editor-ui" class="menu-panel side-menu" style="display: none;">
             <h3>Object Editor</h3>
-            <p><strong>Click the screen to look around. Press Q to show your mouse.</strong><br>Controls: WASD to move, Arrows to rotate.<br>Space to place, E to erase.</p>
+            <p><strong>Click screen to look. Q to free mouse.</strong><br>WASD/Arrows to move/rotate.<br>Left Control to place, E to erase.</p>
+            
+            <div class="file-ops-row">
+                <button id="btn-save-json">Save JSON</button>
+                <button id="btn-load-json">Load JSON</button>
+                <button id="btn-import-xml" class="alt">Import XML</button>
+            </div>
+            
+            <!-- Hidden inputs for file loading -->
+            <input type="file" id="file-input-json" style="display: none;" accept=".json">
+            <input type="file" id="file-input-xml" style="display: none;" accept=".xml">
+
             <label>Color (RGB)</label>
             <div style="display: flex; gap: 5px;">
                 <input type="number" id="obj-r" value="255" min="0" max="255" style="width: 30%;">
                 <input type="number" id="obj-g" value="255" min="0" max="255" style="width: 30%;">
                 <input type="number" id="obj-b" value="255" min="0" max="255" style="width: 30%;">
             </div>
-            <label>Alpha (Opacity)</label>
+            <label>Alpha</label>
             <input type="number" id="obj-a" value="1.0" min="0" max="1" step="0.1">
-            <button id="btn-exit-obj">Exit to Menu</button>
+
+            <label for="obj-collider-name">New Block / Collider Name</label>
+            <div class="collider-name-controls">
+                <input type="text" id="obj-collider-name" placeholder="Example: collider_back">
+                <button id="btn-clear-collider-name" type="button">Clear</button>
+            </div>
+            <div id="obj-collider-name-help">Optional. CTRL-placed blocks use this name in exported JSON.</div>
+
+            <label>Block Texture</label>
+            <div class="texture-picker-controls">
+                <button id="btn-select-texture">Select Texture</button>
+                <button id="btn-clear-texture" title="Place color-only blocks">Clear</button>
+            </div>
+            <div id="selected-texture-name">Selected: None (color only)</div>
+            <div id="texture-picker">
+                <input type="search" id="texture-search" placeholder="Search textures...">
+                <div id="texture-grid"></div>
+            </div>
+
+            <button id="btn-exit-obj" style="margin-top:10px;">Exit to Menu</button>
         </div>
 
         <!-- Map Editor UI -->
         <div id="map-editor-ui" class="menu-panel side-menu" style="display: none;">
             <h3>Map Editor</h3>
-            <p>Controls: Arrows to move pointer, WASD to move camera.<br>Space to place, E to erase.</p>
+            <p>Bird's-eye map builder.<br>Arrows: move pointer, WASD: move camera.<br>Left Control: place, E: erase, Z/X: rotate 15° on Y.</p>
+
+            <div class="file-ops-row">
+                <button id="btn-export-map">Export Map JSON</button>
+                <button id="btn-load-map" class="alt">Load Map JSON</button>
+            </div>
+            <input type="file" id="file-input-map" style="display: none;" accept=".json">
+
+            <button id="btn-select-map-object">Select JSON Object</button>
+            <div id="selected-map-object">Selected: None</div>
+            <div id="map-object-picker">
+                <input type="search" id="map-object-search" placeholder="Search JSON objects...">
+                <div id="map-object-grid"></div>
+            </div>
+
+            <div class="map-settings-row">
+                <label>Height Y
+                    <input type="number" id="map-object-y" value="0" step="1">
+                </label>
+                <label>Rotation Y
+                    <input type="number" id="map-object-rotation" value="0" step="15">
+                </label>
+                <label>Scale
+                    <input type="number" id="map-object-scale" value="1" min="0.01" step="0.1">
+                </label>
+            </div>
+            <button id="btn-rotate-map-object">Rotate 90° (Y Axis)</button>
+            <div id="map-object-count">Placed objects: 0</div>
             <button id="btn-exit-map">Exit to Menu</button>
         </div>
 
         <!-- Programming Interface -->
         <div id="ide-panel" class="menu-panel side-menu" style="display: none; width: 450px;">
-            
-            <div class="tutorial-row">
-                <button id="tut-1">Tut 1: Basics</button>
-                <button id="tut-2">Tut 2: Loops</button>
-                <button id="tut-3">Tut 3: Input</button>
-                <button id="tut-4">Tut 4: Collision</button>
-            </div>
-
+            <div class="tutorial-row" id="tutorial-container"></div>
             <label>Declarations</label>
             <textarea id="code-declarations"></textarea>
             <label>Update Function</label>
             <textarea id="code-update"></textarea>
             <button id="btn-run" style="background: #28a745;">START / STOP</button>
-            
             <label>Debug Console</label>
             <div id="debug-console">Ready...</div>
-
             <button id="btn-exit-ide">Exit to Menu</button>
         </div>
     </div>
@@ -163,11 +269,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
 
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
     <script type="module" src="main.js"></script>
 </body>

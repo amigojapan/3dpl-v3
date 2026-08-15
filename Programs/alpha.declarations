@@ -1,0 +1,14 @@
+for(x=-5;x<0;x++) {
+  for(y=0;y<4;y++) {     
+    qb("blueblock",x,y,1);
+  }
+}cl("blueblock", Color.blue);
+for(x=0;x<5;x++) {
+  for(y=0;y<4;y++) {     
+    qb("redblock",x,y,1);
+  }
+}cl("redblock", Color.red);
+
+qb("test",-0.5,1,0);
+cl("test", Color.green);
+alpha("test", 0.5);

@@ -1,0 +1,2 @@
+XMLObj("cross.xml","cross1",3,0,0);
+XMLObj("cross.xml","cross2",-3,0,0);

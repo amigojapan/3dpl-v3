@@ -1,0 +1,16 @@
+//Move the car using arrow keys
+function move_camera() {
+sp("camera",vars["car"].transform.position.x-5,vars["car"].transform.position.y+5,vars["car"].transform.position.z-12);//set camera to ten positions behind car
+sr("camera",20,10,0);//set the rotation of the camera so it sees the car at an angle
+}
+//Get user input
+if (Input.GetKey (KeyCode.RightArrow))
+    rt("car0",0,100,0);
+if (Input.GetKey (KeyCode.LeftArrow))
+    rt("car0",0,-100,0);
+if (Input.GetKey (KeyCode.Space)) mv("car0",0,100,0);
+if (Input.GetKey (KeyCode.UpArrow)&&!cdcm(vars["car"],"collider_front"))
+    mv("car0",0,0,10);
+if (Input.GetKey (KeyCode.DownArrow)&&!cdcm(vars["car"],"collider_back"))
+    mv("car0",0,0,-10);
+move_camera();
