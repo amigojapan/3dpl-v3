@@ -1,0 +1,26 @@
+[
+  {
+    "cubename": "collider_front",
+    "x": 0,
+    "y": 0,
+    "z": 1,
+    "r": 0,
+    "g": 255,
+    "b": 0,
+    "alpha": 1,
+    "TextureName": "",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "collider_back",
+    "x": 0,
+    "y": 0,
+    "z": -1,
+    "r": 255,
+    "g": 0,
+    "b": 0,
+    "alpha": 1,
+    "TextureName": "",
+    "WrapOnSides": 1
+  }
+]

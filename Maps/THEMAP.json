@@ -1,0 +1,950 @@
+{
+  "format": "3dpl-map-v1",
+  "objects": [
+    {
+      "name": "e55723f9-d592-4a20-a7dd-c8a1f57d0b7f",
+      "x": 0,
+      "y": 0,
+      "z": 100,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "houses_and_terrain1.json"
+    },
+    {
+      "name": "84c75632-1e5a-44ea-a632-869b6122f17e",
+      "x": 5,
+      "y": 0,
+      "z": 160,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "houses_and_terrain1.json"
+    },
+    {
+      "name": "e8fd78a1-4fa4-4653-824e-1ddd6bfedc38",
+      "x": 11,
+      "y": 0,
+      "z": 89,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "houses_and_terrain1.json"
+    },
+    {
+      "name": "0fec4bdf-faaf-496c-b73f-6d56ace838ba",
+      "x": 28,
+      "y": 0,
+      "z": 34,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "houses_and_terrain1.json"
+    },
+    {
+      "name": "c7d549cd-bf8b-4e03-ab9f-36fea5d3d6e5",
+      "x": -12,
+      "y": 0,
+      "z": 118,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "house2.json"
+    },
+    {
+      "name": "feffa06c-3e3c-4655-82d1-95cd19a69468",
+      "x": -12,
+      "y": 0,
+      "z": 103,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "house2.json"
+    },
+    {
+      "name": "4457d460-558a-48a6-981f-43e0f0c767bb",
+      "x": 68,
+      "y": 0,
+      "z": 81,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "house3.json"
+    },
+    {
+      "name": "2296a39a-d776-424e-8938-570bcdbc2735",
+      "x": -4,
+      "y": 0,
+      "z": 71,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "house4.json"
+    },
+    {
+      "name": "5e10bdb1-05ab-413f-8639-0222d8b4186e",
+      "x": 52,
+      "y": 0,
+      "z": 97,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "Fountain_place.json"
+    },
+    {
+      "name": "b6bd4c99-315d-4c9f-97bb-058e32bffd2c",
+      "x": 79,
+      "y": 0,
+      "z": 81,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "Fountain_place.json"
+    },
+    {
+      "name": "c2d8d39f-0b26-4470-b113-4d4c39c88226",
+      "x": -51,
+      "y": 0,
+      "z": 42,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "Fountain_place.json"
+    },
+    {
+      "name": "e592c477-8cc2-441f-9a8e-15373f077390",
+      "x": -39,
+      "y": 0,
+      "z": 109,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "skyscraper1.json"
+    },
+    {
+      "name": "94cd19ac-9a44-482e-a1ef-77bcbbd0c537",
+      "x": 38,
+      "y": 0,
+      "z": 46,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "Trees.json"
+    },
+    {
+      "name": "4086bfda-cf77-4a1e-995c-5f4d446432aa",
+      "x": 17,
+      "y": 0,
+      "z": 153,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "Station.json"
+    },
+    {
+      "name": "e342d314-1152-4154-a22c-facacb350b65",
+      "x": -20,
+      "y": 0,
+      "z": 45,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "Station.json"
+    },
+    {
+      "name": "f6393771-d485-459a-9071-512e1a3fe703",
+      "x": 85,
+      "y": 0,
+      "z": 101,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "big_building1.json"
+    },
+    {
+      "name": "908d22da-0205-45ef-ab4c-ac31ac0d0239",
+      "x": 105,
+      "y": 0,
+      "z": 132,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "Airport.json"
+    },
+    {
+      "name": "188b1943-b451-44a1-9c1e-3e4bcea131b1",
+      "x": 12,
+      "y": 0,
+      "z": 116,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "201a6b62-6279-4f67-b4bb-bae76acf039c",
+      "x": -2,
+      "y": 0,
+      "z": 132,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "4d20646b-bb21-4523-8b78-3641f467ca67",
+      "x": -2,
+      "y": 0,
+      "z": 143,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "78609560-0ff2-41c1-8892-363f379e6aec",
+      "x": 11,
+      "y": 0,
+      "z": 136,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "6dd78bfb-a308-471f-a5c3-435a4cff038d",
+      "x": 26,
+      "y": 0,
+      "z": 136,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "f0612451-ff2a-4699-8ddb-8a0775aa5433",
+      "x": -2,
+      "y": 0,
+      "z": 110,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "795b438f-c062-47a3-893e-408d85c17f2e",
+      "x": -9,
+      "y": 0,
+      "z": 111,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "2cbc9c85-3075-44de-bd01-5e99b94e65a1",
+      "x": -18,
+      "y": 0,
+      "z": 110,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "f6287b90-7a64-4bb2-89e2-59acac223206",
+      "x": -27,
+      "y": 0,
+      "z": 123,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "55ff4021-b0f1-45e5-81fc-6b997c5f635b",
+      "x": -27,
+      "y": 0,
+      "z": 118,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "cbf8dc31-76fd-4f1f-bf43-25fe74df223a",
+      "x": -27,
+      "y": 0,
+      "z": 101,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "4aa4b61f-6e79-42ec-b1da-4f87808161c8",
+      "x": -48,
+      "y": 0,
+      "z": 99,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "eea2c6ef-1da6-4291-926a-13adb2025359",
+      "x": -48,
+      "y": 0,
+      "z": 106,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "d649b96f-fc57-4ba3-94de-10ccc178494b",
+      "x": -48,
+      "y": 0,
+      "z": 114,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "ab4abd63-79b2-48a3-ac2c-11edfa0eb1c6",
+      "x": -48,
+      "y": 0,
+      "z": 123,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "b68afb18-920b-4fb5-8a38-e6e00766c1e9",
+      "x": -38,
+      "y": 0,
+      "z": 123,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "545518df-b267-4dc0-9d2a-cca1fb31dac9",
+      "x": 9,
+      "y": 0,
+      "z": 82,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "0b3f8c1f-6af9-4525-8505-7f1284b117ac",
+      "x": -18,
+      "y": 0,
+      "z": 86,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "99a80c6f-b204-491f-9d2f-db4c04d36d87",
+      "x": -31,
+      "y": 0,
+      "z": 86,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "c133727d-8d4d-455d-bf3b-623e800541e6",
+      "x": 14,
+      "y": 0,
+      "z": 69,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "4bb04a9b-5a14-4a56-84cf-c59de4d65a2b",
+      "x": 4,
+      "y": 0,
+      "z": 69,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "3a1b7f8a-a71f-49af-88b1-a6c652e35ca9",
+      "x": -19,
+      "y": 0,
+      "z": 54,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "fcd03ff8-22fe-4a4e-8d02-7d4c8bdf6e8c",
+      "x": 52,
+      "y": 0,
+      "z": 120,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "house3.json"
+    },
+    {
+      "name": "63ec204c-6c55-4ede-88fa-3c861d38c06c",
+      "x": 44,
+      "y": 0,
+      "z": 150,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "house4.json"
+    },
+    {
+      "name": "d63ac5d3-f025-4d6b-91eb-7b44e22946ca",
+      "x": 3,
+      "y": 0,
+      "z": 43,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "house2.json"
+    },
+    {
+      "name": "77d2ab95-a5f3-4e8c-9aac-a774de191765",
+      "x": 36,
+      "y": 0,
+      "z": 70,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "Cute_character_creating_broken_heart.json"
+    },
+    {
+      "name": "5c40ed63-880b-496a-844e-ac52dd48e550",
+      "x": 28,
+      "y": 0,
+      "z": 85,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "3dbfa07e-347c-4e84-a41c-3db141453dea",
+      "x": 52,
+      "y": 0,
+      "z": 84,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "5d5291c7-d015-4b07-8300-dc4e91cb3998",
+      "x": 52,
+      "y": 0,
+      "z": 62,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "f3333175-8105-454b-95b7-326f1a462ccd",
+      "x": 28,
+      "y": 0,
+      "z": 62,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "db66457b-6267-45be-b761-4137e1cb8529",
+      "x": 15,
+      "y": 0,
+      "z": 61,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "826a51f9-5e15-47b0-b0dc-6537fd3a9f8a",
+      "x": 61,
+      "y": 0,
+      "z": 38,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "1376f53a-63eb-4eff-8513-453fe1598697",
+      "x": 61,
+      "y": 0,
+      "z": 69,
+      "rotationY": 0,
+      "scale": 1,
+      "file": "1tree.json"
+    },
+    {
+      "name": "map_object_cube_xgsgf1qq7",
+      "x": -20,
+      "y": 0,
+      "z": 73,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_vp1bpfytt",
+      "x": -1,
+      "y": 0,
+      "z": 73,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_frh3io6hv",
+      "x": 7,
+      "y": 0,
+      "z": 73,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_yj61cui80",
+      "x": 0,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_7t6vd59kp",
+      "x": 0,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_q3921ucl8",
+      "x": 0,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_amabge5m1",
+      "x": 0,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_17b6zfj4x",
+      "x": 8,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_e8htb51cf",
+      "x": -19,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_x6xlepztl",
+      "x": -19,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_jthkx20v4",
+      "x": -38,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_wqirhp0no",
+      "x": -38,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_0ry97trr2",
+      "x": -54,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_w3ha9eczr",
+      "x": 7,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_9wn855vjc",
+      "x": 35,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_2eefziah3",
+      "x": 53,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_0hr6e86vu",
+      "x": 53,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_yqjuvqy9h",
+      "x": 53,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_n2y9uz86y",
+      "x": 70,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_f0p29x1m4",
+      "x": 70,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_ndnnwqi4z",
+      "x": 70,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_4n3su3gor",
+      "x": 70,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_nyco2kpqu",
+      "x": 70,
+      "y": 0,
+      "z": 76,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_gu0tso9fm",
+      "x": 56,
+      "y": 0,
+      "z": 55,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_ptl3kjei2",
+      "x": 56,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_bs8gtbmsz",
+      "x": 56,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_hjjsk3h4s",
+      "x": 56,
+      "y": 0,
+      "z": 47,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_iy0u7k5xc",
+      "x": -27,
+      "y": 0,
+      "z": 81,
+      "rotationY": 90,
+      "scale": 1,
+      "file": "buildings_starting_terrain.json"
+    },
+    {
+      "name": "map_object_cube_w8bcsa636",
+      "x": 2,
+      "y": 0,
+      "z": 87,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_45kyv0hb7",
+      "x": 2,
+      "y": 0,
+      "z": 87,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_wsvqwcs3f",
+      "x": 2,
+      "y": 0,
+      "z": 87,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_p3jngytn5",
+      "x": 16,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_sg9zt27nu",
+      "x": -6,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_s9myylhtd",
+      "x": -4,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_1qmtiqkn4",
+      "x": -4,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_ktcghbnac",
+      "x": -4,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_vkzzeaa19",
+      "x": -26,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_7fpkgoduj",
+      "x": -26,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_zgopx4y74",
+      "x": -26,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_pf0h601m9",
+      "x": -43,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_l8pztqvqd",
+      "x": -43,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_z5rp3o9pg",
+      "x": -43,
+      "y": 0,
+      "z": 61,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_j4yfeze9l",
+      "x": 46,
+      "y": 0,
+      "z": 60,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_g5emcc05k",
+      "x": 46,
+      "y": 0,
+      "z": 60,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_tfi49sr16",
+      "x": 46,
+      "y": 0,
+      "z": 60,
+      "rotationY": 180,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_byk5lbd2y",
+      "x": 22,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_s48x29ks7",
+      "x": 22,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_2sxy376wo",
+      "x": 22,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_j6xhnkdux",
+      "x": 23,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_i472n1g8r",
+      "x": 23,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_pv7ocijd3",
+      "x": 23,
+      "y": 0,
+      "z": 57,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_oueyt6vg7",
+      "x": 21,
+      "y": 0,
+      "z": 78,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_edn73pl33",
+      "x": 21,
+      "y": 0,
+      "z": 86,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_2g8nzs73d",
+      "x": 21,
+      "y": 0,
+      "z": 86,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    },
+    {
+      "name": "map_object_cube_nbj0gnarw",
+      "x": 21,
+      "y": 0,
+      "z": 86,
+      "rotationY": 270,
+      "scale": 1,
+      "file": "new_road_a.json"
+    }
+  ]
+}

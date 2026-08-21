@@ -1,0 +1,14 @@
+[
+  {
+    "cubename": "tutorial32_ground_voxel",
+    "x": 0,
+    "y": 0,
+    "z": 0,
+    "r": 55,
+    "g": 145,
+    "b": 70,
+    "alpha": 1,
+    "TextureName": "",
+    "WrapOnSides": 6
+  }
+]

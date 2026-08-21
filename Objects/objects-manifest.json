@@ -1,0 +1,346 @@
+{
+  "format": "3dpl-object-manifest-v1",
+  "revision": "6778c991c4f8257f",
+  "objects": [
+    {
+      "file": "1tree.json",
+      "label": "1tree",
+      "preview": "Preview/1tree.png"
+    },
+    {
+      "file": "3DLP_MAP_ISLAND_extended.json",
+      "label": "3DLP_MAP_ISLAND_extended",
+      "preview": "Preview/3DLP_MAP_ISLAND_extended.png"
+    },
+    {
+      "file": "airplane_jet.json",
+      "label": "airplane_jet",
+      "preview": "Preview/airplane_jet.png"
+    },
+    {
+      "file": "Airpor.json",
+      "label": "Airpor",
+      "preview": "Preview/Airpor.png"
+    },
+    {
+      "file": "Airport.json",
+      "label": "Airport",
+      "preview": "Preview/Airport.png"
+    },
+    {
+      "file": "airport_terrain_for_cloning.json",
+      "label": "airport_terrain_for_cloning",
+      "preview": "Preview/airport_terrain_for_cloning.png"
+    },
+    {
+      "file": "big_building1.json",
+      "label": "big_building1",
+      "preview": "Preview/big_building1.png"
+    },
+    {
+      "file": "Bridge_left_side.json",
+      "label": "Bridge_left_side",
+      "preview": "Preview/Bridge_left_side.png"
+    },
+    {
+      "file": "Bridge_middle_for_clone.json",
+      "label": "Bridge_middle_for_clone",
+      "preview": "Preview/Bridge_middle_for_clone.png"
+    },
+    {
+      "file": "buildings_area.json",
+      "label": "buildings_area",
+      "preview": "Preview/buildings_area.png"
+    },
+    {
+      "file": "buildings_starting_terrain.json",
+      "label": "buildings_starting_terrain",
+      "preview": "Preview/buildings_starting_terrain.png"
+    },
+    {
+      "file": "Camera_Coliders.json",
+      "label": "Camera_Coliders",
+      "preview": "Preview/Camera_Coliders.png"
+    },
+    {
+      "file": "car_colliders.json",
+      "label": "car_colliders",
+      "preview": "Preview/car_colliders.png"
+    },
+    {
+      "file": "cemetary.json",
+      "label": "cemetary",
+      "preview": "Preview/cemetary.png"
+    },
+    {
+      "file": "circle.json",
+      "label": "circle",
+      "preview": "Preview/circle.png"
+    },
+    {
+      "file": "cross.json",
+      "label": "cross",
+      "preview": "Preview/cross.png"
+    },
+    {
+      "file": "Cute_character_creating_broken_heart.json",
+      "label": "Cute_character_creating_broken_heart",
+      "preview": "Preview/Cute_character_creating_broken_heart.png"
+    },
+    {
+      "file": "door1.json",
+      "label": "door1",
+      "preview": "Preview/door1.png"
+    },
+    {
+      "file": "door2.json",
+      "label": "door2",
+      "preview": "Preview/door2.png"
+    },
+    {
+      "file": "door3.json",
+      "label": "door3",
+      "preview": "Preview/door3.png"
+    },
+    {
+      "file": "doorsbuton1.json",
+      "label": "doorsbuton1",
+      "preview": "Preview/doorsbuton1.png"
+    },
+    {
+      "file": "Dungeon.json",
+      "label": "Dungeon",
+      "preview": "Preview/Dungeon.png"
+    },
+    {
+      "file": "Dungeon2.json",
+      "label": "Dungeon2",
+      "preview": "Preview/Dungeon2.png"
+    },
+    {
+      "file": "dungeonkeys.json",
+      "label": "dungeonkeys",
+      "preview": "Preview/dungeonkeys.png"
+    },
+    {
+      "file": "first_house.json",
+      "label": "first_house",
+      "preview": "Preview/first_house.png"
+    },
+    {
+      "file": "Fountain_place.json",
+      "label": "Fountain_place",
+      "preview": "Preview/Fountain_place.png"
+    },
+    {
+      "file": "Futuristic_Helycopter.json",
+      "label": "Futuristic_Helycopter",
+      "preview": "Preview/Futuristic_Helycopter.png"
+    },
+    {
+      "file": "Futuristic_Helycopter_propeller.json",
+      "label": "Futuristic_Helycopter_propeller",
+      "preview": "Preview/Futuristic_Helycopter_propeller.png"
+    },
+    {
+      "file": "Futuristic_Helycopter_without_wings.json",
+      "label": "Futuristic_Helycopter_without_wings",
+      "preview": "Preview/Futuristic_Helycopter_without_wings.png"
+    },
+    {
+      "file": "Futuristic_Helycopter_without_wings_with_colliders.json",
+      "label": "Futuristic_Helycopter_without_wings_with_colliders",
+      "preview": "Preview/Futuristic_Helycopter_without_wings_with_colliders.png"
+    },
+    {
+      "file": "heli_no_proeller.json",
+      "label": "heli_no_proeller",
+      "preview": "Preview/heli_no_proeller.png"
+    },
+    {
+      "file": "helicpter_colliders.json",
+      "label": "helicpter_colliders",
+      "preview": "Preview/helicpter_colliders.png"
+    },
+    {
+      "file": "house2.json",
+      "label": "house2",
+      "preview": "Preview/house2.png"
+    },
+    {
+      "file": "house3.json",
+      "label": "house3",
+      "preview": "Preview/house3.png"
+    },
+    {
+      "file": "house4.json",
+      "label": "house4",
+      "preview": "Preview/house4.png"
+    },
+    {
+      "file": "houses_and_terrain.json",
+      "label": "houses_and_terrain",
+      "preview": "Preview/houses_and_terrain.png"
+    },
+    {
+      "file": "houses_and_terrain1.json",
+      "label": "houses_and_terrain1",
+      "preview": "Preview/houses_and_terrain1.png"
+    },
+    {
+      "file": "key_stone.json",
+      "label": "key_stone",
+      "preview": "Preview/key_stone.png"
+    },
+    {
+      "file": "ladder_to_helly.json",
+      "label": "ladder_to_helly",
+      "preview": "Preview/ladder_to_helly.png"
+    },
+    {
+      "file": "main_road.json",
+      "label": "main_road",
+      "preview": "Preview/main_road.png"
+    },
+    {
+      "file": "main_road1.json",
+      "label": "main_road1",
+      "preview": "Preview/main_road1.png"
+    },
+    {
+      "file": "new_road_a.json",
+      "label": "new_road_a",
+      "preview": "Preview/new_road_a.png"
+    },
+    {
+      "file": "new_road_part_a_vertical.json",
+      "label": "new_road_part_a_vertical",
+      "preview": "Preview/new_road_part_a_vertical.png"
+    },
+    {
+      "file": "PerspectiveTemplate.json",
+      "label": "PerspectiveTemplate",
+      "preview": "Preview/PerspectiveTemplate.png"
+    },
+    {
+      "file": "picasso.json",
+      "label": "picasso",
+      "preview": "Preview/picasso.png"
+    },
+    {
+      "file": "pillars.json",
+      "label": "pillars",
+      "preview": "Preview/pillars.png"
+    },
+    {
+      "file": "propeller.json",
+      "label": "propeller",
+      "preview": "Preview/propeller.png"
+    },
+    {
+      "file": "road_1.json",
+      "label": "road_1",
+      "preview": "Preview/road_1.png"
+    },
+    {
+      "file": "road_a.json",
+      "label": "road_a",
+      "preview": "Preview/road_a.png"
+    },
+    {
+      "file": "road_b.json",
+      "label": "road_b",
+      "preview": "Preview/road_b.png"
+    },
+    {
+      "file": "road_part_a.json",
+      "label": "road_part_a",
+      "preview": "Preview/road_part_a.png"
+    },
+    {
+      "file": "road_part_b.json",
+      "label": "road_part_b",
+      "preview": "Preview/road_part_b.png"
+    },
+    {
+      "file": "roadj.json",
+      "label": "roadj",
+      "preview": "Preview/roadj.png"
+    },
+    {
+      "file": "skyscraper1.json",
+      "label": "skyscraper1",
+      "preview": "Preview/skyscraper1.png"
+    },
+    {
+      "file": "spider.json",
+      "label": "spider",
+      "preview": "Preview/spider.png"
+    },
+    {
+      "file": "sport_car.json",
+      "label": "sport_car",
+      "preview": "Preview/sport_car.png"
+    },
+    {
+      "file": "sport_car_tires.json",
+      "label": "sport_car_tires",
+      "preview": "Preview/sport_car_tires.png"
+    },
+    {
+      "file": "sports-car-tires.json",
+      "label": "sports-car-tires",
+      "preview": "Preview/sports-car-tires.png"
+    },
+    {
+      "file": "sports-car.json",
+      "label": "sports-car",
+      "preview": "Preview/sports-car.png"
+    },
+    {
+      "file": "Station.json",
+      "label": "Station",
+      "preview": "Preview/Station.png"
+    },
+    {
+      "file": "test_delete_this.json",
+      "label": "test_delete_this",
+      "preview": "Preview/test_delete_this.png"
+    },
+    {
+      "file": "test_delete_this1.json",
+      "label": "test_delete_this1",
+      "preview": "Preview/test_delete_this1.png"
+    },
+    {
+      "file": "TransparentTexturedCross.json",
+      "label": "TransparentTexturedCross",
+      "preview": "Preview/TransparentTexturedCross.png"
+    },
+    {
+      "file": "trap1.json",
+      "label": "trap1",
+      "preview": "Preview/trap1.png"
+    },
+    {
+      "file": "trap2.json",
+      "label": "trap2",
+      "preview": "Preview/trap2.png"
+    },
+    {
+      "file": "Trees.json",
+      "label": "Trees",
+      "preview": "Preview/Trees.png"
+    },
+    {
+      "file": "tutorial32_ground.json",
+      "label": "tutorial32_ground",
+      "preview": "Preview/tutorial32_ground.png"
+    },
+    {
+      "file": "tutorial32_wall.json",
+      "label": "tutorial32_wall",
+      "preview": "Preview/tutorial32_wall.png"
+    }
+  ]
+}

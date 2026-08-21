@@ -118,30 +118,88 @@
 
         #map-object-picker {
             display: none;
-            padding: 8px;
-            background: rgba(15, 15, 15, 0.95);
+            position: fixed;
+            z-index: 1000;
+            top: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            box-sizing: border-box;
+            width: min(920px, calc(100vw - 30px));
+            height: min(86vh, 760px);
+            padding: 12px;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(15, 15, 15, 0.98);
             border: 1px solid #666;
-            border-radius: 4px;
+            border-radius: 7px;
+            box-shadow: 0 12px 45px rgba(0, 0, 0, 0.75);
         }
-        #map-object-search { width: calc(100% - 12px); margin-bottom: 8px; }
+        .map-object-picker-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .map-object-picker-header button { padding: 5px 10px; }
+        #map-object-search { box-sizing: border-box; width: 100%; }
         #map-object-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 5px;
-            max-height: 260px;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 8px;
+            flex: 1;
+            min-height: 0;
             overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 2px 5px 8px 2px;
+            scrollbar-color: #777 #222;
         }
         .map-object-option {
             min-width: 0;
-            padding: 7px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: stretch;
+            font-size: 9px;
+            font-weight: normal;
+            text-align: center;
+            background: #333;
+            border: 2px solid transparent;
+        }
+        .map-object-option.selected { border-color: #55aaff; background: #224466; }
+        .map-object-preview {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: radial-gradient(circle, #4a5660 0%, #1d2328 72%);
+        }
+        .map-object-preview img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .map-object-preview-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            box-sizing: border-box;
+            color: #aaaaaa;
+            font-size: 9px;
+        }
+        .map-object-option-label {
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-size: 10px;
-            font-weight: normal;
-            text-align: left;
         }
-        .map-object-option.selected { outline: 2px solid #55aaff; background: #224466; }
+        .map-object-no-results { grid-column: 1 / -1; padding: 12px; color: #aaaaaa; text-align: center; font-size: 11px; }
+        #map-object-library-status { margin: 0 0 7px; font-size: 10px; color: #aaaaaa; }
+        @media (max-width: 520px) {
+            #map-object-picker { top: 2vh; height: 94vh; }
+            #map-object-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         .map-settings-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
         .map-settings-row label { min-width: 0; font-size: 11px; }
         .map-settings-row input { box-sizing: border-box; width: 100%; margin-top: 3px; }
@@ -220,7 +278,7 @@
         <!-- Map Editor UI -->
         <div id="map-editor-ui" class="menu-panel side-menu" style="display: none;">
             <h3>Map Editor</h3>
-            <p>Bird's-eye map builder.<br>Arrows: move pointer, WASD: move camera.<br>Left Control: place, E: erase, Z/X: rotate 15° on Y.</p>
+            <p>map builder<br>Arrows: pan camera and cursor together. WASD: free camera pan. C: center cursor.<br>Left Control: place, E: erase, Z/X: rotate 15° on Y.</p>
 
             <div class="file-ops-row">
                 <button id="btn-export-map">Export Map JSON</button>
@@ -230,8 +288,13 @@
 
             <button id="btn-select-map-object">Select JSON Object</button>
             <div id="selected-map-object">Selected: None</div>
-            <div id="map-object-picker">
+            <div id="map-object-picker" role="dialog" aria-modal="true" aria-label="JSON Object Library">
+                <div class="map-object-picker-header">
+                    <strong>JSON Object Library</strong>
+                    <button id="btn-close-map-object-picker" type="button">Close</button>
+                </div>
                 <input type="search" id="map-object-search" placeholder="Search JSON objects...">
+                <div id="map-object-library-status">Loading object library...</div>
                 <div id="map-object-grid"></div>
             </div>
 
@@ -247,6 +310,7 @@
                 </label>
             </div>
             <button id="btn-rotate-map-object">Rotate 90° (Y Axis)</button>
+            <button id="btn-center-map-pointer">Center Placement Cursor (C)</button>
             <div id="map-object-count">Placed objects: 0</div>
             <button id="btn-exit-map">Exit to Menu</button>
         </div>
@@ -271,6 +335,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js?v=20260820-tutorial33"></script>
 </body>
 </html>

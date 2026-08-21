@@ -32,6 +32,8 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const resetCamera = () => {
     camera.position.set(0, 1, 10);
     camera.rotation.set(0, 0, 0, 'YXZ');
+    camera.far = 1000;
+    camera.updateProjectionMatrix();
     camPitch = 0;
     camYaw = 0;
 };
@@ -132,7 +134,10 @@ function is_touching_voxel(landObj, colliderObj, colliderName) {
         return false;
     }
 
-    scene.updateMatrixWorld(true);
+    // Update only the two collision branches. Updating the entire scene here
+    // would repeatedly traverse every voxel in a large LoadMap() map.
+    land.updateWorldMatrix(true, true);
+    colliders.updateWorldMatrix(true, true);
 
     var collider = null;
 
@@ -462,26 +467,106 @@ textureSearch.oninput = () => renderTextureChoices(textureSearch.value);
 renderTextureChoices();
 
 // --- Bird's-eye Map Editor ---
-const availableMapObjectNames = [
+const fallbackMapObjectNames = [
+    "1tree.json",
+    "3DLP_MAP_ISLAND_extended.json",
+    "airplane_jet.json",
+    "Airpor.json",
+    "Airport.json",
+    "airport_terrain_for_cloning.json",
+    "big_building1.json",
+    "Bridge_left_side.json",
+    "Bridge_middle_for_clone.json",
+    "buildings_area.json",
+    "buildings_starting_terrain.json",
+    "Camera_Coliders.json",
     "car_colliders.json",
+    "cemetary.json",
+    "circle.json",
+    "cross.json",
+    "Cute_character_creating_broken_heart.json",
+    "door1.json",
+    "door2.json",
+    "door3.json",
+    "doorsbuton1.json",
+    "Dungeon.json",
+    "Dungeon2.json",
+    "dungeonkeys.json",
+    "first_house.json",
+    "Fountain_place.json",
+    "Futuristic_Helycopter.json",
+    "Futuristic_Helycopter_propeller.json",
+    "Futuristic_Helycopter_without_wings.json",
+    "Futuristic_Helycopter_without_wings_with_colliders.json",
     "heli_no_proeller.json",
     "helicpter_colliders.json",
+    "house2.json",
+    "house3.json",
+    "house4.json",
+    "houses_and_terrain.json",
+    "houses_and_terrain1.json",
+    "key_stone.json",
+    "ladder_to_helly.json",
+    "main_road.json",
+    "main_road1.json",
+    "new_road_a.json",
+    "new_road_part_a_vertical.json",
+    "PerspectiveTemplate.json",
+    "picasso.json",
+    "pillars.json",
     "propeller.json",
+    "road_1.json",
+    "road_a.json",
+    "road_b.json",
+    "road_part_a.json",
+    "road_part_b.json",
+    "roadj.json",
+    "skyscraper1.json",
+    "spider.json",
+    "sport_car.json",
+    "sport_car_tires.json",
     "sports-car-tires.json",
-    "sports-car.json"
+    "sports-car.json",
+    "Station.json",
+    "test_delete_this.json",
+    "test_delete_this1.json",
+    "TransparentTexturedCross.json",
+    "trap1.json",
+    "trap2.json",
+    "Trees.json",
+    "tutorial32_ground.json",
+    "tutorial32_wall.json"
 ];
+const previewPathForMapObject = filename =>
+    `Preview/${filename.substring(filename.lastIndexOf('/') + 1)
+        .replace(/\.json$/i, '')}.png`;
+let availableMapObjects = fallbackMapObjectNames.map(filename => ({
+    file: filename,
+    label: filename,
+    preview: previewPathForMapObject(filename)
+}));
+let mapObjectLibraryRevision = 'fallback-20260820';
+let mapObjectLibraryMessage =
+    `${availableMapObjects.length} built-in JSON objects available`;
+let mapObjectLibraryMessageColor = '#aaaaaa';
+let mapObjectPickerRenderId = 0;
 let selectedMapObject = '';
 let mapObjectPreview = null;
+let mapEditorLoadToken = 0;
+let pendingMapEditorObjects = [];
 
 const mapObjectPicker = document.getElementById('map-object-picker');
 const mapObjectGrid = document.getElementById('map-object-grid');
 const mapObjectSearch = document.getElementById('map-object-search');
+const mapObjectLibraryStatus = document.getElementById('map-object-library-status');
+const closeMapObjectPickerButton = document.getElementById('btn-close-map-object-picker');
 const selectedMapObjectLabel = document.getElementById('selected-map-object');
 const selectMapObjectButton = document.getElementById('btn-select-map-object');
 const mapObjectYInput = document.getElementById('map-object-y');
 const mapObjectRotationInput = document.getElementById('map-object-rotation');
 const mapObjectScaleInput = document.getElementById('map-object-scale');
 const rotateMapObjectButton = document.getElementById('btn-rotate-map-object');
+const centerMapPointerButton = document.getElementById('btn-center-map-pointer');
 const mapObjectCount = document.getElementById('map-object-count');
 
 function updateMapObjectCount() {
@@ -491,6 +576,7 @@ function updateMapObjectCount() {
 
 function removeMapObjectPreview() {
     if (!mapObjectPreview) return;
+    cancelObjectLoads(mapObjectPreview);
     mapObjectPreview.removeFromParent();
     mapObjectPreview.traverse(child => {
         if (!child.isMesh || !child.material) return;
@@ -498,6 +584,17 @@ function removeMapObjectPreview() {
         materials.forEach(material => material.dispose());
     });
     mapObjectPreview = null;
+}
+
+function discardPendingMapEditorObjects(objects = pendingMapEditorObjects) {
+    objects.forEach(object => {
+        cancelObjectLoads(object);
+        object.removeFromParent();
+        const cubeIndex = cubes.indexOf(object);
+        if (cubeIndex !== -1) cubes.splice(cubeIndex, 1);
+        disposeObjectMaterials(object);
+    });
+    if (objects === pendingMapEditorObjects) pendingMapEditorObjects = [];
 }
 
 function createMapObjectPreview() {
@@ -546,54 +643,335 @@ function syncMapObjectPreview() {
 function selectMapEditorObject(filename) {
     selectedMapObject = filename;
     selectedMapObjectLabel.textContent = `Selected: ${filename}`;
+    selectedMapObjectLabel.style.color = '#cccccc';
     selectMapObjectButton.textContent = 'Change JSON Object';
     mapObjectGrid.querySelectorAll('.map-object-option').forEach(option => {
         option.classList.toggle('selected', option.dataset.filename === filename);
     });
-    mapObjectPicker.style.display = 'none';
+    closeMapObjectPicker();
     createMapObjectPreview();
 }
 
+function objectLibraryAssetUrl(relativePath) {
+    const path = 'Objects/' + relativePath
+        .split('/')
+        .map(segment => encodeURIComponent(segment))
+        .join('/');
+    return `${path}?v=${encodeURIComponent(mapObjectLibraryRevision)}`;
+}
+
+function normalizeObjectPreviewReference(value, fallback) {
+    let reference = String(value || fallback).trim().replace(/\\/g, '/');
+    while (reference.startsWith('./')) reference = reference.substring(2);
+    if (/^\/?Objects\//i.test(reference)) {
+        reference = reference.replace(/^\/?Objects\//i, '');
+    }
+
+    const pathOnly = reference.split(/[?#]/, 1)[0];
+    if (!pathOnly || pathOnly.startsWith('/') ||
+        pathOnly.split('/').includes('..') ||
+        !/\.(?:png|jpe?g|webp|gif)$/i.test(pathOnly)) {
+        return fallback;
+    }
+    return reference;
+}
+
+function normalizeMapObjectLibraryEntry(record) {
+    const rawFile = typeof record === 'string' ? record : record?.file;
+    const filename = normalizeObjectJSONReference(rawFile || '');
+    if (isDirectAssetUrl(filename) || !isJSONObjectReference(filename) ||
+        filename.toLowerCase() === 'objects-manifest.json') {
+        return null;
+    }
+
+    const fallbackPreview = previewPathForMapObject(filename);
+    return {
+        file: filename,
+        label: String(record?.label || filename),
+        preview: normalizeObjectPreviewReference(
+            record?.preview,
+            fallbackPreview
+        )
+    };
+}
+
+async function loadMapObjectLibrary() {
+    try {
+        // The changing query also bypasses cached 404 responses after the
+        // manifest is uploaded to a static host for the first time.
+        const manifestUrl =
+            `Objects/objects-manifest.json?refresh=${Date.now()}`;
+        const response = await fetch(manifestUrl, {
+            cache: 'no-store'
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : data.objects;
+        if (!Array.isArray(records)) {
+            throw new Error('Manifest has no objects array.');
+        }
+
+        const seen = new Set();
+        const manifestObjects = records
+            .map(normalizeMapObjectLibraryEntry)
+            .filter(entry => {
+                if (!entry || seen.has(entry.file)) return false;
+                seen.add(entry.file);
+                return true;
+            })
+            .sort((a, b) => a.label.localeCompare(b.label));
+
+        if (manifestObjects.length === 0) {
+            throw new Error('Manifest contains no JSON objects.');
+        }
+
+        availableMapObjects = manifestObjects;
+        mapObjectLibraryRevision = String(data.revision || Date.now());
+        mapObjectLibraryMessage =
+            `${availableMapObjects.length} JSON objects loaded from the server`;
+        mapObjectLibraryMessageColor = '#aaaaaa';
+        return true;
+    } catch (error) {
+        mapObjectLibraryMessage =
+            `Could not refresh object list; showing ${availableMapObjects.length} built-in objects.`;
+        mapObjectLibraryMessageColor = '#ffcc66';
+        console.warn('Object manifest load error:', error);
+        return false;
+    }
+}
+
 function renderMapObjectChoices(filterText = '') {
+    const renderId = ++mapObjectPickerRenderId;
     const filter = filterText.trim().toLowerCase();
     const fragment = document.createDocumentFragment();
     mapObjectGrid.innerHTML = '';
 
-    availableMapObjectNames
-        .filter(filename => filename.toLowerCase().includes(filter))
-        .forEach(filename => {
-            const option = document.createElement('button');
-            option.type = 'button';
-            option.className = 'map-object-option';
-            option.dataset.filename = filename;
-            option.title = filename;
-            option.textContent = filename;
-            option.classList.toggle('selected', filename === selectedMapObject);
-            option.onclick = () => selectMapEditorObject(filename);
-            fragment.appendChild(option);
-        });
+    const matchingObjects = availableMapObjects.filter(entry =>
+        entry.file.toLowerCase().includes(filter) ||
+        entry.label.toLowerCase().includes(filter)
+    );
+
+    let loadedPreviews = 0;
+    let failedPreviews = 0;
+    const updateLibraryStatus = () => {
+        if (renderId !== mapObjectPickerRenderId) return;
+        const matchMessage = filter
+            ? ` • ${matchingObjects.length} search matches`
+            : '';
+        const previewMessage = matchingObjects.length > 0
+            ? ` • previews ${loadedPreviews}/${matchingObjects.length}`
+            : '';
+        const failureMessage = failedPreviews > 0
+            ? ` • ${failedPreviews} preview files missing`
+            : '';
+        mapObjectLibraryStatus.textContent =
+            mapObjectLibraryMessage + matchMessage + previewMessage + failureMessage;
+        mapObjectLibraryStatus.style.color = failedPreviews > 0
+            ? '#ff7777'
+            : mapObjectLibraryMessageColor;
+    };
+    updateLibraryStatus();
+
+    matchingObjects.forEach(entry => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'map-object-option';
+        option.dataset.filename = entry.file;
+        option.title = entry.file;
+        option.classList.toggle('selected', entry.file === selectedMapObject);
+
+        const previewFrame = document.createElement('span');
+        previewFrame.className = 'map-object-preview';
+        const preview = document.createElement('img');
+        preview.alt = `${entry.label} preview`;
+        preview.loading = 'eager';
+        preview.decoding = 'async';
+
+        const placeholder = document.createElement('span');
+        placeholder.className = 'map-object-preview-placeholder';
+        placeholder.textContent = 'Preview file missing';
+        placeholder.title = `Missing Objects/${entry.preview}`;
+        placeholder.style.display = 'none';
+        preview.onload = () => {
+            if (renderId !== mapObjectPickerRenderId) return;
+            loadedPreviews++;
+            updateLibraryStatus();
+        };
+        preview.onerror = () => {
+            if (renderId !== mapObjectPickerRenderId) return;
+            failedPreviews++;
+            preview.style.display = 'none';
+            placeholder.style.display = 'flex';
+            updateLibraryStatus();
+        };
+        preview.src = objectLibraryAssetUrl(entry.preview);
+        previewFrame.append(preview, placeholder);
+
+        const label = document.createElement('span');
+        label.className = 'map-object-option-label';
+        label.textContent = entry.label;
+        option.append(previewFrame, label);
+        option.onclick = () => selectMapEditorObject(entry.file);
+        fragment.appendChild(option);
+    });
+
+    if (matchingObjects.length === 0) {
+        const noMatches = document.createElement('div');
+        noMatches.className = 'map-object-no-results';
+        noMatches.textContent = 'No matching JSON objects.';
+        fragment.appendChild(noMatches);
+    }
 
     mapObjectGrid.appendChild(fragment);
 }
 
-function placeMapEditorObject(entry) {
-    const filename = entry.file;
-    if (!filename || !/\.json$/i.test(filename)) {
-        throw new Error(`Map objects must be JSON files: ${filename || '(missing filename)'}`);
+function closeMapObjectPicker() {
+    mapObjectPicker.style.display = 'none';
+}
+
+function isDirectAssetUrl(value) {
+    return /^(?:https?:|data:|blob:)/i.test(value);
+}
+
+function normalizeObjectJSONReference(value) {
+    let reference = String(value || '').trim().replace(/\\/g, '/');
+    if (isDirectAssetUrl(reference)) return reference;
+
+    while (reference.startsWith('./')) {
+        reference = reference.substring(2);
+    }
+    if (reference.startsWith('/Objects/')) {
+        reference = reference.substring('/Objects/'.length);
+    } else if (/^Objects\//i.test(reference)) {
+        reference = reference.substring('Objects/'.length);
     }
 
-    const instanceName = entry.name || `map_object_${generateId()}`;
-    const x = Number(entry.x) || 0;
-    const y = Number(entry.y) || 0;
-    const z = Number(entry.z) || 0;
-    const rotationY = Number(entry.rotationY) || 0;
-    const scale = Number(entry.scale) || 1;
-    const object = window.Obj(filename, instanceName, x, y, z);
+    const pathOnly = reference.split(/[?#]/, 1)[0];
+    if (!pathOnly ||
+        pathOnly.startsWith('/') ||
+        /^[a-z]:\//i.test(pathOnly) ||
+        pathOnly.split('/').includes('..')) {
+        throw new Error(
+            'Map object files must be JSON files inside the Objects/ directory.'
+        );
+    }
+    return reference;
+}
 
-    object.scale.set(scale, scale, scale);
-    object.rotation.set(0, THREE.MathUtils.degToRad(-rotationY), 0, 'YXZ');
+function objectJSONUrl(value) {
+    const reference = normalizeObjectJSONReference(value);
+    return isDirectAssetUrl(reference) ? reference : `Objects/${reference}`;
+}
+
+function isJSONObjectReference(value) {
+    if (!value) return false;
+    const withoutQuery = String(value).split(/[?#]/, 1)[0];
+    return /\.json$/i.test(withoutQuery);
+}
+
+function finiteMapNumber(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+}
+
+function normalizeMapEntry(entry, index) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw new Error(`Map entry ${index + 1} is not an object.`);
+    }
+
+    const primitive = String(entry.primitive || '').toLowerCase();
+    const isInlineCube = primitive === 'cube';
+    const file = isInlineCube
+        ? ''
+        : normalizeObjectJSONReference(
+            entry.file || entry.filename || entry.objectFile || ''
+        );
+
+    if (!isInlineCube && !isJSONObjectReference(file)) {
+        throw new Error(
+            `Map entry ${index + 1} must contain a JSON object file or cube primitive.`
+        );
+    }
+
+    const scale = Math.max(0.01, finiteMapNumber(entry.scale, 1));
+    const normalized = {
+        name: String(entry.name || '').trim(),
+        x: finiteMapNumber(entry.x, 0),
+        y: finiteMapNumber(entry.y, 0),
+        z: finiteMapNumber(entry.z, 0),
+        rotationY: finiteMapNumber(entry.rotationY, 0),
+        scale
+    };
+
+    if (isInlineCube) {
+        normalized.primitive = 'cube';
+        normalized.color = Array.isArray(entry.color)
+            ? entry.color.slice(0, 3).map(component =>
+                Math.max(0, Math.min(255, finiteMapNumber(component, 136))))
+            : (entry.color !== undefined ? entry.color : [136, 136, 136]);
+        normalized.alpha = Math.max(
+            0,
+            Math.min(1, finiteMapNumber(entry.alpha, 1))
+        );
+        normalized.voxelName = String(entry.voxelName || '').trim();
+    } else {
+        normalized.file = file;
+    }
+
+    return normalized;
+}
+
+function normalizeMapDocument(data) {
+    const entries = Array.isArray(data)
+        ? data
+        : (data && Array.isArray(data.objects) ? data.objects : null);
+
+    if (!entries) throw new Error('Map JSON has no objects array.');
+    return entries.map((entry, index) => normalizeMapEntry(entry, index));
+}
+
+function instantiateMapEntry(entry, fallbackName) {
+    const instanceName = entry.name || fallbackName;
+    const object = entry.primitive === 'cube'
+        ? createInlineMapCube(entry, instanceName)
+        : window.Obj(entry.file, instanceName, 0, 0, 0);
+
+    object.position.set(entry.x, entry.y, entry.z);
+    object.rotation.set(
+        0,
+        THREE.MathUtils.degToRad(-entry.rotationY),
+        0,
+        'YXZ'
+    );
+    object.scale.set(entry.scale, entry.scale, entry.scale);
+    object.userData.mapEntryDefinition = entry;
+    object.userData.sourceFile = entry.file || '';
+    object.userData.mapPrimitive = entry.primitive || '';
+    return object;
+}
+
+function requiredMapObjectFilename(object) {
+    const sourceFile = object.userData.mapEntryDefinition?.file ||
+        object.userData.sourceFile || object.name;
+    return isDirectAssetUrl(sourceFile)
+        ? sourceFile
+        : `Objects/${sourceFile}`;
+}
+
+function requiredMapObjectError(object) {
+    const filename = requiredMapObjectFilename(object);
+    const reason = object.userData.loadError || 'Unknown loading error';
+    return `Required map object "${filename}" could not be loaded: ${reason}`;
+}
+
+function placeMapEditorObject(entry) {
+    const normalizedEntry = normalizeMapEntry(entry, 0);
+    const object = instantiateMapEntry(
+        normalizedEntry,
+        `map_object_${generateId()}`
+    );
     object.userData.mapEditorObject = true;
-    object.userData.sourceFile = filename;
     updateMapObjectCount();
     return object;
 }
@@ -601,15 +979,32 @@ function placeMapEditorObject(entry) {
 function exportMapEditorJSON() {
     const objects = cubes
         .filter(object => object.userData.mapEditorObject)
-        .map(object => ({
-            file: object.userData.sourceFile,
-            name: object.name,
-            x: object.position.x,
-            y: object.position.y,
-            z: object.position.z,
-            rotationY: -THREE.MathUtils.radToDeg(object.rotation.y),
-            scale: object.scale.x
-        }));
+        .map(object => {
+            const entry = {
+                name: object.name,
+                x: object.position.x,
+                y: object.position.y,
+                z: object.position.z,
+                rotationY: -THREE.MathUtils.radToDeg(object.rotation.y),
+                scale: object.scale.x
+            };
+
+            const definition = object.userData.mapEntryDefinition || {};
+            if (definition.primitive === 'cube') {
+                entry.primitive = 'cube';
+                entry.color = definition.color;
+                if (definition.alpha !== 1) {
+                    entry.alpha = definition.alpha;
+                }
+                if (definition.voxelName) {
+                    entry.voxelName = definition.voxelName;
+                }
+            } else {
+                entry.file = definition.file || object.userData.sourceFile;
+            }
+
+            return entry;
+        });
     const mapData = { format: '3dpl-map-v1', objects };
     const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -620,46 +1015,158 @@ function exportMapEditorJSON() {
     URL.revokeObjectURL(url);
 }
 
-selectMapObjectButton.onclick = () => {
-    const opening = mapObjectPicker.style.display !== 'block';
-    mapObjectPicker.style.display = opening ? 'block' : 'none';
-    if (opening) {
-        renderMapObjectChoices(mapObjectSearch.value);
+selectMapObjectButton.onclick = async () => {
+    const opening = mapObjectPicker.style.display !== 'flex';
+    if (!opening) {
+        closeMapObjectPicker();
+        return;
+    }
+
+    mapObjectPicker.style.display = 'flex';
+    mapObjectSearch.value = '';
+    mapObjectLibraryMessage =
+        `Refreshing server list; showing ${availableMapObjects.length} objects...`;
+    mapObjectLibraryMessageColor = '#aaaaaa';
+    renderMapObjectChoices('');
+    await loadMapObjectLibrary();
+
+    if (mapObjectPicker.style.display === 'flex') {
+        renderMapObjectChoices('');
         mapObjectSearch.focus();
     }
 };
+closeMapObjectPickerButton.onclick = closeMapObjectPicker;
 mapObjectSearch.oninput = () => renderMapObjectChoices(mapObjectSearch.value);
 rotateMapObjectButton.onclick = () => {
     const currentRotation = Number(mapObjectRotationInput.value) || 0;
     mapObjectRotationInput.value = ((currentRotation + 90) % 360 + 360) % 360;
     syncMapObjectPreview();
 };
+
+function centerMapPointerOnView() {
+    editorPointer.position.set(
+        Math.round(camera.position.x),
+        Number(mapObjectYInput.value) || 0,
+        Math.round(camera.position.z)
+    );
+    syncMapObjectPreview();
+}
+
+centerMapPointerButton.onclick = centerMapPointerOnView;
+
+function frameMapEditorObjects() {
+    const objects = cubes.filter(object => object.userData.mapEditorObject);
+    if (objects.length === 0) return;
+
+    scene.updateMatrixWorld(true);
+    const bounds = new THREE.Box3();
+    objects.forEach(object => bounds.expandByObject(object));
+    if (bounds.isEmpty()) return;
+
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+    const requiredHeightForZ = size.z / (2 * Math.tan(verticalFov / 2));
+    const horizontalFov = 2 * Math.atan(
+        Math.tan(verticalFov / 2) * camera.aspect
+    );
+    const requiredHeightForX = size.x / (2 * Math.tan(horizontalFov / 2));
+    const height = Math.max(10, requiredHeightForX, requiredHeightForZ) * 1.25;
+
+    camera.position.set(center.x, bounds.max.y + height, center.z);
+    camera.rotation.set(-Math.PI / 2, 0, 0, 'YXZ');
+    const mapDepth = camera.position.y - bounds.min.y;
+    camera.far = Math.max(1000, mapDepth * 2, size.length() * 2);
+    camera.updateProjectionMatrix();
+    editorPointer.position.x = Math.round(center.x);
+    editorPointer.position.z = Math.round(center.z);
+}
+
 document.getElementById('btn-export-map').onclick = exportMapEditorJSON;
 document.getElementById('btn-load-map').onclick = () => document.getElementById('file-input-map').click();
 document.getElementById('file-input-map').onchange = event => {
     const file = event.target.files[0];
     if (!file) return;
+    const loadToken = ++mapEditorLoadToken;
     const reader = new FileReader();
     reader.onload = loadEvent => {
+        let stagedObjects = [];
         try {
             const mapData = JSON.parse(loadEvent.target.result);
-            const objects = Array.isArray(mapData) ? mapData : mapData.objects;
-            if (!Array.isArray(objects)) throw new Error('Map JSON has no objects array.');
-            removeMapObjectPreview();
-            window.cs();
-            objects.forEach(placeMapEditorObject);
-            createMapObjectPreview();
-            updateMapObjectCount();
+            // Validate every entry before replacing the map currently in the editor.
+            const entries = normalizeMapDocument(mapData);
+            discardPendingMapEditorObjects();
+            entries.forEach((entry, index) => {
+                const object = instantiateMapEntry(
+                    entry,
+                    `map_object_${index + 1}`
+                );
+                stagedObjects.push(object);
+                object.removeFromParent();
+                const cubeIndex = cubes.indexOf(object);
+                if (cubeIndex !== -1) cubes.splice(cubeIndex, 1);
+            });
+            pendingMapEditorObjects = stagedObjects;
+            selectedMapObjectLabel.textContent = `Loading map: ${file.name}`;
+            selectedMapObjectLabel.style.color = '#cccccc';
+
+            Promise.all(stagedObjects.map(object => object.userData.ready))
+                .then(() => {
+                    if (!mapEditorMode || loadToken !== mapEditorLoadToken) {
+                        discardPendingMapEditorObjects(stagedObjects);
+                        return;
+                    }
+                    const failedObject = stagedObjects.find(
+                        object => object.userData.loadError
+                    );
+                    if (failedObject) {
+                        throw new Error(requiredMapObjectError(failedObject));
+                    }
+
+                    pendingMapEditorObjects = [];
+                    removeMapObjectPreview();
+                    window.cs();
+                    stagedObjects.forEach(object => {
+                        scene.add(object);
+                        cubes.push(object);
+                        object.userData.mapEditorObject = true;
+                    });
+                    createMapObjectPreview();
+                    updateMapObjectCount();
+                    frameMapEditorObjects();
+                    selectedMapObjectLabel.textContent = `Loaded map: ${file.name}`;
+                    selectedMapObjectLabel.style.color = '#cccccc';
+                })
+                .catch(error => {
+                    discardPendingMapEditorObjects(stagedObjects);
+                    if (loadToken !== mapEditorLoadToken) return;
+                    setDebugError(`Map load error: ${error.message}`);
+                    selectedMapObjectLabel.textContent =
+                        `Map load failed: ${error.message}`;
+                    selectedMapObjectLabel.style.color = '#ff7777';
+                    console.error('Map load error:', error);
+                });
         } catch (error) {
+            discardPendingMapEditorObjects(stagedObjects);
+            if (loadToken !== mapEditorLoadToken) return;
             setDebugError(`Map load error: ${error.message}`);
+            selectedMapObjectLabel.textContent =
+                `Map load failed: ${error.message}`;
+            selectedMapObjectLabel.style.color = '#ff7777';
             console.error('Map load error:', error);
         }
         event.target.value = '';
     };
+    reader.onerror = () => {
+        if (loadToken !== mapEditorLoadToken) return;
+        const message = reader.error ? reader.error.message : 'Could not read the file.';
+        setDebugError(`Map load error: ${message}`);
+        selectedMapObjectLabel.textContent = `Map load failed: ${file.name}`;
+        selectedMapObjectLabel.style.color = '#ff7777';
+        event.target.value = '';
+    };
     reader.readAsText(file);
 };
-
-renderMapObjectChoices();
 
 // --- Debug UI Helpers ---
 const setDebugError = (msg) => {
@@ -679,7 +1186,7 @@ window.Input = {
 };
 window.KeyCode = { 
     RightArrow: 'ArrowRight', LeftArrow: 'ArrowLeft', UpArrow: 'ArrowUp', DownArrow: 'ArrowDown',
-    Space: 'Space', LeftControl: 'ControlLeft', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF' 
+    Space: 'Space', LeftControl: 'ControlLeft', C: 'KeyC', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF'
 };
 
 const gameplayKeyCodes = new Set(Object.values(window.KeyCode));
@@ -687,6 +1194,12 @@ const gameplayKeyCodes = new Set(Object.values(window.KeyCode));
 window.addEventListener('keydown', e => {
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
     const isTyping = activeTag === 'input' || activeTag === 'textarea';
+
+    if (e.code === 'Escape' && mapObjectPicker.style.display === 'flex') {
+        e.preventDefault();
+        closeMapObjectPicker();
+        return;
+    }
 
     if ((e.code === 'Space' && !isTyping) || (isExecuting && gameplayKeyCodes.has(e.code))) {
         e.preventDefault();
@@ -750,6 +1263,12 @@ function forEachObjectMaterial(object, callback) {
 
 function disposeObjectMaterials(object) {
     forEachObjectMaterial(object, material => material.dispose());
+}
+
+function cancelObjectLoads(object) {
+    object.traverse(child => {
+        child.userData.cancelled = true;
+    });
 }
 
 window.qb = function(name, x, y, z) {
@@ -918,6 +1437,48 @@ function collisionBoxFor(object) {
             new THREE.Vector3(1, 1, 1)
         );
     }
+
+    // A map item can contain thousands of voxel meshes. Build its bounds once
+    // in local space, then transform that small cached box when the map moves.
+    // The final voxel check remains exact, so a broad-phase false positive is
+    // harmless while repeated full-tree Box3 scans are avoided.
+    if (object.userData.mapEntry && object.userData.loaded) {
+        if (!object.userData.collisionLocalBox) {
+            object.updateWorldMatrix(true, true);
+            const inverseRootMatrix = new THREE.Matrix4()
+                .copy(object.matrixWorld)
+                .invert();
+            const localBounds = new THREE.Box3().makeEmpty();
+
+            object.traverse(child => {
+                if (!child.isMesh || !child.geometry) return;
+                if (!child.geometry.boundingBox) {
+                    child.geometry.computeBoundingBox();
+                }
+                if (!child.geometry.boundingBox) return;
+
+                const childToRoot = new THREE.Matrix4().multiplyMatrices(
+                    inverseRootMatrix,
+                    child.matrixWorld
+                );
+                localBounds.union(
+                    child.geometry.boundingBox.clone().applyMatrix4(childToRoot)
+                );
+            });
+
+            if (!localBounds.isEmpty()) {
+                object.userData.collisionLocalBox = localBounds;
+            }
+        }
+
+        if (object.userData.collisionLocalBox) {
+            object.updateWorldMatrix(true, false);
+            return object.userData.collisionLocalBox
+                .clone()
+                .applyMatrix4(object.matrixWorld);
+        }
+    }
+
     return new THREE.Box3().setFromObject(object);
 }
 
@@ -943,10 +1504,15 @@ window.cd = function(nameA, nameB) {
  * receive the more expensive voxel-by-voxel is_touching_voxel() check.
  *
  * @param {Object|string} mapObject - LoadMap() result, variable key, or name.
- * @param {Object|string} colliderObject - Object reference or collider name.
+ * @param {Object|string} colliderObject - Collider group, object, or name.
+ * @param {string} [colliderName] - Optional named mesh inside colliderObject.
  * @returns {boolean} True when one of the collider meshes touches a map voxel.
  */
-window.is_object_colliding_with_map = function(mapObject, colliderObject) {
+window.is_object_colliding_with_map = function(
+    mapObject,
+    colliderObject,
+    colliderName
+) {
     const maps = findCollisionObjects(mapObject);
     const colliderRoots = findCollisionObjects(colliderObject);
 
@@ -955,11 +1521,15 @@ window.is_object_colliding_with_map = function(mapObject, colliderObject) {
     const colliderMeshes = [];
     colliderRoots.forEach(root => {
         if (root.isMesh) {
-            colliderMeshes.push(root);
+            if (!colliderName || root.name === colliderName) {
+                colliderMeshes.push(root);
+            }
             return;
         }
         root.traverse(child => {
-            if (child.isMesh) colliderMeshes.push(child);
+            if (child.isMesh && (!colliderName || child.name === colliderName)) {
+                colliderMeshes.push(child);
+            }
         });
     });
 
@@ -1035,16 +1605,16 @@ window.move_object_with_map_collision = function(
             object.translateX(stepX);
             object.translateY(stepY);
             object.translateZ(-stepZ);
+            object.updateWorldMatrix(true, true);
         });
-        scene.updateMatrixWorld(true);
 
         if (window.is_object_colliding_with_map(mapObject, colliderObject)) {
             movingObjects.forEach(object => {
                 object.translateX(-stepX);
                 object.translateY(-stepY);
                 object.translateZ(stepZ);
+                object.updateWorldMatrix(true, true);
             });
-            scene.updateMatrixWorld(true);
             return false;
         }
     }
@@ -1061,6 +1631,7 @@ window.cdcm = function(obj, colliderName) {
 window.dl = function(name) {
     for (let i = cubes.length - 1; i >= 0; i--) {
         if (cubes[i].name === name) {
+            cancelObjectLoads(cubes[i]);
             cubes[i].removeFromParent();
             disposeObjectMaterials(cubes[i]);
             cubes.splice(i, 1);
@@ -1070,6 +1641,7 @@ window.dl = function(name) {
 
 window.cs = function() {
     cubes.forEach(c => { 
+        cancelObjectLoads(c);
         c.removeFromParent(); 
         disposeObjectMaterials(c);
     });
@@ -1118,6 +1690,8 @@ window.SetVolume = function(cubeName, vol) {
 // --- Object and XML Loading ---
 window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
+    const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
+    const url = objectJSONUrl(normalizedReference);
     x = x || 0; y = y || 0; z = z || 0;
     instanceName = instanceName || ("obj_" + Math.random().toString(36).substr(2, 5));
 
@@ -1125,43 +1699,56 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     axisGroup.position.set(x, y, z);
     axisGroup.name = instanceName;
     axisGroup.userData.loaded = false;
+    axisGroup.userData.sourceFile = normalizedReference;
     injectUnityCompatibility(axisGroup);
     scene.add(axisGroup);
     cubes.push(axisGroup);
 
     const buildVoxels = (voxelData) => {
-voxelData.forEach(cords => {
-    var voxelName = cords.cubename || cords.name;
-    if (voxelName === "AxisPoint") return;
-                const mat = new THREE.MeshStandardMaterial({ 
-                color: new THREE.Color(cords.r/255, cords.g/255, cords.b/255), 
-                transparent: true, 
-                opacity: cords.alpha !== undefined ? cords.alpha : 1.0 
+        voxelData.forEach(cords => {
+            const voxelName = cords.cubename || cords.name || "cube";
+            if (voxelName === "AxisPoint") return;
+
+            const red = finiteMapNumber(cords.r, 255);
+            const green = finiteMapNumber(cords.g, 255);
+            const blue = finiteMapNumber(cords.b, 255);
+            const opacity = cords.alpha !== undefined
+                ? finiteMapNumber(cords.alpha, 1)
+                : finiteMapNumber(cords.a, 1);
+            const material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(red / 255, green / 255, blue / 255),
+                transparent: true,
+                opacity
             });
-            
-            let geom = baseGeometry;
+
+            let geometry = baseGeometry;
             if (cords.TextureName) {
-                const tex = textureLoader.load('Textures/' + cords.TextureName);
-                tex.colorSpace = THREE.SRGBColorSpace;
-                mat.map = tex;
-                
+                const texture = textureLoader.load('Textures/' + cords.TextureName);
+                texture.colorSpace = THREE.SRGBColorSpace;
+                material.map = texture;
+
                 if (cords.WrapOnSides == 1) {
-                    geom = baseGeometry.clone();
-                    window.apply3DPLWrap1(geom);
+                    geometry = baseGeometry.clone();
+                    window.apply3DPLWrap1(geometry);
                 }
             }
-            
-            const mesh = new THREE.Mesh(geom, mat);
-            mesh.position.set(cords.x, cords.y, cords.z);
-            //mesh.name = cords.cubename;
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(
+                finiteMapNumber(cords.x, 0),
+                finiteMapNumber(cords.y, 0),
+                finiteMapNumber(cords.z, 0)
+            );
             mesh.name = voxelName;
             mesh.userData.textureName = cords.TextureName || "";
             mesh.userData.wrap = cords.WrapOnSides || 6;
-            axisGroup.add(mesh); 
+            axisGroup.add(mesh);
         });
     };
 
     const finishObjectLoad = data => {
+        if (axisGroup.userData.cancelled) return axisGroup;
+
         let voxelData = null;
         if (Array.isArray(data)) {
             voxelData = data;
@@ -1177,15 +1764,23 @@ voxelData.forEach(cords => {
         return axisGroup;
     };
 
-    if (loadedObjectCache[filenameOrUrl]) {
-        finishObjectLoad(loadedObjectCache[filenameOrUrl]);
+    if (loadedObjectCache[url]) {
+        try {
+            finishObjectLoad(loadedObjectCache[url]);
+        } catch (error) {
+            axisGroup.userData.loadError = error.message;
+            setDebugError(`Failed to load JSON object: ${url}`);
+            console.error(error);
+        }
         axisGroup.userData.ready = Promise.resolve(axisGroup);
     } else {
-        const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
-        axisGroup.userData.ready = fetch(url)
-            .then(res => { if (!res.ok) throw new Error("File not found"); return res.json(); })
+        axisGroup.userData.ready = fetch(url, { cache: 'no-store' })
+            .then(res => {
+                if (!res.ok) throw new Error(`File not found (HTTP ${res.status})`);
+                return res.json();
+            })
             .then(data => {
-                loadedObjectCache[filenameOrUrl] = data;
+                loadedObjectCache[url] = data;
                 return finishObjectLoad(data);
             })
             .catch(err => {
@@ -1325,10 +1920,15 @@ window.LoadMap = function(mapJsonFile, objectName) {
 
     // Accept an optional leading "Maps/", but never load map files from
     // outside that directory.
-    const normalizedMapFile = String(mapJsonFile).replace(/\\/g, '/');
-    const relativeMapFile = normalizedMapFile.startsWith('Maps/')
-        ? normalizedMapFile.substring('Maps/'.length)
-        : normalizedMapFile;
+    let normalizedMapFile = String(mapJsonFile).trim().replace(/\\/g, '/');
+    while (normalizedMapFile.startsWith('./')) {
+        normalizedMapFile = normalizedMapFile.substring(2);
+    }
+    const relativeMapFile = /^\/Maps\//i.test(normalizedMapFile)
+        ? normalizedMapFile.substring('/Maps/'.length)
+        : (/^Maps\//i.test(normalizedMapFile)
+            ? normalizedMapFile.substring('Maps/'.length)
+            : normalizedMapFile);
 
     if (!relativeMapFile ||
         relativeMapFile.startsWith('/') ||
@@ -1362,48 +1962,22 @@ window.LoadMap = function(mapJsonFile, objectName) {
             // Do not resurrect a map that was deleted while its file was loading.
             if (!cubes.includes(mapGroup)) return mapGroup;
 
-            const entries = Array.isArray(data) ? data : data.objects;
-            if (!Array.isArray(entries)) {
-                throw new Error('Map JSON has no objects array.');
-            }
-
-            const mapParts = [];
-            entries.forEach((entry, index) => {
-                const isInlineCube = entry.primitive === 'cube';
-                const hasJSONFile = entry.file && /\.json$/i.test(entry.file);
-                if (!isInlineCube && !hasJSONFile) {
-                    throw new Error(
-                        `Map entry ${index + 1} must contain a JSON object file or cube primitive.`
-                    );
-                }
-
-                const partName = entry.name || `${objectName}_part_${index + 1}`;
-                const part = isInlineCube
-                    ? createInlineMapCube(entry, partName)
-                    : window.Obj(entry.file, partName, 0, 0, 0);
+            const entries = normalizeMapDocument(data);
+            const mapParts = entries.map((entry, index) => {
+                const part = instantiateMapEntry(
+                    entry,
+                    `${objectName}_part_${index + 1}`
+                );
 
                 // Only the parent map should be registered as a top-level 3DPL object.
                 const partIndex = cubes.indexOf(part);
                 if (partIndex !== -1) cubes.splice(partIndex, 1);
                 mapGroup.add(part);
-
-                part.position.set(
-                    Number(entry.x) || 0,
-                    Number(entry.y) || 0,
-                    Number(entry.z) || 0
-                );
-                part.rotation.set(
-                    0,
-                    THREE.MathUtils.degToRad(-(Number(entry.rotationY) || 0)),
-                    0,
-                    'YXZ'
-                );
-                const partScale = Math.max(0.01, Number(entry.scale) || 1);
-                part.scale.set(partScale, partScale, partScale);
                 part.userData.mapEntry = entry;
-                mapParts.push(part);
+                return part;
             });
 
+            mapGroup.userData.mapEntries = entries;
             mapGroup.userData.resolvedMapUrl = mapUrl;
             return Promise.all(mapParts.map(part => part.userData.ready))
                 .then(() => {
@@ -1411,9 +1985,9 @@ window.LoadMap = function(mapJsonFile, objectName) {
 
                     const failedPart = mapParts.find(part => part.userData.loadError);
                     if (failedPart) {
-                        throw new Error(
-                            `${failedPart.name}: ${failedPart.userData.loadError}`
-                        );
+                        mapGroup.userData.missingObjectFile =
+                            requiredMapObjectFilename(failedPart);
+                        throw new Error(requiredMapObjectError(failedPart));
                     }
 
                     // Collision checks can now safely inspect every part's voxels.
@@ -1761,6 +2335,111 @@ var rotorSpeed = (goingUp || goingDown)
     : vars["idleRotorSpeed"];
 vars["rotate_propeller"](rotorSpeed);
 vars["move_camera"]();`
+    },
+    33: {
+        title: "Car Simulator 6 with LoadMap collisions",
+        decl: `// TUTORIAL 33: CAR SIMULATOR 6 WITH A JSON MAP
+// Arrow keys drive and steer. Space launches the car upward.
+// THEMAP.json and every JSON object it references must be on the server.
+vars["land"] = LoadMap("THEMAP.json", "land");
+vars["car"] = Obj("sports-car.json", "car0", 2, 1, -10);
+vars["car_colliders"] = Obj(
+    "car_colliders.json", "car_colliders", 2, 1, -10);
+vars["car_colliders"].transform.parent = vars["car"].transform;
+
+sr("land", 0, 180, 0);
+mv("land", 0, 0, -20);
+sc("car0", 0.19, 0.19, 0.19);
+
+vars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);
+vars["tire2"] = Obj("sports-car-tires.json", "tire2", 0, 0, 0);
+vars["tire3"] = Obj("sports-car-tires.json", "tire3", 0, 0, 0);
+vars["tire4"] = Obj("sports-car-tires.json", "tire4", 0, 0, 0);
+sc("tire1", 0.10, 0.10, 0.10);
+sc("tire2", 0.10, 0.10, 0.10);
+sc("tire3", 0.10, 0.10, 0.10);
+sc("tire4", 0.10, 0.10, 0.10);
+
+sp("tire1", vars["car"].transform.position.x - 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z - 1);
+sp("tire2", vars["car"].transform.position.x + 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z - 1);
+sp("tire3", vars["car"].transform.position.x - 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z + 1);
+sp("tire4", vars["car"].transform.position.x + 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z + 1);
+
+vars["tire1"].transform.parent = vars["car"].transform;
+vars["tire2"].transform.parent = vars["car"].transform;
+vars["tire3"].transform.parent = vars["car"].transform;
+vars["tire4"].transform.parent = vars["car"].transform;
+
+// Six degrees per frame is twice the old steering speed of three.
+vars["turnSpeed"] = 6;
+
+vars["move_camera"] = function() {
+    sp("camera",
+        vars["car"].transform.position.x,
+        vars["car"].transform.position.y,
+        vars["car"].transform.position.z);
+    mv("camera", 3, 3, -30);
+};
+
+vars["rotate_tires"] = function() {
+    sr("tire1", vars["tire1"].transform.eulerAngles.x + 45,
+        vars["tire1"].transform.eulerAngles.y,
+        vars["tire1"].transform.eulerAngles.z);
+    sr("tire2", vars["tire2"].transform.eulerAngles.x + 45,
+        vars["tire2"].transform.eulerAngles.y,
+        vars["tire2"].transform.eulerAngles.z);
+    sr("tire3", vars["tire3"].transform.eulerAngles.x + 45,
+        vars["tire3"].transform.eulerAngles.y,
+        vars["tire3"].transform.eulerAngles.z);
+    sr("tire4", vars["tire4"].transform.eulerAngles.x + 45,
+        vars["tire4"].transform.eulerAngles.y,
+        vars["tire4"].transform.eulerAngles.z);
+};
+
+// This safely advances in small steps and rolls back on a map collision.
+vars["drive"] = function(distance, colliderName) {
+    return move_object_with_map_collision(
+        vars["land"], vars["car"], colliderName,
+        0, 0, distance, 0.2);
+};
+
+vars["move_camera"]();`,
+        upd: `// Steering remains responsive while the large map is loading.
+if (Input.GetKey(KeyCode.RightArrow))
+    rt("car0", 0, vars["turnSpeed"], 0);
+if (Input.GetKey(KeyCode.LeftArrow))
+    rt("car0", 0, -vars["turnSpeed"], 0);
+
+// car_colliders is parented to the car, so it follows automatically.
+// There is no camcol object in this program.
+if (Input.GetKey(KeyCode.Space))
+    mv("car0", 0, 1, 0);
+
+// Wait until both asynchronous JSON loads have collision meshes.
+var collisionReady =
+    vars["land"].userData.loaded &&
+    vars["car_colliders"].userData.loaded;
+
+if (collisionReady) {
+    if (Input.GetKey(KeyCode.DownArrow) &&
+        vars["drive"](1, "collider_back"))
+        vars["rotate_tires"]();
+
+    if (Input.GetKey(KeyCode.UpArrow) &&
+        vars["drive"](-1, "collider_front"))
+        vars["rotate_tires"]();
+}
+
+// Follow the car every frame.
+vars["move_camera"]();`
     }
 };
 
@@ -1868,10 +2547,33 @@ function animate() {
         if (window.Input.GetKey(window.KeyCode.D)) camera.position.x += panSpeed;
 
         if (actionCooldown <= 0) {
-            if (window.Input.GetKey(window.KeyCode.UpArrow)) { editorPointer.position.z -= 1; actionCooldown = 0.15; }
-            if (window.Input.GetKey(window.KeyCode.DownArrow)) { editorPointer.position.z += 1; actionCooldown = 0.15; }
-            if (window.Input.GetKey(window.KeyCode.LeftArrow)) { editorPointer.position.x -= 1; actionCooldown = 0.15; }
-            if (window.Input.GetKey(window.KeyCode.RightArrow)) { editorPointer.position.x += 1; actionCooldown = 0.15; }
+            // Arrow keys pan the camera and placement cursor together. The
+            // cursor stays fixed on screen while reaching new map coordinates.
+            if (window.Input.GetKey(window.KeyCode.UpArrow)) {
+                camera.position.z -= 1;
+                editorPointer.position.z -= 1;
+                actionCooldown = 0.15;
+            }
+            if (window.Input.GetKey(window.KeyCode.DownArrow)) {
+                camera.position.z += 1;
+                editorPointer.position.z += 1;
+                actionCooldown = 0.15;
+            }
+            if (window.Input.GetKey(window.KeyCode.LeftArrow)) {
+                camera.position.x -= 1;
+                editorPointer.position.x -= 1;
+                actionCooldown = 0.15;
+            }
+            if (window.Input.GetKey(window.KeyCode.RightArrow)) {
+                camera.position.x += 1;
+                editorPointer.position.x += 1;
+                actionCooldown = 0.15;
+            }
+
+            if (window.Input.GetKey(window.KeyCode.C)) {
+                centerMapPointerOnView();
+                actionCooldown = 0.2;
+            }
 
             if (window.Input.GetKey(window.KeyCode.Z)) {
                 mapObjectRotationInput.value = (Number(mapObjectRotationInput.value) || 0) - 15;
@@ -1918,6 +2620,9 @@ function animate() {
 
 const hideAllMenus = () => {
     if (document.activeElement) document.activeElement.blur();
+    closeMapObjectPicker();
+    mapEditorLoadToken++;
+    discardPendingMapEditorObjects();
     document.querySelectorAll('.menu-panel').forEach(el => el.style.display = 'none');
     objectEditorMode = false;
     mapEditorMode = false;

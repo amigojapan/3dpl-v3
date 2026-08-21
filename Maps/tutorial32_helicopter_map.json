@@ -2,8 +2,7 @@
   "format": "3dpl-map-v1",
   "objects": [
     {
-      "primitive": "cube",
-      "color": [55, 145, 70],
+      "file": "tutorial32_ground.json",
       "name": "tutorial32_ground",
       "x": 0,
       "y": -30,
@@ -12,8 +11,7 @@
       "scale": 60
     },
     {
-      "primitive": "cube",
-      "color": [180, 85, 45],
+      "file": "tutorial32_wall.json",
       "name": "tutorial32_front_wall",
       "x": 0,
       "y": 4,
@@ -22,8 +20,7 @@
       "scale": 8
     },
     {
-      "primitive": "cube",
-      "color": [180, 85, 45],
+      "file": "tutorial32_wall.json",
       "name": "tutorial32_back_wall",
       "x": 0,
       "y": 4,
@@ -32,8 +29,7 @@
       "scale": 8
     },
     {
-      "primitive": "cube",
-      "color": [180, 85, 45],
+      "file": "tutorial32_wall.json",
       "name": "tutorial32_left_wall",
       "x": -12,
       "y": 4,
@@ -42,8 +38,7 @@
       "scale": 8
     },
     {
-      "primitive": "cube",
-      "color": [180, 85, 45],
+      "file": "tutorial32_wall.json",
       "name": "tutorial32_right_wall",
       "x": 12,
       "y": 4,
@@ -52,8 +47,7 @@
       "scale": 8
     },
     {
-      "primitive": "cube",
-      "color": [180, 85, 45],
+      "file": "tutorial32_wall.json",
       "name": "tutorial32_ceiling",
       "x": 0,
       "y": 16,

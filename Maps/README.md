@@ -1,6 +1,8 @@
 # 3DPL maps
 
 Place JSON files exported by Creative Mode's Map Editor in this directory.
+The Map Editor's **Load Map JSON** button and the `LoadMap()` function use the
+same decoder, so an exported map can be opened through either route.
 
 Load one from a 3DPL declaration with:
 
@@ -21,6 +23,14 @@ object, use:
 if (is_object_colliding_with_map(vars["level"], "collider_back")) {
     // The collider is touching a voxel in one of the map's placed objects.
 }
+```
+
+You can also pass a collider group plus the name of one probe inside it:
+
+```javascript
+is_object_colliding_with_map(
+    vars["level"], vars["car_colliders"], "collider_back"
+);
 ```
 
 The function performs a bounding-box `cd()` check against each placed map
@@ -57,5 +67,14 @@ file:
 }
 ```
 
-Tutorial 32 uses inline cubes so its collision map does not depend on additional
-files in `Objects/`.
+Tutorial 32 uses the normal exported-map format and references
+`tutorial32_ground.json` and `tutorial32_wall.json` in `Objects/`.
+
+External object entries may use either `"file": "tree.json"` or
+`"file": "Objects/tree.json"`. In both cases the object is resolved inside the
+`Objects/` directory. Top-level arrays from older map exports and the current
+`{ "format": "3dpl-map-v1", "objects": [...] }` format are both supported.
+
+If a required object is missing, both Map Editor import and `LoadMap()` report
+its full `Objects/filename.json` path. `LoadMap()` also stores that path in
+`map.userData.missingObjectFile`.

@@ -1,0 +1,86 @@
+[
+  {
+    "cubename": "CrossCubes",
+    "x": 0,
+    "y": 1,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": 0,
+    "y": 0,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": 0,
+    "y": 2,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": -1,
+    "y": 1,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": 1,
+    "y": 1,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": 0,
+    "y": -1,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  },
+  {
+    "cubename": "CrossCubes",
+    "x": 0,
+    "y": -2,
+    "z": -6,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 0.3,
+    "TextureName": "picasso.png",
+    "WrapOnSides": 1
+  }
+]
