@@ -9,6 +9,11 @@ let clock = new THREE.Clock();
 
 // Object Cache
 const loadedObjectCache = {};
+const pendingObjectDataPromises = {};
+const objectCollisionDataCache = new Map();
+const mapRenderBatchStates = new WeakMap();
+const objectVoxelCollisionData = new WeakMap();
+const objectCollisionLocalBoxes = new WeakMap();
 
 // Editor States
 let objectEditorMode = false;
@@ -44,7 +49,10 @@ const listener = new THREE.AudioListener();
 camera.add(listener);
 const audioLoader = new THREE.AudioLoader();
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: 'high-performance'
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.tabIndex = 0;
 document.body.appendChild(renderer.domElement);
@@ -57,7 +65,113 @@ scene.add(dirLight);
 
 const baseGeometry = new THREE.BoxGeometry(1, 1, 1);
 const textureLoader = new THREE.TextureLoader();
+const sharedTextureCache = new Map();
+let wrappedBaseGeometry = null;
 let skyBackgroundTexture = null;
+
+function imageHasTransparentPixels(image) {
+    const width = image.naturalWidth || image.videoWidth || image.width;
+    const height = image.naturalHeight || image.videoHeight || image.height;
+    if (!width || !height) return true;
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        context.drawImage(image, 0, 0, width, height);
+        const pixels = context.getImageData(0, 0, width, height).data;
+        for (let offset = 3; offset < pixels.length; offset += 4) {
+            if (pixels[offset] < 255) return true;
+        }
+        return false;
+    } catch (error) {
+        // A tainted or unsupported image stays on the conservative transparent
+        // path, preserving its appearance rather than guessing.
+        return true;
+    }
+}
+
+function updateTextureMaterialTransparency(texture, material) {
+    const hasTransparentPixels =
+        texture.userData.threeDPLHasTransparentPixels;
+    if (hasTransparentPixels === undefined) return;
+    const needsTransparency = material.opacity < 1 || hasTransparentPixels;
+    if (material.transparent !== needsTransparency) {
+        material.transparent = needsTransparency;
+        material.needsUpdate = true;
+    }
+}
+
+function materialNeedsTransparency(material, opacity) {
+    if (opacity < 1) return true;
+    if (!material.map) return false;
+    const hasTransparentPixels =
+        material.map.userData.threeDPLHasTransparentPixels;
+    return hasTransparentPixels === undefined ? true : hasTransparentPixels;
+}
+
+function assignSharedTexture(material, textureName) {
+    const previousTexture = material.map;
+    if (previousTexture && previousTexture.userData.threeDPLMaterials) {
+        previousTexture.userData.threeDPLMaterials.delete(material);
+    }
+
+    const texture = loadSharedTexture(textureName);
+    material.map = texture;
+    if (texture.userData.threeDPLHasTransparentPixels === undefined) {
+        if (!texture.userData.threeDPLMaterials) {
+            texture.userData.threeDPLMaterials = new Set();
+        }
+        texture.userData.threeDPLMaterials.add(material);
+        if (!material.transparent) {
+            material.transparent = true;
+            material.needsUpdate = true;
+        }
+    }
+    updateTextureMaterialTransparency(texture, material);
+    return texture;
+}
+
+function loadSharedTexture(textureName) {
+    const textureUrl = 'Textures/' + textureName;
+    if (sharedTextureCache.has(textureUrl)) {
+        return sharedTextureCache.get(textureUrl);
+    }
+
+    let resolveTextureReady;
+    const textureReady = new Promise(resolve => {
+        resolveTextureReady = resolve;
+    });
+    const texture = textureLoader.load(
+        textureUrl,
+        loadedTexture => {
+            loadedTexture.userData.threeDPLHasTransparentPixels =
+                imageHasTransparentPixels(loadedTexture.image);
+            const materials = loadedTexture.userData.threeDPLMaterials;
+            if (materials) {
+                materials.forEach(material =>
+                    updateTextureMaterialTransparency(loadedTexture, material));
+                materials.clear();
+            }
+            resolveTextureReady(loadedTexture);
+        },
+        undefined,
+        () => {
+            texture.userData.threeDPLHasTransparentPixels = true;
+            if (texture.userData.threeDPLMaterials) {
+                texture.userData.threeDPLMaterials.clear();
+            }
+            sharedTextureCache.delete(textureUrl);
+            resolveTextureReady(texture);
+            setDebugError(`Texture load error: Could not load ${textureUrl}`);
+        }
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.userData.threeDPLReady = textureReady;
+    sharedTextureCache.set(textureUrl, texture);
+    return texture;
+}
 
 function setSkyboxVisible(visible) {
     scene.background = (visible && skyBackgroundTexture)
@@ -134,11 +248,6 @@ function is_touching_voxel(landObj, colliderObj, colliderName) {
         return false;
     }
 
-    // Update only the two collision branches. Updating the entire scene here
-    // would repeatedly traverse every voxel in a large LoadMap() map.
-    land.updateWorldMatrix(true, true);
-    colliders.updateWorldMatrix(true, true);
-
     var collider = null;
 
     // Find ONLY the requested collider.
@@ -152,24 +261,9 @@ function is_touching_voxel(landObj, colliderObj, colliderName) {
         return false;
     }
 
-    var colliderBox = new THREE.Box3().setFromObject(collider);
-
-    // Check this collider against every land voxel.
-    var touching = false;
-
-    land.traverse(function(voxel) {
-        if (touching || !voxel.isMesh) {
-            return;
-        }
-
-        var landBox = new THREE.Box3().setFromObject(voxel);
-
-        if (colliderBox.intersectsBox(landBox)) {
-            touching = true;
-        }
-    });
-
-    return touching;
+    collider.updateWorldMatrix(true, false);
+    const colliderBox = new THREE.Box3().setFromObject(collider);
+    return colliderMeshTouchesLand(land, colliderBox);
 }
 
 // --- 3DPL Texture UV Unwrapping ---
@@ -197,12 +291,21 @@ window.apply3DPLWrap1 = function(geometry) {
     uvAttribute.needsUpdate = true;
 };
 
+function getWrappedBaseGeometry() {
+    if (!wrappedBaseGeometry) {
+        wrappedBaseGeometry = baseGeometry.clone();
+        window.apply3DPLWrap1(wrappedBaseGeometry);
+    }
+    return wrappedBaseGeometry;
+}
+
 // Pointer Mesh
 const pointerGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
 const pointerMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
 editorPointer = new THREE.Mesh(pointerGeo, pointerMat);
 scene.add(editorPointer);
 editorPointer.visible = false;
+const editorForwardPosition = new THREE.Vector3();
 
 // --- CodeMirror Editor Setup ---
 const editorOptions = { mode: "javascript", theme: "dracula", lineNumbers: true, tabSize: 4 };
@@ -579,10 +682,9 @@ function removeMapObjectPreview() {
     cancelObjectLoads(mapObjectPreview);
     mapObjectPreview.removeFromParent();
     mapObjectPreview.traverse(child => {
-        if (!child.isMesh || !child.material) return;
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach(material => material.dispose());
+        if (child.isInstancedMesh) child.dispose();
     });
+    disposeObjectMaterials(mapObjectPreview);
     mapObjectPreview = null;
 }
 
@@ -611,6 +713,70 @@ function createMapObjectPreview() {
     syncMapObjectPreview();
 }
 
+function buildMapObjectPreviewBatch(previewObject) {
+    if (previewObject.userData.mapPreviewBatch) return;
+
+    const voxelMeshes = [];
+    previewObject.traverse(child => {
+        if (child.isMesh && !child.userData.mapPreviewBatch) {
+            voxelMeshes.push(child);
+        }
+    });
+    if (voxelMeshes.length === 0) return;
+
+    previewObject.updateWorldMatrix(true, true);
+    const inversePreviewMatrix = new THREE.Matrix4()
+        .copy(previewObject.matrixWorld)
+        .invert();
+    const instanceMatrix = new THREE.Matrix4();
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x00ffff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.45,
+        depthTest: false,
+        depthWrite: false
+    });
+    const batch = new THREE.InstancedMesh(
+        baseGeometry,
+        material,
+        voxelMeshes.length
+    );
+
+    voxelMeshes.forEach((mesh, index) => {
+        instanceMatrix.multiplyMatrices(
+            inversePreviewMatrix,
+            mesh.matrixWorld
+        );
+        batch.setMatrixAt(index, instanceMatrix);
+    });
+    batch.instanceMatrix.needsUpdate = true;
+    batch.computeBoundingBox();
+    batch.computeBoundingSphere();
+    batch.renderOrder = 999;
+    batch.userData.mapPreviewBatch = true;
+
+    voxelMeshes.forEach(mesh => {
+        unindexCollisionObject(mesh);
+        mesh.removeFromParent();
+        const materials = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
+        materials.forEach(voxelMaterial => {
+            if (voxelMaterial.map &&
+                voxelMaterial.map.userData.threeDPLMaterials) {
+                voxelMaterial.map.userData.threeDPLMaterials.delete(
+                    voxelMaterial
+                );
+            }
+            voxelMaterial.dispose();
+        });
+    });
+
+    previewObject.add(batch);
+    previewObject.userData.mapPreviewBatch = batch;
+}
+
 function syncMapObjectPreview() {
     if (!mapObjectPreview) return;
 
@@ -621,23 +787,39 @@ function syncMapObjectPreview() {
     mapObjectPreview.scale.set(scale, scale, scale);
     mapObjectPreview.rotation.set(0, THREE.MathUtils.degToRad(-rotationY), 0, 'YXZ');
 
-    // This also styles children that arrive later from asynchronous JSON loading.
-    mapObjectPreview.traverse(child => {
-        if (!child.isMesh || child.userData.mapPreviewStyled) return;
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach(material => {
-            material.color.setHex(0x00ffff);
-            material.map = null;
-            material.wireframe = true;
-            material.transparent = true;
-            material.opacity = 0.45;
-            material.depthTest = false;
-            material.depthWrite = false;
-            material.needsUpdate = true;
+    if (mapObjectPreview.userData.loaded) {
+        buildMapObjectPreviewBatch(mapObjectPreview);
+    }
+
+    // Style children as they arrive, then stop traversing a preview on every
+    // animation frame once its asynchronous JSON load is complete.
+    if (!mapObjectPreview.userData.mapPreviewStyleComplete) {
+        mapObjectPreview.traverse(child => {
+            if (!child.isMesh || child.userData.mapPreviewStyled) return;
+            const materials = Array.isArray(child.material)
+                ? child.material
+                : [child.material];
+            materials.forEach(material => {
+                material.color.setHex(0x00ffff);
+                if (material.map && material.map.userData.threeDPLMaterials) {
+                    material.map.userData.threeDPLMaterials.delete(material);
+                }
+                material.map = null;
+                material.wireframe = true;
+                material.transparent = true;
+                material.opacity = 0.45;
+                material.depthTest = false;
+                material.depthWrite = false;
+                material.needsUpdate = true;
+            });
+            child.renderOrder = 999;
+            child.userData.mapPreviewStyled = true;
         });
-        child.renderOrder = 999;
-        child.userData.mapPreviewStyled = true;
-    });
+        if (mapObjectPreview.userData.loaded &&
+            mapObjectPreview.userData.mapPreviewBatch) {
+            mapObjectPreview.userData.mapPreviewStyleComplete = true;
+        }
+    }
 }
 
 function selectMapEditorObject(filename) {
@@ -785,7 +967,7 @@ function renderMapObjectChoices(filterText = '') {
         previewFrame.className = 'map-object-preview';
         const preview = document.createElement('img');
         preview.alt = `${entry.label} preview`;
-        preview.loading = 'eager';
+        preview.loading = 'lazy';
         preview.decoding = 'async';
 
         const placeholder = document.createElement('span');
@@ -972,6 +1154,8 @@ function placeMapEditorObject(entry) {
         `map_object_${generateId()}`
     );
     object.userData.mapEditorObject = true;
+    object.userData.ready.then(() =>
+        scheduleMapEditorObjectOptimization(object));
     updateMapObjectCount();
     return object;
 }
@@ -1130,6 +1314,7 @@ document.getElementById('file-input-map').onchange = event => {
                         scene.add(object);
                         cubes.push(object);
                         object.userData.mapEditorObject = true;
+                        scheduleMapEditorObjectOptimization(object);
                     });
                     createMapObjectPreview();
                     updateMapObjectCount();
@@ -1253,6 +1438,44 @@ function injectUnityCompatibility(mesh) {
     });
 }
 
+// Obj() collider meshes are nested below groups, but looking them up by name
+// must not require traversing a 60,000-voxel map every update substep.
+const collisionObjectNameIndex = new Map();
+
+function indexCollisionObject(object) {
+    if (!object || !object.name) return;
+    let matches = collisionObjectNameIndex.get(object.name);
+    if (!matches) {
+        matches = new Set();
+        collisionObjectNameIndex.set(object.name, matches);
+    }
+    matches.add(object);
+}
+
+function unindexCollisionObject(object) {
+    if (!object || !object.name) return;
+    const matches = collisionObjectNameIndex.get(object.name);
+    if (!matches) return;
+    matches.delete(object);
+    if (matches.size === 0) collisionObjectNameIndex.delete(object.name);
+}
+
+function belongsToActiveCube(object) {
+    let root = object;
+    while (root.parent && root.parent !== scene) root = root.parent;
+    return root.parent === scene && cubes.includes(root);
+}
+
+function traverseObjectTreeRaw(root, callback) {
+    callback(root);
+    for (const child of root.children) {
+        // Render batches are an internal mirror of original map voxels. They
+        // never participate in public name lookup or collision discovery.
+        if (child.userData.mapRenderBatch) continue;
+        traverseObjectTreeRaw(child, callback);
+    }
+}
+
 function forEachObjectMaterial(object, callback) {
     object.traverse(child => {
         if (!child.isMesh || !child.material) return;
@@ -1262,12 +1485,18 @@ function forEachObjectMaterial(object, callback) {
 }
 
 function disposeObjectMaterials(object) {
-    forEachObjectMaterial(object, material => material.dispose());
+    forEachObjectMaterial(object, material => {
+        if (material.map && material.map.userData.threeDPLMaterials) {
+            material.map.userData.threeDPLMaterials.delete(material);
+        }
+        material.dispose();
+    });
 }
 
 function cancelObjectLoads(object) {
     object.traverse(child => {
         child.userData.cancelled = true;
+        unindexCollisionObject(child);
     });
 }
 
@@ -1294,9 +1523,15 @@ window.alpha = function(name, alphaVal) {
     cubes.forEach(c => { 
         if (c.name === name) {
             forEachObjectMaterial(c, material => {
-                material.transparent = true;
+                const needsTransparency = materialNeedsTransparency(
+                    material,
+                    alphaVal
+                );
+                if (material.transparent !== needsTransparency) {
+                    material.transparent = needsTransparency;
+                    material.needsUpdate = true;
+                }
                 material.opacity = alphaVal;
-                material.needsUpdate = true;
             });
         }
     });
@@ -1304,22 +1539,18 @@ window.alpha = function(name, alphaVal) {
 
 window.tx = function(name, textureName, source, wrap) {
     wrap = wrap || 6;
-    const mapTexture = textureLoader.load('Textures/' + textureName, undefined, undefined, (err) => {
-        setDebugError(`Texture load error: Could not load Textures/${textureName}`);
-    });
-    mapTexture.colorSpace = THREE.SRGBColorSpace; 
+    loadSharedTexture(textureName);
     
     cubes.forEach(c => { 
         if (c.name === name) {
             forEachObjectMaterial(c, (material, mesh) => {
-                material.map = mapTexture;
+                assignSharedTexture(material, textureName);
                 material.needsUpdate = true;
                 mesh.userData.textureName = textureName;
                 mesh.userData.wrap = wrap;
 
                 if (wrap === 1 || wrap === "1") {
-                    if (mesh.geometry === baseGeometry) mesh.geometry = baseGeometry.clone();
-                    window.apply3DPLWrap1(mesh.geometry);
+                    mesh.geometry = getWrappedBaseGeometry();
                 } else {
                     if (mesh.geometry !== baseGeometry) mesh.geometry = baseGeometry;
                 }
@@ -1419,15 +1650,134 @@ function findCollisionObjects(target) {
     )];
     if (topLevelMatches.length > 0) return topLevelMatches;
 
+    const indexedMatches = collisionObjectNameIndex.get(target);
+    if (indexedMatches) {
+        const activeMatches = [];
+        indexedMatches.forEach(object => {
+            // A user may directly rename an Object3D. Drop that stale key and
+            // let the traversal fallback discover its new name when requested.
+            if (object.name !== target) {
+                indexedMatches.delete(object);
+            } else if (belongsToActiveCube(object)) {
+                activeMatches.push(object);
+            } else {
+                indexedMatches.delete(object);
+            }
+        });
+        if (indexedMatches.size === 0) collisionObjectNameIndex.delete(target);
+        if (activeMatches.length > 0) return [...new Set(activeMatches)];
+    }
+
     // Collider blocks loaded inside an Obj() group are not top-level cubes.
-    // Search descendants so names such as "collider_back" work with cd().
+    // Keep a fallback for objects renamed or added directly by user code.
     const nestedMatches = new Set();
     cubes.forEach(root => {
-        root.traverse(child => {
-            if (child !== root && child.name === target) nestedMatches.add(child);
+        traverseObjectTreeRaw(root, child => {
+            if (child !== root && child.name === target) {
+                nestedMatches.add(child);
+                indexCollisionObject(child);
+            }
         });
     });
     return [...nestedMatches];
+}
+
+function collisionVoxelDataFromObjectData(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.voxels)) return data.voxels;
+    if (data && Array.isArray(data.objects)) return data.objects;
+    return null;
+}
+
+function buildVoxelCollisionNode(entries) {
+    const bounds = new THREE.Box3().makeEmpty();
+    entries.forEach(entry => bounds.union(entry.box));
+
+    if (entries.length <= 12) {
+        return { bounds, boxes: entries.map(entry => entry.box) };
+    }
+
+    const size = bounds.getSize(new THREE.Vector3());
+    const axis = size.x >= size.y && size.x >= size.z
+        ? 0
+        : (size.y >= size.z ? 1 : 2);
+    entries.sort((left, right) => left.center[axis] - right.center[axis]);
+    const middle = Math.floor(entries.length / 2);
+    return {
+        bounds,
+        left: buildVoxelCollisionNode(entries.slice(0, middle)),
+        right: buildVoxelCollisionNode(entries.slice(middle))
+    };
+}
+
+function buildObjectCollisionData(voxelData) {
+    const entries = [];
+    voxelData.forEach(voxel => {
+        const voxelName = voxel.cubename || voxel.name || 'cube';
+        if (voxelName === 'AxisPoint') return;
+
+        const x = finiteMapNumber(voxel.x, 0);
+        const y = finiteMapNumber(voxel.y, 0);
+        const z = finiteMapNumber(voxel.z, 0);
+        entries.push({
+            center: [x, y, z],
+            box: new THREE.Box3(
+                new THREE.Vector3(x - 0.5, y - 0.5, z - 0.5),
+                new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5)
+            )
+        });
+    });
+
+    if (entries.length === 0) return null;
+    const tree = buildVoxelCollisionNode(entries);
+    return { localBounds: tree.bounds, tree };
+}
+
+function ensureMapItemCollisionData(object) {
+    if (object.userData.collisionCacheDisabled) return null;
+    if (!object.userData.mapEntry || !object.userData.loaded) return null;
+    const existingCollisionData = objectVoxelCollisionData.get(object);
+    if (existingCollisionData) {
+        return existingCollisionData;
+    }
+
+    const sourceFile = object.userData.sourceFile;
+    if (!sourceFile) return null;
+    const url = objectJSONUrl(sourceFile);
+    let collisionData = objectCollisionDataCache.get(url);
+
+    if (!collisionData) {
+        const voxelData = collisionVoxelDataFromObjectData(
+            loadedObjectCache[url]
+        );
+        if (!voxelData) return null;
+        collisionData = buildObjectCollisionData(voxelData);
+        if (!collisionData) return null;
+        objectCollisionDataCache.set(url, collisionData);
+    }
+
+    objectVoxelCollisionData.set(object, collisionData);
+    objectCollisionLocalBoxes.set(object, collisionData.localBounds);
+    return collisionData;
+}
+
+function collisionTreeTouchesWorldBox(node, matrixWorld, colliderBox, scratchBox) {
+    scratchBox.copy(node.bounds).applyMatrix4(matrixWorld);
+    if (!scratchBox.intersectsBox(colliderBox)) return false;
+
+    if (node.boxes) {
+        for (const localBox of node.boxes) {
+            scratchBox.copy(localBox).applyMatrix4(matrixWorld);
+            if (scratchBox.intersectsBox(colliderBox)) return true;
+        }
+        return false;
+    }
+
+    return collisionTreeTouchesWorldBox(
+        node.left, matrixWorld, colliderBox, scratchBox
+    ) || collisionTreeTouchesWorldBox(
+        node.right, matrixWorld, colliderBox, scratchBox
+    );
 }
 
 function collisionBoxFor(object) {
@@ -1443,7 +1793,12 @@ function collisionBoxFor(object) {
     // The final voxel check remains exact, so a broad-phase false positive is
     // harmless while repeated full-tree Box3 scans are avoided.
     if (object.userData.mapEntry && object.userData.loaded) {
-        if (!object.userData.collisionLocalBox) {
+        if (object.userData.collisionCacheDisabled) {
+            return new THREE.Box3().setFromObject(object);
+        }
+        ensureMapItemCollisionData(object);
+        let collisionLocalBox = objectCollisionLocalBoxes.get(object);
+        if (!collisionLocalBox) {
             object.updateWorldMatrix(true, true);
             const inverseRootMatrix = new THREE.Matrix4()
                 .copy(object.matrixWorld)
@@ -1467,14 +1822,14 @@ function collisionBoxFor(object) {
             });
 
             if (!localBounds.isEmpty()) {
-                object.userData.collisionLocalBox = localBounds;
+                objectCollisionLocalBoxes.set(object, localBounds);
+                collisionLocalBox = localBounds;
             }
         }
 
-        if (object.userData.collisionLocalBox) {
+        if (collisionLocalBox) {
             object.updateWorldMatrix(true, false);
-            return object.userData.collisionLocalBox
-                .clone()
+            return collisionLocalBox.clone()
                 .applyMatrix4(object.matrixWorld);
         }
     }
@@ -1498,6 +1853,106 @@ window.cd = function(nameA, nameB) {
     return false;
 };
 
+function collectColliderMeshes(colliderObject, colliderName) {
+    const roots = findCollisionObjects(colliderObject);
+    const meshes = new Set();
+
+    roots.forEach(root => {
+        if (root.isMesh) {
+            if (!colliderName || root.name === colliderName) meshes.add(root);
+            return;
+        }
+        root.traverse(child => {
+            if (child.isMesh && (!colliderName || child.name === colliderName)) {
+                meshes.add(child);
+            }
+        });
+    });
+
+    return [...meshes];
+}
+
+function collectNamedMeshesWithin(roots, meshName) {
+    const meshes = new Set();
+    roots.forEach(root => {
+        if (root.isMesh && root.name === meshName) meshes.add(root);
+        root.traverse(child => {
+            if (child.isMesh && child.name === meshName) meshes.add(child);
+        });
+    });
+    return [...meshes];
+}
+
+function colliderMeshTouchesLand(land, colliderBox) {
+    const collisionData = objectVoxelCollisionData.get(land) ||
+        ensureMapItemCollisionData(land);
+    if (collisionData) {
+        land.updateWorldMatrix(true, false);
+        return collisionTreeTouchesWorldBox(
+            collisionData.tree,
+            land.matrixWorld,
+            colliderBox,
+            new THREE.Box3()
+        );
+    }
+
+    // This fallback keeps the exact Box3 behavior used by legacy XML maps and
+    // arbitrary user-created land objects, while avoiding one Box3 allocation
+    // per voxel.
+    land.updateWorldMatrix(true, true);
+    const voxelBox = new THREE.Box3();
+    let touching = false;
+
+    land.traverse(voxel => {
+        if (touching || !voxel.isMesh || !voxel.geometry) return;
+        if (!voxel.geometry.boundingBox) voxel.geometry.computeBoundingBox();
+        if (!voxel.geometry.boundingBox) return;
+        voxelBox.copy(voxel.geometry.boundingBox).applyMatrix4(voxel.matrixWorld);
+        if (colliderBox.intersectsBox(voxelBox)) touching = true;
+    });
+
+    return touching;
+}
+
+function prepareMapCollisionItems(maps) {
+    const preparedItems = [];
+    maps.forEach(map => {
+        const mapItems = map.userData.is3DPLMap ? map.children : [map];
+        mapItems.forEach(mapItem => {
+            preparedItems.push({
+                mapItem,
+                box: collisionBoxFor(mapItem)
+            });
+        });
+    });
+    return preparedItems;
+}
+
+function resolvedCollidersTouchMaps(
+    maps,
+    colliderMeshes,
+    preparedMapItems
+) {
+    const colliderBoxes = colliderMeshes.map(colliderMesh => {
+        colliderMesh.updateWorldMatrix(true, false);
+        return new THREE.Box3().setFromObject(colliderMesh);
+    });
+    const mapItems = preparedMapItems || prepareMapCollisionItems(maps);
+
+    for (const preparedItem of mapItems) {
+        for (let index = 0; index < colliderMeshes.length; index++) {
+            const colliderBox = colliderBoxes[index];
+            if (!preparedItem.box.intersectsBox(colliderBox)) continue;
+            if (colliderMeshTouchesLand(
+                preparedItem.mapItem,
+                colliderBox
+            )) return true;
+        }
+    }
+
+    return false;
+}
+
 /**
  * Efficiently checks a named collider/object against a LoadMap() map.
  * First it uses cd() against each placed map item. Only overlapping items
@@ -1514,50 +1969,9 @@ window.is_object_colliding_with_map = function(
     colliderName
 ) {
     const maps = findCollisionObjects(mapObject);
-    const colliderRoots = findCollisionObjects(colliderObject);
-
-    if (maps.length === 0 || colliderRoots.length === 0) return false;
-
-    const colliderMeshes = [];
-    colliderRoots.forEach(root => {
-        if (root.isMesh) {
-            if (!colliderName || root.name === colliderName) {
-                colliderMeshes.push(root);
-            }
-            return;
-        }
-        root.traverse(child => {
-            if (child.isMesh && (!colliderName || child.name === colliderName)) {
-                colliderMeshes.push(child);
-            }
-        });
-    });
-
+    const colliderMeshes = collectColliderMeshes(colliderObject, colliderName);
     if (colliderMeshes.length === 0) return false;
-
-    for (const map of maps) {
-        // LoadMap() stores every placed object as a direct child. For another
-        // compatible group, treating its direct children as items also works.
-        const mapItems = map.children.length > 0 ? map.children : [map];
-
-        for (const mapItem of mapItems) {
-            for (const colliderMesh of colliderMeshes) {
-                if (!window.cd(mapItem, colliderMesh)) continue;
-
-                // mapItem, rather than the whole map, is deliberately supplied
-                // as landObj so only the broad-phase match scans its voxels.
-                if (is_touching_voxel(
-                    mapItem,
-                    colliderMesh,
-                    colliderMesh.name
-                )) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
+    return maps.length > 0 && resolvedCollidersTouchMaps(maps, colliderMeshes);
 };
 
 /**
@@ -1578,16 +1992,28 @@ window.move_object_with_map_collision = function(
 ) {
     const maps = findCollisionObjects(mapObject);
     const movingObjects = findCollisionObjects(movingObject);
+    // A collider name belongs to the object being moved whenever possible.
+    // This prevents another active vehicle with the same probe name from
+    // incorrectly blocking movement. Global lookup remains as a fallback for
+    // legacy programs that keep collider objects separate.
+    let colliderMeshes = typeof colliderObject === 'string'
+        ? collectNamedMeshesWithin(movingObjects, colliderObject)
+        : collectColliderMeshes(colliderObject);
+    if (colliderMeshes.length === 0) {
+        colliderMeshes = collectColliderMeshes(colliderObject);
+    }
 
-    if (maps.length === 0 || movingObjects.length === 0) return false;
+    if (maps.length === 0 ||
+        movingObjects.length === 0 ||
+        colliderMeshes.length === 0) {
+        return false;
+    }
 
     // Do not allow movement through an empty placeholder while LoadMap() or
     // the collider JSON is still downloading.
     if (maps.some(map => map.userData.is3DPLMap && !map.userData.loaded)) {
         return false;
     }
-    if (findCollisionObjects(colliderObject).length === 0) return false;
-
     const dx = Number(x) || 0;
     const dy = Number(y) || 0;
     const dz = Number(z) || 0;
@@ -1599,22 +2025,26 @@ window.move_object_with_map_collision = function(
     const stepX = dx / steps;
     const stepY = dy / steps;
     const stepZ = dz / steps;
+    const preparedMapItems = prepareMapCollisionItems(maps);
 
     for (let step = 0; step < steps; step++) {
         movingObjects.forEach(object => {
             object.translateX(stepX);
             object.translateY(stepY);
             object.translateZ(-stepZ);
-            object.updateWorldMatrix(true, true);
         });
 
-        if (window.is_object_colliding_with_map(mapObject, colliderObject)) {
+        if (resolvedCollidersTouchMaps(
+            maps,
+            colliderMeshes,
+            preparedMapItems
+        )) {
             movingObjects.forEach(object => {
                 object.translateX(-stepX);
                 object.translateY(-stepY);
                 object.translateZ(stepZ);
-                object.updateWorldMatrix(true, true);
             });
+            colliderMeshes.forEach(mesh => mesh.updateWorldMatrix(true, false));
             return false;
         }
     }
@@ -1688,6 +2118,31 @@ window.SetVolume = function(cubeName, vol) {
 };
 
 // --- Object and XML Loading ---
+function fetchObjectData(url) {
+    if (pendingObjectDataPromises[url]) {
+        return pendingObjectDataPromises[url];
+    }
+
+    const request = fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`File not found (HTTP ${response.status})`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            loadedObjectCache[url] = data;
+            return data;
+        });
+
+    pendingObjectDataPromises[url] = request;
+    request.then(
+        () => delete pendingObjectDataPromises[url],
+        () => delete pendingObjectDataPromises[url]
+    );
+    return request;
+}
+
 window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
     const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
@@ -1717,19 +2172,19 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
                 : finiteMapNumber(cords.a, 1);
             const material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(red / 255, green / 255, blue / 255),
-                transparent: true,
+                // Unknown textures remain transparent so their PNG alpha is
+                // preserved. Untextured alpha-1 voxels can use the faster
+                // opaque render path with identical output.
+                transparent: opacity < 1 || Boolean(cords.TextureName),
                 opacity
             });
 
             let geometry = baseGeometry;
             if (cords.TextureName) {
-                const texture = textureLoader.load('Textures/' + cords.TextureName);
-                texture.colorSpace = THREE.SRGBColorSpace;
-                material.map = texture;
+                assignSharedTexture(material, cords.TextureName);
 
                 if (cords.WrapOnSides == 1) {
-                    geometry = baseGeometry.clone();
-                    window.apply3DPLWrap1(geometry);
+                    geometry = getWrappedBaseGeometry();
                 }
             }
 
@@ -1743,6 +2198,7 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
             mesh.userData.textureName = cords.TextureName || "";
             mesh.userData.wrap = cords.WrapOnSides || 6;
             axisGroup.add(mesh);
+            if (/collider/i.test(voxelName)) indexCollisionObject(mesh);
         });
     };
 
@@ -1774,15 +2230,8 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
         }
         axisGroup.userData.ready = Promise.resolve(axisGroup);
     } else {
-        axisGroup.userData.ready = fetch(url, { cache: 'no-store' })
-            .then(res => {
-                if (!res.ok) throw new Error(`File not found (HTTP ${res.status})`);
-                return res.json();
-            })
-            .then(data => {
-                loadedObjectCache[url] = data;
-                return finishObjectLoad(data);
-            })
+        axisGroup.userData.ready = fetchObjectData(url)
+            .then(data => finishObjectLoad(data))
             .catch(err => {
                 axisGroup.userData.loadError = err.message;
                 setDebugError(`Failed to load JSON object: ${url}`);
@@ -1804,24 +2253,27 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
     const axisGroup = new THREE.Group();
     axisGroup.position.set(x, y, z);
     axisGroup.name = instanceName;
+    axisGroup.userData.loaded = false;
     injectUnityCompatibility(axisGroup);
     scene.add(axisGroup);
     cubes.push(axisGroup);
 
     const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
-    fetch(url)
+    axisGroup.userData.ready = fetch(url)
         .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
         .then(str => {
+            if (axisGroup.userData.cancelled) return axisGroup;
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(str, "text/xml");
             
             if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
                 setDebugError(`XML Syntax Error in ${url}`);
-                return;
+                return axisGroup;
             }
 
             let nodes = xmlDoc.getElementsByTagName("Coordinates");
             if (nodes.length === 0) nodes = xmlDoc.getElementsByTagName("Object");
+            const collisionVoxels = [];
 
             for (let i = 0; i < nodes.length; i++) {
                 const n = nodes[i];
@@ -1842,18 +2294,16 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
 
                 const mat = new THREE.MeshStandardMaterial({ 
                     color: new THREE.Color(r/255, g/255, b/255), 
-                    transparent: true, opacity: alpha 
+                    transparent: alpha < 1 || Boolean(texName),
+                    opacity: alpha
                 });
 
                 let geom = baseGeometry;
                 if (texName) {
-                    const tex = textureLoader.load('Textures/' + texName);
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    mat.map = tex;
+                    assignSharedTexture(mat, texName);
                     
                     if (wrap === 1) {
-                        geom = baseGeometry.clone();
-                        window.apply3DPLWrap1(geom);
+                        geom = getWrappedBaseGeometry();
                     }
                 }
 
@@ -1863,11 +2313,36 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
                 mesh.userData.textureName = texName;
                 mesh.userData.wrap = wrap;
                 axisGroup.add(mesh);
+                collisionVoxels.push({
+                    cubename,
+                    x: bx,
+                    y: by,
+                    z: bz
+                });
             }
+
+            let collisionData = objectCollisionDataCache.get(`xml:${url}`);
+            if (!collisionData) {
+                collisionData = buildObjectCollisionData(collisionVoxels);
+                if (collisionData) {
+                    objectCollisionDataCache.set(`xml:${url}`, collisionData);
+                }
+            }
+            if (collisionData) {
+                objectVoxelCollisionData.set(axisGroup, collisionData);
+                objectCollisionLocalBoxes.set(
+                    axisGroup,
+                    collisionData.localBounds
+                );
+            }
+            axisGroup.userData.loaded = true;
+            return axisGroup;
         })
         .catch(err => {
+            axisGroup.userData.loadError = err.message;
             setDebugError(`Cannot fetch ${url}. (Use HTTP Server)`);
             console.error(err);
+            return axisGroup;
         });
 
     return axisGroup;
@@ -1899,11 +2374,249 @@ function createInlineMapCube(entry, instanceName) {
     const mesh = new THREE.Mesh(baseGeometry, material);
     mesh.name = entry.voxelName || `${instanceName}_voxel`;
     group.add(mesh);
+    const localBounds = new THREE.Box3(
+        new THREE.Vector3(-0.5, -0.5, -0.5),
+        new THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    const collisionData = {
+        localBounds,
+        tree: { bounds: localBounds, boxes: [localBounds] }
+    };
+    objectVoxelCollisionData.set(group, collisionData);
+    objectCollisionLocalBoxes.set(group, localBounds);
 
     scene.add(group);
     cubes.push(group);
     group.userData.ready = Promise.resolve(group);
     return group;
+}
+
+function opaqueMapMaterialSignature(mesh) {
+    const material = mesh.material;
+    if (!mesh.visible || !material || material.visible === false ||
+        Array.isArray(material) || material.transparent || material.opacity < 1) {
+        return '';
+    }
+
+    return [
+        mesh.geometry.uuid,
+        material.type,
+        material.color?.getHexString() || '',
+        material.map?.uuid || '',
+        material.roughness ?? '',
+        material.metalness ?? '',
+        material.side,
+        material.alphaTest,
+        material.depthTest,
+        material.depthWrite,
+        mesh.castShadow,
+        mesh.receiveShadow,
+        mesh.layers.mask,
+        mesh.renderOrder
+    ].join('|');
+}
+
+const mapPartCompatibilityMethods = [
+    'traverse',
+    'traverseVisible',
+    'getObjectById',
+    'getObjectByName',
+    'getObjectByProperty',
+    'getObjectsByProperty',
+    'raycast',
+    'clone',
+    'copy',
+    'toJSON',
+    'remove',
+    'clear'
+];
+
+function restoreMapPartCompatibilityMethods(part, state) {
+    Object.entries(state.originalMethods).forEach(([name, record]) => {
+        if (record.hadOwn) {
+            part[name] = record.value;
+        } else {
+            delete part[name];
+        }
+    });
+}
+
+function installMapPartCompatibilityMethods(part, state) {
+    mapPartCompatibilityMethods.forEach(name => {
+        const method = part[name];
+        if (typeof method !== 'function') return;
+        state.originalMethods[name] = {
+            hadOwn: Object.prototype.hasOwnProperty.call(part, name),
+            value: method
+        };
+        part[name] = function(...args) {
+            disableMapPartRenderBatches(this);
+            return method.apply(this, args);
+        };
+    });
+}
+
+function disableMapPartRenderBatches(part) {
+    const state = mapRenderBatchStates.get(part);
+    if (!state) return;
+
+    // Restore public methods first so disposal/material functions see only
+    // the original hierarchy and batch removal cannot re-enter this function.
+    restoreMapPartCompatibilityMethods(part, state);
+    state.originalMeshes.forEach(record => {
+        record.mesh.visible = record.visible;
+        record.mesh.matrixAutoUpdate = record.matrixAutoUpdate;
+        record.mesh.matrixWorldAutoUpdate = record.matrixWorldAutoUpdate;
+        record.mesh.updateMatrix();
+        record.mesh.updateWorldMatrix(true, false);
+        delete record.mesh.userData.mapRenderBatched;
+    });
+
+    state.batches.forEach(batch => {
+        batch.removeFromParent();
+        if (batch.material.map &&
+            batch.material.map.userData.threeDPLMaterials) {
+            batch.material.map.userData.threeDPLMaterials.delete(
+                batch.material
+            );
+        }
+        batch.material.dispose();
+        batch.dispose();
+    });
+
+    mapRenderBatchStates.delete(part);
+    part.userData.mapRenderOptimizationDisabled = true;
+    // Traversing a map part exposes its voxels for editing. From this point,
+    // collision tests use the live hierarchy so a moved/deleted voxel cannot
+    // be masked by the immutable JSON collision tree built at load time.
+    part.userData.collisionCacheDisabled = true;
+    objectVoxelCollisionData.delete(part);
+    objectCollisionLocalBoxes.delete(part);
+}
+
+function optimizeMapPartRendering(part) {
+    if (part.userData.mapRenderOptimizationDisabled ||
+        mapRenderBatchStates.has(part)) {
+        return;
+    }
+
+    const groups = new Map();
+    part.traverse(child => {
+        if (!child.isMesh || child.isInstancedMesh) return;
+        const signature = opaqueMapMaterialSignature(child);
+        if (!signature) return;
+        if (!groups.has(signature)) groups.set(signature, []);
+        groups.get(signature).push(child);
+    });
+
+    const batchGroups = [...groups.values()].filter(meshes => meshes.length > 1);
+    if (batchGroups.length === 0) return;
+
+    part.updateWorldMatrix(true, true);
+    const inversePartMatrix = new THREE.Matrix4()
+        .copy(part.matrixWorld)
+        .invert();
+    const instanceMatrix = new THREE.Matrix4();
+    const originalMeshes = [];
+    const batches = [];
+
+    batchGroups.forEach(meshes => {
+        const firstMesh = meshes[0];
+        const batchMaterial = firstMesh.material.clone();
+        if (batchMaterial.map &&
+            batchMaterial.map.userData.threeDPLHasTransparentPixels ===
+                undefined) {
+            if (!batchMaterial.map.userData.threeDPLMaterials) {
+                batchMaterial.map.userData.threeDPLMaterials = new Set();
+            }
+            batchMaterial.map.userData.threeDPLMaterials.add(batchMaterial);
+        }
+
+        const batch = new THREE.InstancedMesh(
+            firstMesh.geometry,
+            batchMaterial,
+            meshes.length
+        );
+        meshes.forEach((mesh, index) => {
+            instanceMatrix.multiplyMatrices(
+                inversePartMatrix,
+                mesh.matrixWorld
+            );
+            batch.setMatrixAt(index, instanceMatrix);
+            originalMeshes.push({
+                mesh,
+                visible: mesh.visible,
+                matrixAutoUpdate: mesh.matrixAutoUpdate,
+                matrixWorldAutoUpdate: mesh.matrixWorldAutoUpdate
+            });
+            mesh.updateMatrix();
+            mesh.matrixAutoUpdate = false;
+            mesh.matrixWorldAutoUpdate = false;
+            mesh.visible = false;
+            mesh.userData.mapRenderBatched = true;
+        });
+
+        batch.instanceMatrix.needsUpdate = true;
+        batch.computeBoundingBox();
+        batch.computeBoundingSphere();
+        batch.name = '__3dpl_map_render_batch__';
+        batch.userData.mapRenderBatch = true;
+        batch.castShadow = firstMesh.castShadow;
+        batch.receiveShadow = firstMesh.receiveShadow;
+        batch.layers.mask = firstMesh.layers.mask;
+        batch.renderOrder = firstMesh.renderOrder;
+        part.add(batch);
+        batches.push(batch);
+    });
+
+    const state = {
+        originalMeshes,
+        batches,
+        originalMethods: {}
+    };
+    mapRenderBatchStates.set(part, state);
+    installMapPartCompatibilityMethods(part, state);
+}
+
+function scheduleMapRenderingOptimization(mapGroup, mapParts) {
+    const textureReadyPromises = mapPartTextureReadyPromises(mapParts);
+
+    Promise.all([...textureReadyPromises]).then(() => {
+        if (!cubes.includes(mapGroup) || mapGroup.userData.cancelled) return;
+        mapParts.forEach(part => optimizeMapPartRendering(part));
+        mapGroup.userData.renderOptimized = true;
+    });
+}
+
+function mapPartTextureReadyPromises(mapParts) {
+    const textureReadyPromises = new Set();
+    mapParts.forEach(part => {
+        part.traverse(child => {
+            if (!child.isMesh || !child.material) return;
+            const materials = Array.isArray(child.material)
+                ? child.material
+                : [child.material];
+            materials.forEach(material => {
+                const ready = material.map?.userData.threeDPLReady;
+                if (ready) textureReadyPromises.add(ready);
+            });
+        });
+    });
+    return textureReadyPromises;
+}
+
+function scheduleMapEditorObjectOptimization(object) {
+    const textureReadyPromises = mapPartTextureReadyPromises([object]);
+    Promise.all([...textureReadyPromises]).then(() => {
+        if (!mapEditorMode ||
+            !cubes.includes(object) ||
+            !object.userData.mapEditorObject ||
+            object.userData.cancelled ||
+            object.userData.loadError) {
+            return;
+        }
+        optimizeMapPartRendering(object);
+    });
 }
 
 /**
@@ -1990,8 +2703,14 @@ window.LoadMap = function(mapJsonFile, objectName) {
                         throw new Error(requiredMapObjectError(failedPart));
                     }
 
+                    // Build one shared local collision tree per unique source
+                    // file during loading, rather than pausing the first drive
+                    // frame to scan every voxel in every repeated instance.
+                    mapParts.forEach(part => ensureMapItemCollisionData(part));
+
                     // Collision checks can now safely inspect every part's voxels.
                     mapGroup.userData.loaded = true;
+                    scheduleMapRenderingOptimization(mapGroup, mapParts);
                     return mapGroup;
                 });
         })
@@ -2124,6 +2843,16 @@ function PreProcessor(code) {
     processed = processed.replace(/(while\s*\(.*?\)\s*\{)/g, "$1 " + loopCheck);
 
     return processed;
+}
+
+// The update editor usually stays unchanged for thousands of frames. Cache
+// its preprocessed form and refresh it only when CodeMirror reports an edit.
+// Direct eval is retained so update programs keep the exact same scope and
+// behavior they had before this optimization.
+let cachedUpdateCode = PreProcessor(editorUpdate.getValue());
+
+function refreshCachedUpdateCode() {
+    cachedUpdateCode = PreProcessor(editorUpdate.getValue());
 }
 
 function evalDeclarations() {
@@ -2445,6 +3174,7 @@ vars["move_camera"]();`
 
 const tutContainer = document.querySelector('.tutorial-row');
 tutContainer.innerHTML = ''; 
+let suppressDeclarationEvaluation = false;
 
 for (let i = 1; i <= Object.keys(tutorials).length; i++) {
     const btn = document.createElement('button');
@@ -2459,8 +3189,10 @@ const loadTutorial = (num) => {
     if (document.activeElement) document.activeElement.blur(); 
     isExecuting = false;
     document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
+    suppressDeclarationEvaluation = true;
     editorDeclarations.setValue(tutorials[num].decl);
     editorUpdate.setValue(tutorials[num].upd);
+    suppressDeclarationEvaluation = false;
     evalDeclarations();
 };
 
@@ -2477,9 +3209,7 @@ function animate() {
     if (isExecuting) {
         window._evalStartTime = performance.now();
         try { 
-            const updCode = editorUpdate.getValue();
-            const safeUpdCode = PreProcessor(updCode);
-            eval(safeUpdCode); 
+            eval(cachedUpdateCode);
         } catch (e) { 
             isExecuting = false; 
             setDebugError("Update Error: " + e.message + "<br><em>Execution stopped.</em>");
@@ -2504,9 +3234,12 @@ function animate() {
         if (window.Input.GetKey(window.KeyCode.UpArrow)) camera.rotateX(rotSpeed);
         if (window.Input.GetKey(window.KeyCode.DownArrow)) camera.rotateX(-rotSpeed);
 
-        const forward = new THREE.Vector3(0, 0, -4);
-        forward.applyMatrix4(camera.matrixWorld);
-        editorPointer.position.set(Math.round(forward.x), Math.round(forward.y), Math.round(forward.z));
+        editorForwardPosition.set(0, 0, -4).applyMatrix4(camera.matrixWorld);
+        editorPointer.position.set(
+            Math.round(editorForwardPosition.x),
+            Math.round(editorForwardPosition.y),
+            Math.round(editorForwardPosition.z)
+        );
 
         if (actionCooldown <= 0) {
             if (window.Input.GetKey(window.KeyCode.LeftControl)) {
@@ -2701,7 +3434,10 @@ document.getElementById('btn-run').onclick = (e) => {
     }
 };
 
-editorDeclarations.on('change', () => { if (!isExecuting) evalDeclarations(); });
+editorDeclarations.on('change', () => {
+    if (!isExecuting && !suppressDeclarationEvaluation) evalDeclarations();
+});
+editorUpdate.on('change', refreshCachedUpdateCode);
 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
