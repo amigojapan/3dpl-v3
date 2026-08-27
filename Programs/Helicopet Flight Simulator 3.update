@@ -39,12 +39,13 @@ if (Input.GetKey (KeyCode.D)&&!cdcm(vars["car"],"collider_left")) {//colliders a
 }
 
 if (Input.GetKey (KeyCode.Z)){//&&!cdcm(vars["car"],"collider_back")) {
-		    	Camera.main.gameObject.transform.rotation = Quaternion.Euler(Camera.main.gameObject.transform.rotation.eulerAngles.x,Camera.main.gameObject.transform.rotation.eulerAngles.y,Camera.main.gameObject.transform.rotation.eulerAngles.z+2);
+    rt("camera", 0, 0, 2);
 }
 if (Input.GetKey (KeyCode.X)){//&&!cdcm(vars["car"],"collider_back")) {
-		    	Camera.main.gameObject.transform.rotation = Quaternion.Euler(Camera.main.gameObject.transform.rotation.eulerAngles.x,Camera.main.gameObject.transform.rotation.eulerAngles.y,Camera.main.gameObject.transform.rotation.eulerAngles.z-2);
+    rt("camera", 0, 0, -2);
 }
-if (Input.GetKeyUp (KeyCode.UpArrow) || Input.GetKeyUp (KeyCode.DownArrow)||Input.GetKeyUp (KeyCode.W)||Input.GetKeyUp (KeyCode.S)) 
+if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow) &&
+    !Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S))
   SetPitch("car0",1);//Set sound to idle flying sound
 
 rotate_tires();

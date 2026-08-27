@@ -1,10 +1,10 @@
 XMLObj("3DLP_MAP_ISLAND_extended.xml","land",0,0,0);
 vars["car"]=Obj("sports-car.json","car0",-2,0,-10);
-vars["car_colliders"]=Obj("camera_coliders.json","car0",-2,0,-10);
+vars["car_colliders"]=Obj("car_colliders.json","car_colliders",0,0,0);
+vars["car_colliders"].transform.parent=vars["car"].transform;
 sr("land", 0, 180,0);
 mv("land", 0, 0,-20);
 sc("car0", 0.19, 0.19, 0.19);
-sc("car_colliders", 0.19, 0.19, 0.19);
 vars["tire1"]=Obj("sports-car-tires.json","tire1",0,0,0);
 sc("tire1",0.10, 0.10, 0.10);
 vars["tire2"]=Obj("sports-car-tires.json","tire2",0,0,0);

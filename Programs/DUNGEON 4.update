@@ -1,7 +1,7 @@
 eq("Camera_Coliders0","camera");//make the camera colliders follow the camera
-if(cdoocwc(vars["trap1"],"collider_trap"))
+if(cd(vars["Camera_Colliders"], vars["trap1"]))
   sp("camera",0,1,-10);//set player to beginning of level(he died)
-if(cdcgo(vars["spider1"]))//if the spider still exists and the camera colides with the spider then:
+if(cd(vars["Camera_Colliders"], vars["spider1"]))//if the spider still exists and the camera collides with the spider then:
   sp("camera",0,1,-10);//set player to beginning of level(he died)
 rt("traps",0,0,100);
 //
@@ -14,7 +14,7 @@ if (Input.GetKey (KeyCode.D))
     rt("camera",0,100,0);
 if (Input.GetKey (KeyCode.A))
     rt("camera",0,-100,0);
-if (Input.GetKey (KeyCode.W)&&!cdcm(vars["Camera_Colliders"],"collider_front")&&!cdco(vars["Camera_Colliders"],"collider_front",vars["door1"]))
+if (Input.GetKey (KeyCode.W)&&!cdcm(vars["Camera_Colliders"],"collider_front")&&!is_touching_voxel(vars["door1"],vars["Camera_Colliders"],"collider_front"))
     mv("camera",0,0,10);
 if (Input.GetKey (KeyCode.S)&&!cdcm(vars["Camera_Colliders"],"collider_back"))
     mv("camera",0,0,-10);

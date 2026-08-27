@@ -1,1 +1,1 @@
-vars["random"] = new System.Random();
+vars["dropCount"] = 0;

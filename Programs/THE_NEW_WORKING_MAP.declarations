@@ -1,1 +1,1 @@
-Map("THE_MAP.map","map1",0,0,0);
+vars["land"] = LoadMap("THEMAP.json", "map1");

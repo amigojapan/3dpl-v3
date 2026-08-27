@@ -25,7 +25,52 @@
             gap: 10px;
         }
 
-        #ide-panel { background: rgba(30, 30, 30, 0.5); }
+        #ide-panel { box-sizing: border-box; width: min(450px, calc(100vw - 20px)) !important; background: rgba(30, 30, 30, 0.5); }
+        .ide-window-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .ide-window-title { font-weight: bold; }
+        .ide-window-actions { display: flex; flex: 0 0 auto; gap: 5px; }
+        .ide-window-actions button { width: 38px; height: 32px; padding: 0; font-size: 18px; }
+        #ide-program-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        #btn-restore-ide {
+            display: none;
+            pointer-events: auto;
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            z-index: 2100;
+            width: 52px;
+            height: 52px;
+            padding: 0;
+            border: 1px solid rgba(255,255,255,.65);
+            border-radius: 12px;
+            background: rgba(30,30,30,.72);
+            font-size: 22px;
+            backdrop-filter: blur(4px);
+        }
+        #ide-panel.ide-maximized {
+            top: 0;
+            left: 0;
+            z-index: 1900;
+            box-sizing: border-box;
+            width: 100vw !important;
+            height: 100vh;
+            max-height: none;
+            transform: none;
+            border-radius: 0;
+            overflow-y: auto;
+        }
+        #ide-panel.ide-maximized .CodeMirror {
+            flex: 1 1 0;
+            min-height: 120px;
+        }
         .center-menu { top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
         .side-menu { top: 10px; left: 10px; width: 350px; max-height: 90vh; overflow-y: auto; }
         
@@ -209,11 +254,120 @@
         #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255, 255, 255, 0.8); }
         #crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
         #crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+
+        #mobile-controller-toggle, #mobile-controller { display: none; }
+            #mobile-controller-toggle {
+                display: block;
+                pointer-events: auto;
+                position: fixed;
+                right: max(12px, env(safe-area-inset-right));
+                bottom: max(12px, env(safe-area-inset-bottom));
+                z-index: 2100;
+                width: 48px;
+                height: 48px;
+                padding: 0;
+                border: 1px solid rgba(255,255,255,.65);
+                border-radius: 50%;
+                background: rgba(20,20,20,.55);
+                font-size: 25px;
+                backdrop-filter: blur(4px);
+                touch-action: manipulation;
+            }
+            #mobile-controller-toggle[aria-expanded="true"] { background: rgba(45,120,220,.7); }
+            #mobile-controller.open {
+                display: flex;
+                pointer-events: none;
+                position: fixed;
+                inset: 0;
+                z-index: 2000;
+                align-items: flex-end;
+                justify-content: space-between;
+                box-sizing: border-box;
+                padding: 12px max(14px, env(safe-area-inset-right)) max(72px, calc(env(safe-area-inset-bottom) + 64px)) max(14px, env(safe-area-inset-left));
+                background: linear-gradient(to top, rgba(0,0,0,.22), transparent 48%);
+            }
+            #mobile-controller-start {
+                pointer-events: auto;
+                position: absolute;
+                top: max(14px, env(safe-area-inset-top));
+                right: max(14px, env(safe-area-inset-right));
+                width: 128px;
+                height: 64px;
+                padding: 0;
+                border: 2px solid rgba(255,255,255,.75);
+                border-radius: 16px;
+                background: rgba(40,167,69,.72);
+                box-shadow: 0 3px 12px rgba(0,0,0,.38);
+                font-size: 20px;
+                backdrop-filter: blur(4px);
+                touch-action: manipulation;
+            }
+            #mobile-controller-start:active { background: rgba(32,130,55,.9); transform: scale(.96); }
+            .mobile-control-group { pointer-events: auto; user-select: none; -webkit-user-select: none; touch-action: none; }
+            .mobile-key {
+                width: clamp(92px, 26vw, 124px);
+                height: clamp(92px, 26vw, 124px);
+                padding: 0;
+                border: 1px solid rgba(255,255,255,.65);
+                border-radius: 14px;
+                color: #fff;
+                background: rgba(25,25,30,.42);
+                box-shadow: 0 2px 8px rgba(0,0,0,.3);
+                font-size: 30px;
+                backdrop-filter: blur(3px);
+                touch-action: none;
+            }
+            .mobile-key.pressed { background: rgba(70,145,255,.75); transform: scale(.94); }
+            .mobile-dpad, .mobile-wasd {
+                display: grid;
+                grid-template-columns: repeat(3, clamp(92px, 26vw, 124px));
+                grid-template-rows: repeat(2, clamp(92px, 26vw, 124px));
+                gap: 5px;
+            }
+            .mobile-dpad [data-code="ArrowUp"], .mobile-wasd [data-code="KeyW"] { grid-column: 2; grid-row: 1; }
+            .mobile-dpad [data-code="ArrowLeft"], .mobile-wasd [data-code="KeyA"] { grid-column: 1; grid-row: 2; }
+            .mobile-dpad [data-code="ArrowDown"], .mobile-wasd [data-code="KeyS"] { grid-column: 2; grid-row: 2; }
+            .mobile-dpad [data-code="ArrowRight"], .mobile-wasd [data-code="KeyD"] { grid-column: 3; grid-row: 2; }
+            .mobile-actions { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 6px; }
+            .mobile-actions .mobile-key { width: clamp(116px, 32vw, 156px); font-size: 18px; }
+            .mobile-actions [data-code="Space"] { height: clamp(116px, 32vw, 156px); border-radius: 50%; }
+        @media (max-width: 620px) and (orientation: portrait) {
+            #mobile-controller.open {
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 4px;
+                overflow-y: auto;
+                padding-bottom: max(70px, calc(env(safe-area-inset-bottom) + 62px));
+            }
+            .mobile-actions { flex-direction: row; margin-bottom: 0; }
+        }
     </style>
 </head>
 <body>
     <div id="ui-layer">
         <div id="crosshair"></div>
+
+        <button id="mobile-controller-toggle" type="button" aria-label="Open onscreen controller" aria-controls="mobile-controller" aria-expanded="false">🎮</button>
+        <div id="mobile-controller" aria-hidden="true">
+            <button id="mobile-controller-start" type="button" aria-label="Start or stop the 3DPL program">START</button>
+            <div class="mobile-control-group mobile-dpad" aria-label="Arrow controls">
+                <button class="mobile-key" data-code="ArrowUp" aria-label="Up arrow">▲</button>
+                <button class="mobile-key" data-code="ArrowLeft" aria-label="Left arrow">◀</button>
+                <button class="mobile-key" data-code="ArrowDown" aria-label="Down arrow">▼</button>
+                <button class="mobile-key" data-code="ArrowRight" aria-label="Right arrow">▶</button>
+            </div>
+            <div class="mobile-control-group mobile-wasd" aria-label="W A S D controls">
+                <button class="mobile-key" data-code="KeyW">W</button>
+                <button class="mobile-key" data-code="KeyA">A</button>
+                <button class="mobile-key" data-code="KeyS" data-alias="KeyZ">S</button>
+                <button class="mobile-key" data-code="KeyD">D</button>
+            </div>
+            <div class="mobile-control-group mobile-actions" aria-label="Action controls">
+                <button class="mobile-key" data-code="ControlRight" data-alias="ControlLeft">R CTRL</button>
+                <button class="mobile-key" data-code="Space">SPACE</button>
+            </div>
+        </div>
 
         <!-- Main Menu -->
         <div id="main-menu" class="menu-panel center-menu">
@@ -316,7 +470,19 @@
         </div>
 
         <!-- Programming Interface -->
+        <button id="btn-restore-ide" type="button" aria-label="Restore code window" title="Restore code window">&lt;/&gt;</button>
         <div id="ide-panel" class="menu-panel side-menu" style="display: none; width: 450px;">
+            <div class="ide-window-header">
+                <span class="ide-window-title">3DPL Code</span>
+                <span id="ide-program-name" title="Current program">untitled</span>
+                <div class="ide-window-actions">
+                    <button id="btn-load-program" type="button" aria-label="Load program files" title="Load .declarations and .update files">📂</button>
+                    <button id="btn-save-program" type="button" aria-label="Save program files" title="Save .declarations and .update files">💾</button>
+                    <button id="btn-minimize-ide" type="button" aria-label="Minimize code window" title="Minimize">−</button>
+                    <button id="btn-maximize-ide" type="button" aria-label="Maximize code window" title="Maximize" aria-pressed="false">□</button>
+                </div>
+            </div>
+            <input id="file-input-program" type="file" accept=".declarations,.update" multiple style="display:none;">
             <div class="tutorial-row" id="tutorial-container"></div>
             <label>Declarations</label>
             <textarea id="code-declarations"></textarea>
@@ -335,6 +501,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260821-performance-1"></script>
+    <script type="module" src="main.js?v=20260824-program-files-1"></script>
 </body>
 </html>

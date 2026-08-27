@@ -1,5 +1,5 @@
 eq("Camera_Coliders0","camera");//make the camera colliders follow the camera
-if(cdcgo(vars["spider1"]))//if the spider still exists and the camera colides with the spider then:
+if(cd(vars["Camera_Colliders"], vars["spider1"]))//if the spider still exists and the camera collides with the spider then:
   sp("camera",0,1,-10);//set player to beginning of level(he died)
 rt("traps",0,0,100);
 //

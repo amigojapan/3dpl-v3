@@ -1,3 +1,2 @@
-//  vars["mySound"] = UnityEngine.Resources.Load("testsound", AudioClip);
-vars["obj"] =GameObject.Find("SoundChannel1"); 
-if(vars["obj"]==null) debugString="null";
+vars["obj"] = qb("SoundChannel1", 0, 0, 0);
+AttachSound("SoundChannel1", "testsound.wav");

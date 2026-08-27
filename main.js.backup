@@ -1371,7 +1371,7 @@ window.Input = {
 };
 window.KeyCode = { 
     RightArrow: 'ArrowRight', LeftArrow: 'ArrowLeft', UpArrow: 'ArrowUp', DownArrow: 'ArrowDown',
-    Space: 'Space', LeftControl: 'ControlLeft', C: 'KeyC', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF'
+    Space: 'Space', LeftControl: 'ControlLeft', RightControl: 'ControlRight', C: 'KeyC', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF'
 };
 
 const gameplayKeyCodes = new Set(Object.values(window.KeyCode));
@@ -1398,6 +1398,57 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
     window.Input._keys[e.code] = false;
 }, true);
+
+// Touch controls write to the same key-state table as physical keyboards, so
+// Input.GetKey works unchanged in programs, tutorials, and editor modes.
+const mobileControllerToggle = document.getElementById('mobile-controller-toggle');
+const mobileController = document.getElementById('mobile-controller');
+const mobileControlButtons = [...mobileController.querySelectorAll('[data-code]')];
+
+function releaseMobileControls() {
+    mobileControlButtons.forEach(button => {
+        window.Input._keys[button.dataset.code] = false;
+        if (button.dataset.alias) window.Input._keys[button.dataset.alias] = false;
+        button.classList.remove('pressed');
+    });
+}
+
+mobileControllerToggle.addEventListener('click', () => {
+    const isOpen = mobileController.classList.toggle('open');
+    mobileControllerToggle.setAttribute('aria-expanded', String(isOpen));
+    mobileControllerToggle.setAttribute('aria-label', `${isOpen ? 'Close' : 'Open'} onscreen controller`);
+    mobileController.setAttribute('aria-hidden', String(!isOpen));
+    if (!isOpen) releaseMobileControls();
+});
+
+document.getElementById('mobile-controller-start').addEventListener('click', event => {
+    event.preventDefault();
+    document.getElementById('btn-run').click();
+});
+
+mobileControlButtons.forEach(button => {
+    const setPressed = pressed => {
+        window.Input._keys[button.dataset.code] = pressed;
+        // Compatibility aliases keep older tutorials (Z and left Ctrl) usable
+        // while the visible controller presents the requested S and right Ctrl.
+        if (button.dataset.alias) window.Input._keys[button.dataset.alias] = pressed;
+        button.classList.toggle('pressed', pressed);
+    };
+    button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        setPressed(true);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+        button.addEventListener(type, () => setPressed(false));
+    });
+    button.addEventListener('contextmenu', event => event.preventDefault());
+});
+
+window.addEventListener('blur', releaseMobileControls);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseMobileControls();
+});
 
 renderer.domElement.addEventListener('mousedown', () => {
     if (document.activeElement) document.activeElement.blur();
@@ -3191,7 +3242,12 @@ const loadTutorial = (num) => {
     document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
     suppressDeclarationEvaluation = true;
     editorDeclarations.setValue(tutorials[num].decl);
-    editorUpdate.setValue(tutorials[num].upd);
+    const tutorialUpdate = tutorials[num].upd;
+    setCurrentProgramName(tutorials[num].title || `Tutorial ${num}`);
+    const mobileInputHelp = tutorialUpdate.includes('Input.GetKey')
+        ? '// Mobile: tap the controller icon. Use the arrow pad, WASD, R CTRL, and SPACE.\n'
+        : '';
+    editorUpdate.setValue(mobileInputHelp + tutorialUpdate);
     suppressDeclarationEvaluation = false;
     evalDeclarations();
 };
@@ -3357,6 +3413,7 @@ const hideAllMenus = () => {
     mapEditorLoadToken++;
     discardPendingMapEditorObjects();
     document.querySelectorAll('.menu-panel').forEach(el => el.style.display = 'none');
+    document.getElementById('btn-restore-ide').style.display = 'none';
     objectEditorMode = false;
     mapEditorMode = false;
     setSkyboxVisible(true);
@@ -3377,6 +3434,110 @@ document.getElementById('btn-3dpl').onclick = () => {
     document.getElementById('ide-panel').style.display = 'flex';
     setTimeout(() => { editorDeclarations.refresh(); editorUpdate.refresh(); }, 10);
     resetCamera();
+};
+
+const idePanel = document.getElementById('ide-panel');
+const restoreIdeButton = document.getElementById('btn-restore-ide');
+const maximizeIdeButton = document.getElementById('btn-maximize-ide');
+const programNameLabel = document.getElementById('ide-program-name');
+const programFileInput = document.getElementById('file-input-program');
+let currentProgramName = 'untitled';
+const refreshCodeEditors = () => setTimeout(() => {
+    editorDeclarations.refresh();
+    editorUpdate.refresh();
+}, 10);
+
+document.getElementById('btn-minimize-ide').onclick = () => {
+    if (document.activeElement) document.activeElement.blur();
+    idePanel.style.display = 'none';
+    restoreIdeButton.style.display = 'block';
+};
+
+restoreIdeButton.onclick = () => {
+    restoreIdeButton.style.display = 'none';
+    idePanel.style.display = 'flex';
+    refreshCodeEditors();
+};
+
+maximizeIdeButton.onclick = () => {
+    const isMaximized = idePanel.classList.toggle('ide-maximized');
+    maximizeIdeButton.setAttribute('aria-pressed', String(isMaximized));
+    maximizeIdeButton.setAttribute('aria-label', `${isMaximized ? 'Restore' : 'Maximize'} code window`);
+    maximizeIdeButton.title = isMaximized ? 'Restore window size' : 'Maximize';
+    maximizeIdeButton.textContent = isMaximized ? '❐' : '□';
+    refreshCodeEditors();
+};
+
+function setCurrentProgramName(name) {
+    currentProgramName = name || 'untitled';
+    programNameLabel.textContent = currentProgramName;
+    programNameLabel.title = `Current program: ${currentProgramName}`;
+}
+
+document.getElementById('btn-load-program').onclick = () => {
+    programFileInput.value = '';
+    programFileInput.click();
+};
+
+programFileInput.onchange = async () => {
+    const files = [...programFileInput.files];
+    const declarationsFile = files.find(file => file.name.toLowerCase().endsWith('.declarations'));
+    const updateFile = files.find(file => file.name.toLowerCase().endsWith('.update'));
+
+    if (!declarationsFile || !updateFile) {
+        setDebugError('Load Program: select one .declarations file and its matching .update file.');
+        return;
+    }
+
+    const declarationsName = declarationsFile.name.slice(0, -'.declarations'.length);
+    const updateName = updateFile.name.slice(0, -'.update'.length);
+    if (declarationsName !== updateName) {
+        setDebugError('Load Program: both files must have the same program name.');
+        return;
+    }
+
+    try {
+        const [declarationsCode, updateCode] = await Promise.all([
+            declarationsFile.text(),
+            updateFile.text()
+        ]);
+        isExecuting = false;
+        suppressDeclarationEvaluation = true;
+        editorDeclarations.setValue(declarationsCode);
+        editorUpdate.setValue(updateCode);
+        suppressDeclarationEvaluation = false;
+        setCurrentProgramName(declarationsName);
+        evalDeclarations();
+        refreshCodeEditors();
+    } catch (error) {
+        suppressDeclarationEvaluation = false;
+        setDebugError(`Load Program: ${error.message}`);
+    }
+};
+
+function downloadProgramFile(filename, contents) {
+    const blobUrl = URL.createObjectURL(new Blob([contents], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+
+document.getElementById('btn-save-program').onclick = () => {
+    const requestedName = window.prompt('Program name:', currentProgramName);
+    if (requestedName === null) return;
+    const safeName = requestedName.trim().replace(/[\\/:*?"<>|]+/g, '_');
+    if (!safeName) {
+        setDebugError('Save Program: enter a program name.');
+        return;
+    }
+
+    setCurrentProgramName(safeName);
+    downloadProgramFile(`${safeName}.declarations`, editorDeclarations.getValue());
+    downloadProgramFile(`${safeName}.update`, editorUpdate.getValue());
 };
 
 document.getElementById('btn-obj-editor').onclick = () => {

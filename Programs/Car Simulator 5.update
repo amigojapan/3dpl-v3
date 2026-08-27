@@ -17,15 +17,17 @@ if (Input.GetKey (KeyCode.RightArrow))
 if (Input.GetKey (KeyCode.LeftArrow))
     rt("car0",0,-100,0);
 if (Input.GetKey (KeyCode.Space)) mv("car0",0,100,0);
-if (Input.GetKey (KeyCode.UpArrow)&&!cdcm(vars["car"],"collider_front")) {
+if (Input.GetKey (KeyCode.UpArrow)&&
+    !is_touching_voxel(vars["land"],vars["car_colliders"],"collider_front")) {
     mv("car0",0,0,10);
     rotate_tires();
 }
-if (Input.GetKey (KeyCode.DownArrow)&&!cdcm(vars["car"],"collider_back")) {
+if (Input.GetKey (KeyCode.DownArrow)&&
+    !is_touching_voxel(vars["land"],vars["car_colliders"],"collider_back")) {
     mv("car0",0,0,-10);
     rotate_tires();
 }
-if (Input.GetKeyUp (KeyCode.UpArrow) || Input.GetKeyUp (KeyCode.DownArrow)) 
+if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow))
   SetPitch("car0",1);//Set sound to idle speed
 
 move_camera();

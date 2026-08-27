@@ -1,3 +1,3 @@
 PlaySound("a"); //this will play the sound attached to cube "a" 
-//StropSound("a");//this would stop the sound attached to cube "a"
+//StopSound("a");//this would stop the sound attached to cube "a"
 mv("a",1,1,1);//notice how the sound fades away as the cube moves away

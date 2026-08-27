@@ -1,3 +1,2 @@
-if(!vars["obj"].audio.isPlaying && vars["obj"].audio.clip.isReadyToPlay)
-  vars["obj"].audio.Play();
+PlaySound("a");
 mv("a",10,10,10);

@@ -657,6 +657,7 @@ let selectedMapObject = '';
 let mapObjectPreview = null;
 let mapEditorLoadToken = 0;
 let pendingMapEditorObjects = [];
+let currentMapName = 'my_map.json';
 
 const mapObjectPicker = document.getElementById('map-object-picker');
 const mapObjectGrid = document.getElementById('map-object-grid');
@@ -1160,7 +1161,7 @@ function placeMapEditorObject(entry) {
     return object;
 }
 
-function exportMapEditorJSON() {
+function serializeMapEditor() {
     const objects = cubes
         .filter(object => object.userData.mapEditorObject)
         .map(object => {
@@ -1189,12 +1190,16 @@ function exportMapEditorJSON() {
 
             return entry;
         });
-    const mapData = { format: '3dpl-map-v1', objects };
+    return { format: '3dpl-map-v1', objects };
+}
+
+function exportMapEditorJSON() {
+    const mapData = serializeMapEditor();
     const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const download = document.createElement('a');
     download.href = url;
-    download.download = 'my_map.json';
+    download.download = currentMapName || 'my_map.json';
     download.click();
     URL.revokeObjectURL(url);
 }
@@ -1268,86 +1273,86 @@ function frameMapEditorObjects() {
 
 document.getElementById('btn-export-map').onclick = exportMapEditorJSON;
 document.getElementById('btn-load-map').onclick = () => document.getElementById('file-input-map').click();
+
+function reportMapEditorLoadError(error) {
+    setDebugError(`Map load error: ${error.message}`);
+    selectedMapObjectLabel.textContent = `Map load failed: ${error.message}`;
+    selectedMapObjectLabel.style.color = '#ff7777';
+    console.error('Map load error:', error);
+}
+
+async function loadMapEditorData(mapData, displayName = 'map.json') {
+    const loadToken = ++mapEditorLoadToken;
+    let stagedObjects = [];
+
+    try {
+        // Validate every entry before replacing the map currently in the editor.
+        const entries = normalizeMapDocument(mapData);
+        discardPendingMapEditorObjects();
+        entries.forEach((entry, index) => {
+            const object = instantiateMapEntry(
+                entry,
+                `map_object_${index + 1}`
+            );
+            stagedObjects.push(object);
+            object.removeFromParent();
+            const cubeIndex = cubes.indexOf(object);
+            if (cubeIndex !== -1) cubes.splice(cubeIndex, 1);
+        });
+        pendingMapEditorObjects = stagedObjects;
+        selectedMapObjectLabel.textContent = `Loading map: ${displayName}`;
+        selectedMapObjectLabel.style.color = '#cccccc';
+
+        await Promise.all(stagedObjects.map(object => object.userData.ready));
+        if (!mapEditorMode || loadToken !== mapEditorLoadToken) {
+            discardPendingMapEditorObjects(stagedObjects);
+            return false;
+        }
+
+        const failedObject = stagedObjects.find(object => object.userData.loadError);
+        if (failedObject) throw new Error(requiredMapObjectError(failedObject));
+
+        pendingMapEditorObjects = [];
+        removeMapObjectPreview();
+        window.cs();
+        stagedObjects.forEach(object => {
+            scene.add(object);
+            cubes.push(object);
+            object.userData.mapEditorObject = true;
+            scheduleMapEditorObjectOptimization(object);
+        });
+        createMapObjectPreview();
+        updateMapObjectCount();
+        frameMapEditorObjects();
+        currentMapName = String(displayName || 'my_map.json').replace(/\.json$/i, '') + '.json';
+        selectedMapObjectLabel.textContent = `Loaded map: ${currentMapName}`;
+        selectedMapObjectLabel.style.color = '#cccccc';
+        return true;
+    } catch (error) {
+        discardPendingMapEditorObjects(stagedObjects);
+        if (loadToken === mapEditorLoadToken) reportMapEditorLoadError(error);
+        throw error;
+    }
+}
+
 document.getElementById('file-input-map').onchange = event => {
     const file = event.target.files[0];
     if (!file) return;
-    const loadToken = ++mapEditorLoadToken;
     const reader = new FileReader();
-    reader.onload = loadEvent => {
-        let stagedObjects = [];
+    reader.onload = async loadEvent => {
         try {
             const mapData = JSON.parse(loadEvent.target.result);
-            // Validate every entry before replacing the map currently in the editor.
-            const entries = normalizeMapDocument(mapData);
-            discardPendingMapEditorObjects();
-            entries.forEach((entry, index) => {
-                const object = instantiateMapEntry(
-                    entry,
-                    `map_object_${index + 1}`
-                );
-                stagedObjects.push(object);
-                object.removeFromParent();
-                const cubeIndex = cubes.indexOf(object);
-                if (cubeIndex !== -1) cubes.splice(cubeIndex, 1);
-            });
-            pendingMapEditorObjects = stagedObjects;
-            selectedMapObjectLabel.textContent = `Loading map: ${file.name}`;
-            selectedMapObjectLabel.style.color = '#cccccc';
-
-            Promise.all(stagedObjects.map(object => object.userData.ready))
-                .then(() => {
-                    if (!mapEditorMode || loadToken !== mapEditorLoadToken) {
-                        discardPendingMapEditorObjects(stagedObjects);
-                        return;
-                    }
-                    const failedObject = stagedObjects.find(
-                        object => object.userData.loadError
-                    );
-                    if (failedObject) {
-                        throw new Error(requiredMapObjectError(failedObject));
-                    }
-
-                    pendingMapEditorObjects = [];
-                    removeMapObjectPreview();
-                    window.cs();
-                    stagedObjects.forEach(object => {
-                        scene.add(object);
-                        cubes.push(object);
-                        object.userData.mapEditorObject = true;
-                        scheduleMapEditorObjectOptimization(object);
-                    });
-                    createMapObjectPreview();
-                    updateMapObjectCount();
-                    frameMapEditorObjects();
-                    selectedMapObjectLabel.textContent = `Loaded map: ${file.name}`;
-                    selectedMapObjectLabel.style.color = '#cccccc';
-                })
-                .catch(error => {
-                    discardPendingMapEditorObjects(stagedObjects);
-                    if (loadToken !== mapEditorLoadToken) return;
-                    setDebugError(`Map load error: ${error.message}`);
-                    selectedMapObjectLabel.textContent =
-                        `Map load failed: ${error.message}`;
-                    selectedMapObjectLabel.style.color = '#ff7777';
-                    console.error('Map load error:', error);
-                });
+            await loadMapEditorData(mapData, file.name);
         } catch (error) {
-            discardPendingMapEditorObjects(stagedObjects);
-            if (loadToken !== mapEditorLoadToken) return;
-            setDebugError(`Map load error: ${error.message}`);
-            selectedMapObjectLabel.textContent =
-                `Map load failed: ${error.message}`;
-            selectedMapObjectLabel.style.color = '#ff7777';
-            console.error('Map load error:', error);
+            // loadMapEditorData reports its own failures. JSON parsing happens
+            // before it is called, so report that error here.
+            if (error instanceof SyntaxError) reportMapEditorLoadError(error);
         }
         event.target.value = '';
     };
     reader.onerror = () => {
-        if (loadToken !== mapEditorLoadToken) return;
         const message = reader.error ? reader.error.message : 'Could not read the file.';
-        setDebugError(`Map load error: ${message}`);
-        selectedMapObjectLabel.textContent = `Map load failed: ${file.name}`;
-        selectedMapObjectLabel.style.color = '#ff7777';
+        reportMapEditorLoadError(new Error(message));
         event.target.value = '';
     };
     reader.readAsText(file);
@@ -1364,6 +1369,138 @@ const clearDebug = () => {
     if(consoleEl) consoleEl.innerHTML = `<span style="color: #55ff55;">Running OK...</span>`;
 };
 
+// --- Account UI and session state ---
+const authModal = document.getElementById('auth-modal');
+const signupForm = document.getElementById('signup-form');
+const loginForm = document.getElementById('login-form');
+const authDialogTitle = document.getElementById('auth-dialog-title');
+const authMessage = document.getElementById('auth-message');
+const accountStatus = document.getElementById('account-status');
+let loggedInNick = sessionStorage.getItem('3dplLoggedInNick') || '';
+
+function setLoggedInNick(nick) {
+    const normalizedNick = nick || '';
+    if (normalizedNick !== loggedInNick) clearPersonalObjectCaches();
+    loggedInNick = normalizedNick;
+    if (loggedInNick) {
+        sessionStorage.setItem('3dplLoggedInNick', loggedInNick);
+        accountStatus.textContent = loggedInNick;
+        accountStatus.title = `Logged in as ${loggedInNick}`;
+    } else {
+        sessionStorage.removeItem('3dplLoggedInNick');
+        accountStatus.textContent = 'Not logged in';
+        accountStatus.title = 'Not logged in';
+    }
+}
+
+setLoggedInNick(loggedInNick);
+
+function openAuthModal(mode) {
+    if (document.pointerLockElement) document.exitPointerLock();
+    const isSignup = mode === 'signup';
+    signupForm.style.display = isSignup ? 'flex' : 'none';
+    loginForm.style.display = isSignup ? 'none' : 'flex';
+    authDialogTitle.textContent = isSignup ? 'Create account' : 'Log in';
+    authMessage.textContent = '';
+    authModal.classList.add('open');
+    authModal.setAttribute('aria-hidden', 'false');
+    const firstInput = (isSignup ? signupForm : loginForm).querySelector('input');
+    setTimeout(() => firstInput.focus(), 0);
+}
+
+function closeAuthModal() {
+    authModal.classList.remove('open');
+    authModal.setAttribute('aria-hidden', 'true');
+    if (document.activeElement) document.activeElement.blur();
+}
+
+document.getElementById('btn-open-signup').onclick = () => openAuthModal('signup');
+document.getElementById('btn-open-login').onclick = () => openAuthModal('login');
+document.getElementById('btn-close-auth').onclick = closeAuthModal;
+authModal.addEventListener('pointerdown', event => {
+    if (event.target === authModal) closeAuthModal();
+});
+
+async function readApiResponse(response) {
+    let body;
+    try {
+        body = await response.json();
+    } catch (error) {
+        throw new Error('The server returned an invalid response.');
+    }
+    if (!response.ok || body.ok !== true || body.error) {
+        const requestError = new Error(body.message || body.error || `Request failed (${response.status})`);
+        requestError.status = response.status;
+        requestError.code = typeof body.error === 'string' ? body.error : '';
+        requestError.payload = body;
+        throw requestError;
+    }
+    return body;
+}
+
+async function postAccountForm(url, fields) {
+    const response = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: new URLSearchParams(fields)
+    });
+    return readApiResponse(response);
+}
+
+signupForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const data = new FormData(signupForm);
+    const password = String(data.get('password') || '');
+    if (password !== String(data.get('confirm_password') || '')) {
+        authMessage.textContent = 'The passwords do not match.';
+        return;
+    }
+
+    const submitButton = signupForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    authMessage.textContent = 'Creating account...';
+    try {
+        const result = await postAccountForm('server_side/register.php', {
+            nick: String(data.get('nick') || '').trim(),
+            email: String(data.get('email') || '').trim(),
+            password
+        });
+        window.alert('Signup successful. You can now log in.');
+        signupForm.reset();
+        openAuthModal('login');
+        loginForm.elements.nick.value = result.nick || '';
+    } catch (error) {
+        authMessage.textContent = error.message;
+    } finally {
+        submitButton.disabled = false;
+    }
+});
+
+loginForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const data = new FormData(loginForm);
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    authMessage.textContent = 'Logging in...';
+    try {
+        const result = await postAccountForm('server_side/login.php', {
+            nick: String(data.get('nick') || '').trim(),
+            password: String(data.get('password') || '')
+        });
+        setLoggedInNick(result.nick || String(data.get('nick') || '').trim());
+        loginForm.reset();
+        closeAuthModal();
+        window.alert('Login successful');
+    } catch (error) {
+        setLoggedInNick('');
+        authMessage.textContent = error.message;
+        window.alert('Login failed');
+    } finally {
+        submitButton.disabled = false;
+    }
+});
+
 // --- Bulletproof Input System ---
 window.Input = { 
     _keys: {}, 
@@ -1371,14 +1508,28 @@ window.Input = {
 };
 window.KeyCode = { 
     RightArrow: 'ArrowRight', LeftArrow: 'ArrowLeft', UpArrow: 'ArrowUp', DownArrow: 'ArrowDown',
-    Space: 'Space', LeftControl: 'ControlLeft', C: 'KeyC', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF'
+    Space: 'Space', LeftControl: 'ControlLeft', RightControl: 'ControlRight', C: 'KeyC', E: 'KeyE', Q: 'KeyQ', A: 'KeyA', Z: 'KeyZ', X: 'KeyX', W: 'KeyW', S: 'KeyS', D: 'KeyD', R: 'KeyR', F: 'KeyF'
 };
 
 const gameplayKeyCodes = new Set(Object.values(window.KeyCode));
 
 window.addEventListener('keydown', e => {
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-    const isTyping = activeTag === 'input' || activeTag === 'textarea';
+    const isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || document.activeElement?.isContentEditable;
+
+    if (e.code === 'Escape' && authModal.classList.contains('open')) {
+        e.preventDefault();
+        closeAuthModal();
+        return;
+    }
+
+    if (e.code === 'Escape' && document.getElementById('cloud-object-modal').classList.contains('open')) {
+        e.preventDefault();
+        closeCloudObjectModal();
+        return;
+    }
+
+    if (document.querySelector('.app-modal.open')) return;
 
     if (e.code === 'Escape' && mapObjectPicker.style.display === 'flex') {
         e.preventDefault();
@@ -1398,6 +1549,57 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
     window.Input._keys[e.code] = false;
 }, true);
+
+// Touch controls write to the same key-state table as physical keyboards, so
+// Input.GetKey works unchanged in programs, tutorials, and editor modes.
+const mobileControllerToggle = document.getElementById('mobile-controller-toggle');
+const mobileController = document.getElementById('mobile-controller');
+const mobileControlButtons = [...mobileController.querySelectorAll('[data-code]')];
+
+function releaseMobileControls() {
+    mobileControlButtons.forEach(button => {
+        window.Input._keys[button.dataset.code] = false;
+        if (button.dataset.alias) window.Input._keys[button.dataset.alias] = false;
+        button.classList.remove('pressed');
+    });
+}
+
+mobileControllerToggle.addEventListener('click', () => {
+    const isOpen = mobileController.classList.toggle('open');
+    mobileControllerToggle.setAttribute('aria-expanded', String(isOpen));
+    mobileControllerToggle.setAttribute('aria-label', `${isOpen ? 'Close' : 'Open'} onscreen controller`);
+    mobileController.setAttribute('aria-hidden', String(!isOpen));
+    if (!isOpen) releaseMobileControls();
+});
+
+document.getElementById('mobile-controller-start').addEventListener('click', event => {
+    event.preventDefault();
+    document.getElementById('btn-run').click();
+});
+
+mobileControlButtons.forEach(button => {
+    const setPressed = pressed => {
+        window.Input._keys[button.dataset.code] = pressed;
+        // Compatibility aliases keep older tutorials (Z and left Ctrl) usable
+        // while the visible controller presents the requested S and right Ctrl.
+        if (button.dataset.alias) window.Input._keys[button.dataset.alias] = pressed;
+        button.classList.toggle('pressed', pressed);
+    };
+    button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        setPressed(true);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+        button.addEventListener(type, () => setPressed(false));
+    });
+    button.addEventListener('contextmenu', event => event.preventDefault());
+});
+
+window.addEventListener('blur', releaseMobileControls);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseMobileControls();
+});
 
 renderer.domElement.addEventListener('mousedown', () => {
     if (document.activeElement) document.activeElement.blur();
@@ -1743,17 +1945,17 @@ function ensureMapItemCollisionData(object) {
 
     const sourceFile = object.userData.sourceFile;
     if (!sourceFile) return null;
-    const url = objectJSONUrl(sourceFile);
-    let collisionData = objectCollisionDataCache.get(url);
+    const cacheKey = object.userData.resolvedObjectUrl || objectJSONUrl(sourceFile);
+    let collisionData = objectCollisionDataCache.get(cacheKey);
 
     if (!collisionData) {
         const voxelData = collisionVoxelDataFromObjectData(
-            loadedObjectCache[url]
+            loadedObjectCache[cacheKey]
         );
         if (!voxelData) return null;
         collisionData = buildObjectCollisionData(voxelData);
         if (!collisionData) return null;
-        objectCollisionDataCache.set(url, collisionData);
+        objectCollisionDataCache.set(cacheKey, collisionData);
     }
 
     objectVoxelCollisionData.set(object, collisionData);
@@ -2118,15 +2320,70 @@ window.SetVolume = function(cubeName, vol) {
 };
 
 // --- Object and XML Loading ---
+const personalFallbackStatuses = new Set([401, 403, 404]);
+
+function httpResponseError(response, body = null) {
+    const message = body?.message || body?.error ||
+        `Request failed (HTTP ${response.status})`;
+    const error = new Error(message);
+    error.status = response.status;
+    error.code = typeof body?.error === 'string' ? body.error : '';
+    return error;
+}
+
+function flatPersonalJSONName(reference) {
+    const value = String(reference || '').trim();
+    if (!value || isDirectAssetUrl(value) || /[/?#\\]/.test(value) || value.length > 128) {
+        return '';
+    }
+    return /^[A-Za-z0-9][A-Za-z0-9 ._-]*\.json$/i.test(value) ? value : '';
+}
+
+function personalObjectResourceUrl(reference, nick = loggedInNick) {
+    const filename = flatPersonalJSONName(reference);
+    if (!nick || !filename) return '';
+    return `server_side/download_object.php?name=${encodeURIComponent(filename)}` +
+        `&scope=${encodeURIComponent(nick)}`;
+}
+
+function clearPersonalObjectCaches() {
+    const prefix = 'server_side/download_object.php?';
+    Object.keys(loadedObjectCache).forEach(key => {
+        if (key.startsWith(prefix)) delete loadedObjectCache[key];
+    });
+    Object.keys(pendingObjectDataPromises).forEach(key => {
+        if (key.startsWith(prefix)) delete pendingObjectDataPromises[key];
+    });
+    [...objectCollisionDataCache.keys()].forEach(key => {
+        if (typeof key === 'string' && key.startsWith(prefix)) {
+            objectCollisionDataCache.delete(key);
+        }
+    });
+}
+
+function invalidatePersonalObjectCache(reference) {
+    const url = personalObjectResourceUrl(reference);
+    if (!url) return;
+    delete loadedObjectCache[url];
+    delete pendingObjectDataPromises[url];
+    objectCollisionDataCache.delete(url);
+}
+
 function fetchObjectData(url) {
     if (pendingObjectDataPromises[url]) {
         return pendingObjectDataPromises[url];
     }
 
-    const request = fetch(url)
-        .then(response => {
+    const isPersonalRequest = url.startsWith('server_side/download_object.php?');
+    const request = fetch(url, isPersonalRequest ? {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    } : undefined)
+        .then(async response => {
             if (!response.ok) {
-                throw new Error(`File not found (HTTP ${response.status})`);
+                let body = null;
+                try { body = await response.json(); } catch (error) { /* HTTP status is enough. */ }
+                throw httpResponseError(response, body);
             }
             return response.json();
         })
@@ -2143,10 +2400,28 @@ function fetchObjectData(url) {
     return request;
 }
 
+async function fetchObjectDataPersonalFirst(personalUrl, sharedUrl) {
+    if (!personalUrl) {
+        return { data: await fetchObjectData(sharedUrl), resolvedUrl: sharedUrl };
+    }
+
+    try {
+        return {
+            data: await fetchObjectData(personalUrl),
+            resolvedUrl: personalUrl
+        };
+    } catch (error) {
+        if (!personalFallbackStatuses.has(error.status)) throw error;
+        if (error.status === 401 || error.status === 403) setLoggedInNick('');
+        return { data: await fetchObjectData(sharedUrl), resolvedUrl: sharedUrl };
+    }
+}
+
 window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
     const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
-    const url = objectJSONUrl(normalizedReference);
+    const sharedUrl = objectJSONUrl(normalizedReference);
+    const personalUrl = personalObjectResourceUrl(normalizedReference);
     x = x || 0; y = y || 0; z = z || 0;
     instanceName = instanceName || ("obj_" + Math.random().toString(36).substr(2, 5));
 
@@ -2202,7 +2477,7 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
         });
     };
 
-    const finishObjectLoad = data => {
+    const finishObjectLoad = (data, resolvedUrl) => {
         if (axisGroup.userData.cancelled) return axisGroup;
 
         let voxelData = null;
@@ -2216,25 +2491,32 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
 
         if (!voxelData) throw new Error('Unknown voxel JSON format.');
         buildVoxels(voxelData);
+        axisGroup.userData.resolvedObjectUrl = resolvedUrl;
         axisGroup.userData.loaded = true;
         return axisGroup;
     };
 
-    if (loadedObjectCache[url]) {
+    const synchronouslyCachedUrl = personalUrl && loadedObjectCache[personalUrl]
+        ? personalUrl
+        : (!personalUrl && loadedObjectCache[sharedUrl] ? sharedUrl : '');
+    if (synchronouslyCachedUrl) {
         try {
-            finishObjectLoad(loadedObjectCache[url]);
+            finishObjectLoad(
+                loadedObjectCache[synchronouslyCachedUrl],
+                synchronouslyCachedUrl
+            );
         } catch (error) {
             axisGroup.userData.loadError = error.message;
-            setDebugError(`Failed to load JSON object: ${url}`);
+            setDebugError(`Failed to load JSON object: ${sharedUrl}`);
             console.error(error);
         }
         axisGroup.userData.ready = Promise.resolve(axisGroup);
     } else {
-        axisGroup.userData.ready = fetchObjectData(url)
-            .then(data => finishObjectLoad(data))
+        axisGroup.userData.ready = fetchObjectDataPersonalFirst(personalUrl, sharedUrl)
+            .then(result => finishObjectLoad(result.data, result.resolvedUrl))
             .catch(err => {
                 axisGroup.userData.loadError = err.message;
-                setDebugError(`Failed to load JSON object: ${url}`);
+                setDebugError(`Failed to load JSON object: ${sharedUrl}`);
                 console.error(err);
                 return axisGroup;
             });
@@ -2652,6 +2934,10 @@ window.LoadMap = function(mapJsonFile, objectName) {
     }
 
     const mapUrl = `Maps/${relativeMapFile}`;
+    const personalMapName = flatPersonalJSONName(relativeMapFile);
+    const personalMapUrl = loggedInNick && personalMapName
+        ? `server_side/load_map.php?name=${encodeURIComponent(personalMapName)}`
+        : '';
 
     objectName = objectName || (`map_${Math.random().toString(36).substr(2, 5)}`);
 
@@ -2665,13 +2951,34 @@ window.LoadMap = function(mapJsonFile, objectName) {
     cubes.push(mapGroup);
 
     const fetchMapJSON = async () => {
-        const response = await fetch(mapUrl, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+        if (personalMapUrl) {
+            const personalResponse = await fetch(personalMapUrl, {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+            if (personalResponse.ok) {
+                return {
+                    data: await personalResponse.json(),
+                    resolvedUrl: personalMapUrl
+                };
+            }
+            if (!personalFallbackStatuses.has(personalResponse.status)) {
+                let body = null;
+                try { body = await personalResponse.json(); } catch (error) { /* Status is enough. */ }
+                throw httpResponseError(personalResponse, body);
+            }
+            if (personalResponse.status === 401 || personalResponse.status === 403) {
+                setLoggedInNick('');
+            }
+        }
+
+        const sharedResponse = await fetch(mapUrl, { cache: 'no-store' });
+        if (!sharedResponse.ok) throw httpResponseError(sharedResponse);
+        return { data: await sharedResponse.json(), resolvedUrl: mapUrl };
     };
 
     mapGroup.userData.ready = fetchMapJSON()
-        .then((data) => {
+        .then(({ data, resolvedUrl }) => {
             // Do not resurrect a map that was deleted while its file was loading.
             if (!cubes.includes(mapGroup)) return mapGroup;
 
@@ -2691,7 +2998,7 @@ window.LoadMap = function(mapJsonFile, objectName) {
             });
 
             mapGroup.userData.mapEntries = entries;
-            mapGroup.userData.resolvedMapUrl = mapUrl;
+            mapGroup.userData.resolvedMapUrl = resolvedUrl;
             return Promise.all(mapParts.map(part => part.userData.ready))
                 .then(() => {
                     if (!cubes.includes(mapGroup)) return mapGroup;
@@ -2725,7 +3032,7 @@ window.LoadMap = function(mapJsonFile, objectName) {
 };
 
 // --- Object Editor File I/O ---
-document.getElementById('btn-save-json').onclick = () => {
+function serializeObjectEditor() {
     const exportData = [];
     cubes.forEach(c => {
         if (c.name === "AxisPoint" || c.name === "guide" || c.name === "pointer") return;
@@ -2742,7 +3049,45 @@ document.getElementById('btn-save-json').onclick = () => {
             });
         }
     });
-    
+    return exportData;
+}
+
+function validateObjectEditorData(data) {
+    if (!Array.isArray(data)) throw new Error('Object JSON must contain an array of blocks.');
+    if (data.length > 250000) throw new Error('This object contains too many blocks.');
+    data.forEach((block, index) => {
+        if (!block || typeof block !== 'object' || Array.isArray(block)) {
+            throw new Error(`Block ${index + 1} is invalid.`);
+        }
+        for (const field of ['x', 'y', 'z', 'r', 'g', 'b']) {
+            if (!Number.isFinite(Number(block[field]))) {
+                throw new Error(`Block ${index + 1} has an invalid ${field} value.`);
+            }
+        }
+    });
+    return data;
+}
+
+function loadObjectEditorData(data) {
+    validateObjectEditorData(data);
+    window.cs();
+    const axis = window.qb("AxisPoint", 0, 0, 0);
+    axis.material.color.setHex(0x00ff00);
+    axis.material.opacity = 0.5;
+
+    data.forEach((cords, index) => {
+        const blockName = String(cords.cubename || `cube_${index + 1}`);
+        const c = window.qb(blockName, Number(cords.x), Number(cords.y), Number(cords.z));
+        c.material.color.setRGB(Number(cords.r) / 255, Number(cords.g) / 255, Number(cords.b) / 255);
+        c.material.opacity = cords.alpha !== undefined ? Number(cords.alpha) : 1.0;
+
+        const wrap = cords.WrapOnSides || 6;
+        if (cords.TextureName) window.tx(blockName, String(cords.TextureName), "File", wrap);
+    });
+}
+
+document.getElementById('btn-save-json').onclick = () => {
+    const exportData = serializeObjectEditor();
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2760,26 +3105,160 @@ document.getElementById('file-input-json').onchange = (e) => {
     reader.onload = (event) => {
         try {
             const data = JSON.parse(event.target.result);
-            window.cs(); 
-            const axis = window.qb("AxisPoint", 0, 0, 0);
-            axis.material.color.setHex(0x00ff00);
-            axis.material.opacity = 0.5;
-
-            data.forEach(cords => {
-                const c = window.qb(cords.cubename, cords.x, cords.y, cords.z);
-                c.material.color.setRGB(cords.r/255, cords.g/255, cords.b/255);
-                c.material.opacity = cords.alpha !== undefined ? cords.alpha : 1.0;
-                
-                const wrap = cords.WrapOnSides || 6;
-                if(cords.TextureName) {
-                    window.tx(cords.cubename, cords.TextureName, "File", wrap);
-                }
-            });
+            loadObjectEditorData(data);
             e.target.value = '';
-        } catch(err) { console.error("Error loading JSON", err); }
+        } catch(err) {
+            setDebugError(`Object load error: ${err.message}`);
+            console.error("Error loading JSON", err);
+        }
     };
     reader.readAsText(file);
 };
+
+// --- Authenticated cloud object storage ---
+const cloudObjectModal = document.getElementById('cloud-object-modal');
+const cloudObjectList = document.getElementById('cloud-object-list');
+
+function requireLoggedInUser() {
+    if (loggedInNick) return true;
+    window.alert('You must log in before using online object storage.');
+    openAuthModal('login');
+    return false;
+}
+
+function closeCloudObjectModal() {
+    cloudObjectModal.classList.remove('open');
+    cloudObjectModal.setAttribute('aria-hidden', 'true');
+}
+
+function handleCloudObjectError(error) {
+    if (error.status === 401 || error.status === 403) {
+        setLoggedInNick('');
+        window.alert('You must log in before using online object storage.');
+        openAuthModal('login');
+        return;
+    }
+    window.alert(error.message || 'The object request failed.');
+}
+
+async function sendCloudObject(objectName, overwrite = false) {
+    const payload = JSON.stringify(serializeObjectEditor(), null, 2);
+    const formData = new FormData();
+    formData.append('object', new Blob([payload], { type: 'application/json' }), `${objectName}.json`);
+    if (overwrite) formData.append('overwrite', '1');
+    const response = await fetch('server_side/upload_object.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    });
+    return readApiResponse(response);
+}
+
+document.getElementById('btn-upload-cloud-object').onclick = async () => {
+    if (!requireLoggedInUser()) return;
+    const requestedName = window.prompt('Object name:', 'my_object');
+    if (requestedName === null) return;
+    const objectName = requestedName.trim().replace(/\.json$/i, '');
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(objectName)) {
+        window.alert('Use 1–64 letters, numbers, underscores, or hyphens for the object name.');
+        return;
+    }
+
+    try {
+        const result = await sendCloudObject(objectName);
+        window.alert(`Uploaded ${result.name || `${objectName}.json`}`);
+    } catch (error) {
+        if (error.status === 409 && window.confirm('That object already exists. Replace it?')) {
+            try {
+                const result = await sendCloudObject(objectName, true);
+                window.alert(`Uploaded ${result.name || `${objectName}.json`}`);
+            } catch (overwriteError) {
+                handleCloudObjectError(overwriteError);
+            }
+        } else if (error.status !== 409) {
+            handleCloudObjectError(error);
+        }
+    }
+};
+
+async function refreshCloudObjectList() {
+    cloudObjectList.replaceChildren();
+    const loadingOption = document.createElement('option');
+    loadingOption.value = '';
+    loadingOption.textContent = 'Loading...';
+    loadingOption.disabled = true;
+    cloudObjectList.appendChild(loadingOption);
+
+    const response = await fetch('server_side/download_object.php', {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    const result = await readApiResponse(response);
+    cloudObjectList.replaceChildren();
+    const objects = Array.isArray(result.objects) ? result.objects : [];
+    objects.forEach(entry => {
+        const filename = typeof entry === 'string' ? entry : entry.name;
+        if (!filename) return;
+        const option = document.createElement('option');
+        option.value = filename;
+        option.textContent = filename;
+        cloudObjectList.appendChild(option);
+    });
+    if (cloudObjectList.options.length > 0) {
+        cloudObjectList.selectedIndex = 0;
+    } else {
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'No uploaded objects';
+        emptyOption.disabled = true;
+        cloudObjectList.appendChild(emptyOption);
+    }
+}
+
+document.getElementById('btn-download-cloud-object').onclick = async () => {
+    if (!requireLoggedInUser()) return;
+    if (document.pointerLockElement) document.exitPointerLock();
+    cloudObjectModal.classList.add('open');
+    cloudObjectModal.setAttribute('aria-hidden', 'false');
+    try {
+        await refreshCloudObjectList();
+    } catch (error) {
+        closeCloudObjectModal();
+        handleCloudObjectError(error);
+    }
+};
+
+document.getElementById('btn-refresh-cloud-objects').onclick = async () => {
+    try {
+        await refreshCloudObjectList();
+    } catch (error) {
+        closeCloudObjectModal();
+        handleCloudObjectError(error);
+    }
+};
+
+document.getElementById('btn-load-cloud-object').onclick = async () => {
+    const filename = cloudObjectList.value;
+    if (!filename) return;
+    try {
+        const response = await fetch(`server_side/download_object.php?name=${encodeURIComponent(filename)}`, {
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+        if (!response.ok) await readApiResponse(response);
+        const data = await response.json();
+        loadObjectEditorData(data.object || data);
+        closeCloudObjectModal();
+        window.alert(`Loaded ${filename}`);
+    } catch (error) {
+        handleCloudObjectError(error);
+    }
+};
+
+document.getElementById('btn-close-cloud-objects').onclick = closeCloudObjectModal;
+cloudObjectModal.addEventListener('pointerdown', event => {
+    if (event.target === cloudObjectModal) closeCloudObjectModal();
+});
 
 document.getElementById('btn-import-xml').onclick = () => document.getElementById('file-input-xml').click();
 document.getElementById('file-input-xml').onchange = (e) => {
@@ -3191,7 +3670,12 @@ const loadTutorial = (num) => {
     document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
     suppressDeclarationEvaluation = true;
     editorDeclarations.setValue(tutorials[num].decl);
-    editorUpdate.setValue(tutorials[num].upd);
+    const tutorialUpdate = tutorials[num].upd;
+    setCurrentProgramName(tutorials[num].title || `Tutorial ${num}`);
+    const mobileInputHelp = tutorialUpdate.includes('Input.GetKey')
+        ? '// Mobile: tap the controller icon. Use the arrow pad, WASD, R CTRL, and SPACE.\n'
+        : '';
+    editorUpdate.setValue(mobileInputHelp + tutorialUpdate);
     suppressDeclarationEvaluation = false;
     evalDeclarations();
 };
@@ -3357,6 +3841,7 @@ const hideAllMenus = () => {
     mapEditorLoadToken++;
     discardPendingMapEditorObjects();
     document.querySelectorAll('.menu-panel').forEach(el => el.style.display = 'none');
+    document.getElementById('btn-restore-ide').style.display = 'none';
     objectEditorMode = false;
     mapEditorMode = false;
     setSkyboxVisible(true);
@@ -3377,6 +3862,110 @@ document.getElementById('btn-3dpl').onclick = () => {
     document.getElementById('ide-panel').style.display = 'flex';
     setTimeout(() => { editorDeclarations.refresh(); editorUpdate.refresh(); }, 10);
     resetCamera();
+};
+
+const idePanel = document.getElementById('ide-panel');
+const restoreIdeButton = document.getElementById('btn-restore-ide');
+const maximizeIdeButton = document.getElementById('btn-maximize-ide');
+const programNameLabel = document.getElementById('ide-program-name');
+const programFileInput = document.getElementById('file-input-program');
+let currentProgramName = 'untitled';
+const refreshCodeEditors = () => setTimeout(() => {
+    editorDeclarations.refresh();
+    editorUpdate.refresh();
+}, 10);
+
+document.getElementById('btn-minimize-ide').onclick = () => {
+    if (document.activeElement) document.activeElement.blur();
+    idePanel.style.display = 'none';
+    restoreIdeButton.style.display = 'block';
+};
+
+restoreIdeButton.onclick = () => {
+    restoreIdeButton.style.display = 'none';
+    idePanel.style.display = 'flex';
+    refreshCodeEditors();
+};
+
+maximizeIdeButton.onclick = () => {
+    const isMaximized = idePanel.classList.toggle('ide-maximized');
+    maximizeIdeButton.setAttribute('aria-pressed', String(isMaximized));
+    maximizeIdeButton.setAttribute('aria-label', `${isMaximized ? 'Restore' : 'Maximize'} code window`);
+    maximizeIdeButton.title = isMaximized ? 'Restore window size' : 'Maximize';
+    maximizeIdeButton.textContent = isMaximized ? '❐' : '□';
+    refreshCodeEditors();
+};
+
+function setCurrentProgramName(name) {
+    currentProgramName = name || 'untitled';
+    programNameLabel.textContent = currentProgramName;
+    programNameLabel.title = `Current program: ${currentProgramName}`;
+}
+
+document.getElementById('btn-load-program').onclick = () => {
+    programFileInput.value = '';
+    programFileInput.click();
+};
+
+programFileInput.onchange = async () => {
+    const files = [...programFileInput.files];
+    const declarationsFile = files.find(file => file.name.toLowerCase().endsWith('.declarations'));
+    const updateFile = files.find(file => file.name.toLowerCase().endsWith('.update'));
+
+    if (!declarationsFile || !updateFile) {
+        setDebugError('Load Program: select one .declarations file and its matching .update file.');
+        return;
+    }
+
+    const declarationsName = declarationsFile.name.slice(0, -'.declarations'.length);
+    const updateName = updateFile.name.slice(0, -'.update'.length);
+    if (declarationsName !== updateName) {
+        setDebugError('Load Program: both files must have the same program name.');
+        return;
+    }
+
+    try {
+        const [declarationsCode, updateCode] = await Promise.all([
+            declarationsFile.text(),
+            updateFile.text()
+        ]);
+        isExecuting = false;
+        suppressDeclarationEvaluation = true;
+        editorDeclarations.setValue(declarationsCode);
+        editorUpdate.setValue(updateCode);
+        suppressDeclarationEvaluation = false;
+        setCurrentProgramName(declarationsName);
+        evalDeclarations();
+        refreshCodeEditors();
+    } catch (error) {
+        suppressDeclarationEvaluation = false;
+        setDebugError(`Load Program: ${error.message}`);
+    }
+};
+
+function downloadProgramFile(filename, contents) {
+    const blobUrl = URL.createObjectURL(new Blob([contents], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+
+document.getElementById('btn-save-program').onclick = () => {
+    const requestedName = window.prompt('Program name:', currentProgramName);
+    if (requestedName === null) return;
+    const safeName = requestedName.trim().replace(/[\\/:*?"<>|]+/g, '_');
+    if (!safeName) {
+        setDebugError('Save Program: enter a program name.');
+        return;
+    }
+
+    setCurrentProgramName(safeName);
+    downloadProgramFile(`${safeName}.declarations`, editorDeclarations.getValue());
+    downloadProgramFile(`${safeName}.update`, editorUpdate.getValue());
 };
 
 document.getElementById('btn-obj-editor').onclick = () => {

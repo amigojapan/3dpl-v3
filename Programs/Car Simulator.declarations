@@ -1,5 +1,5 @@
-Map("map2.map","Original Names",0,0,0);
-vars["car"]=Obj("car_ugly.obj","car0",0,3,30);
+vars["land"] = LoadMap("THEMAP.json", "land");
+vars["car"]=Obj("sport_car.json","car0",0,3,30);
 //sr("car0",0,180,0);
 //debugString=vars["car"].transform.Find("collider_front").ToString()
 //debugString=vars["car"].name

@@ -1,8 +1,8 @@
-Map("map2.map","Original Names",0,0,0);
-vars["car"]=Obj("Futuristic_Helycopter_without_wings_with_colliders.obj","car0",0,0,30);
+vars["land"] = LoadMap("THEMAP.json", "land");
+vars["car"]=Obj("Futuristic_Helycopter_without_wings_with_colliders.json","car0",0,0,30);
 //vars["car"].transform.localScale = Vector3(0,0,0); // make it face opposite y direction
 sc("car0",-0.9,-0.9,-0.9);
-vars["tire1"]=Obj("Futuristic_Helycopter_propeller.obj","tire1",0,0,0);
+vars["tire1"]=Obj("Futuristic_Helycopter_propeller.json","tire1",0,0,0);
 sc("tire1",-0.9,-0.9,-0.9);
 sp("tire1",vars["car"].transform.position.x,vars["car"].transform.position.y,vars["car"].transform.position.z);
 vars["tire1"].transform.parent=vars["car"].transform;
