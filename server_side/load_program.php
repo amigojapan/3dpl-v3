@@ -6,11 +6,16 @@ require_once __DIR__ . '/api_common.php';
 api_require_method('GET');
 $nick = api_require_user();
 session_write_close();
+api_require_matching_scope($_GET, $nick);
 
 $lock = null;
 try {
     $programsDirectory = api_programs_directory($nick, true);
-    $lock = fopen($programsDirectory . DIRECTORY_SEPARATOR . '.programs.lock', 'c');
+    $lockPath = $programsDirectory . DIRECTORY_SEPARATOR . '.programs.lock';
+    if (is_link($lockPath)) {
+        throw new RuntimeException('The program storage lock path is unsafe.');
+    }
+    $lock = fopen($lockPath, 'c');
     if ($lock === false || !flock($lock, LOCK_SH)) {
         throw new RuntimeException('The program storage lock could not be acquired.');
     }

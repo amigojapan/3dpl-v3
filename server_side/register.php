@@ -109,8 +109,11 @@ try {
     $statement->execute();
 
     $registrationStage = 'user_storage_create';
-    $objectsDirectory = api_objects_directory($nick, true);
-    $createdUserDirectory = dirname($objectsDirectory);
+    // The storage collision check above guarantees this is a new account
+    // directory. Set the rollback target before creation so a partial layout
+    // is also removed if one of the later library directories cannot be made.
+    $createdUserDirectory = $usersRoot . DIRECTORY_SEPARATOR . $nick;
+    api_ensure_user_layout($nick);
 
     $registrationStage = 'database_commit';
     $db->exec('COMMIT');
@@ -129,9 +132,19 @@ try {
             error_log('3DPL registration rollback error: ' . $rollbackError->getMessage());
         }
     }
-    if ($createdUserDirectory !== null && is_dir($createdUserDirectory)) {
-        $objectsDirectory = $createdUserDirectory . DIRECTORY_SEPARATOR . 'Objects';
-        @rmdir($objectsDirectory);
+    if (
+        $createdUserDirectory !== null
+        && is_dir($createdUserDirectory)
+        && !is_link($createdUserDirectory)
+    ) {
+        foreach (array_reverse(THREEDPL_PERSONAL_LIBRARIES) as $library) {
+            $libraryDirectory = $createdUserDirectory . DIRECTORY_SEPARATOR . $library;
+            if (is_dir($libraryDirectory) && !is_link($libraryDirectory)) {
+                // rmdir only removes empty directories, so an unexpected file
+                // can never be deleted during registration rollback.
+                @rmdir($libraryDirectory);
+            }
+        }
         @rmdir($createdUserDirectory);
     }
     error_log('3DPL registration error: ' . $error->getMessage());

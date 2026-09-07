@@ -1,0 +1,9 @@
+for(var x=0; x< vars["ttobj"].children.length; x++) {
+  vars["myobj"] = vars["ttobj"].children[x];
+  vars["counter"]=vars["counter"]+1; ((object, x, y, z) => { object.translateX(x); object.translateY(y); object.translateZ(-z); })(vars["myobj"], (-7.0 + Math.random() * (7.0 - -7.0)),(-7.0 + Math.random() * (7.0 - -7.0)),(-7.0 + Math.random() * (7.0 - -7.0)));
+  window.debugString = vars["counter"].toString();
+  if(vars["counter"]>4000) {
+    vars["myobj"].removeFromParent();
+  }
+ //window.debugString =vars["myobj"].name;
+}

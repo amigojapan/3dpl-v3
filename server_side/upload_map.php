@@ -6,6 +6,9 @@ require_once __DIR__ . '/api_common.php';
 api_require_method('POST');
 $nick = api_require_user();
 session_write_close();
+api_require_matching_scope($_POST, $nick);
+$userLayout = api_require_user_layout($nick);
+$mapsDirectory = $userLayout['Maps'];
 
 $upload = $_FILES['map'] ?? null;
 if (!is_array($upload)) {
@@ -91,8 +94,11 @@ $destination = null;
 $installed = false;
 
 try {
-    $mapsDirectory = api_maps_directory($nick, true);
-    $lock = fopen($mapsDirectory . DIRECTORY_SEPARATOR . '.maps.lock', 'c');
+    $lockPath = $mapsDirectory . DIRECTORY_SEPARATOR . '.maps.lock';
+    if (is_link($lockPath)) {
+        throw new RuntimeException('The map storage lock path is unsafe.');
+    }
+    $lock = fopen($lockPath, 'c');
     if ($lock === false || !flock($lock, LOCK_EX)) {
         throw new RuntimeException('The map storage lock could not be acquired.');
     }

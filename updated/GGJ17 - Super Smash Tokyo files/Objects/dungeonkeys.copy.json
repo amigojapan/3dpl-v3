@@ -1,0 +1,14 @@
+[
+  {
+    "cubename": "c61b94a0-9df0-465d-9c4b-07851217b523",
+    "x": 0,
+    "y": 0,
+    "z": 0,
+    "r": 255,
+    "g": 255,
+    "b": 255,
+    "alpha": 1,
+    "TextureName": "dungeonkeyss.png",
+    "WrapOnSides": 6
+  }
+]

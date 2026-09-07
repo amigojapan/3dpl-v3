@@ -6,6 +6,7 @@ let vars = {}; // Global variables object for the user
 let sounds = {}; // Dictionary to store loaded audio objects
 let isExecuting = false;
 let clock = new THREE.Clock();
+let loggedInNick = sessionStorage.getItem('3dplLoggedInNick') || '';
 
 // Object Cache
 const loadedObjectCache = {};
@@ -47,7 +48,12 @@ resetCamera();
 // Audio Setup
 const listener = new THREE.AudioListener();
 camera.add(listener);
-const audioLoader = new THREE.AudioLoader();
+
+function clearLoadedSounds() {
+    const previousSounds = sounds;
+    sounds = {};
+    Object.values(previousSounds).forEach(disposeLoadedSound);
+}
 
 const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -133,8 +139,50 @@ function assignSharedTexture(material, textureName) {
     return texture;
 }
 
-function loadSharedTexture(textureName) {
-    const textureUrl = 'Textures/' + textureName;
+function flatTextureFilename(reference) {
+    const value = String(reference || '').trim();
+    if (!value || /[/?#\\]/.test(value) || value.length > 128) return '';
+    return /^[A-Za-z0-9][A-Za-z0-9 ._-]*\.(?:png|jpe?g|webp|gif)$/i.test(value)
+        ? value
+        : '';
+}
+
+function personalTextureResourceUrl(textureName, nick = loggedInNick) {
+    const filename = flatTextureFilename(textureName);
+    if (!nick || !filename) return '';
+    // The server resolves the account from the authenticated session. The
+    // scope value is only a browser-cache discriminator when accounts change.
+    return `server_side/load_texture.php?name=${encodeURIComponent(filename)}` +
+        `&scope=${encodeURIComponent(nick)}`;
+}
+
+function staticTextureResourceUrl(textureName) {
+    const filename = flatTextureFilename(textureName);
+    return filename
+        ? `Textures/${encodeURIComponent(filename)}`
+        : 'Textures/__invalid_texture_name__';
+}
+
+function registerTextureMaterial(texture, material) {
+    if (texture.userData.threeDPLHasTransparentPixels === undefined) {
+        if (!texture.userData.threeDPLMaterials) {
+            texture.userData.threeDPLMaterials = new Set();
+        }
+        texture.userData.threeDPLMaterials.add(material);
+        if (!material.transparent) {
+            material.transparent = true;
+            material.needsUpdate = true;
+        }
+    } else {
+        updateTextureMaterialTransparency(texture, material);
+    }
+}
+
+function loadSharedTexture(textureName, allowPersonal = true) {
+    const personalUrl = allowPersonal
+        ? personalTextureResourceUrl(textureName)
+        : '';
+    const textureUrl = personalUrl || staticTextureResourceUrl(textureName);
     if (sharedTextureCache.has(textureUrl)) {
         return sharedTextureCache.get(textureUrl);
     }
@@ -158,6 +206,24 @@ function loadSharedTexture(textureName) {
         },
         undefined,
         () => {
+            if (personalUrl) {
+                const fallbackTexture = loadSharedTexture(textureName, false);
+                const materials = texture.userData.threeDPLMaterials;
+                if (materials) {
+                    materials.forEach(material => {
+                        if (material.map !== texture) return;
+                        material.map = fallbackTexture;
+                        registerTextureMaterial(fallbackTexture, material);
+                        material.needsUpdate = true;
+                    });
+                    materials.clear();
+                }
+                sharedTextureCache.delete(textureUrl);
+                Promise.resolve(fallbackTexture.userData.threeDPLReady)
+                    .then(() => resolveTextureReady(fallbackTexture));
+                texture.dispose();
+                return;
+            }
             texture.userData.threeDPLHasTransparentPixels = true;
             if (texture.userData.threeDPLMaterials) {
                 texture.userData.threeDPLMaterials.clear();
@@ -168,9 +234,21 @@ function loadSharedTexture(textureName) {
         }
     );
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.userData.threeDPLTextureName = textureName;
+    texture.userData.threeDPLPersonal = Boolean(personalUrl);
     texture.userData.threeDPLReady = textureReady;
     sharedTextureCache.set(textureUrl, texture);
     return texture;
+}
+
+function clearPersonalTextureCache() {
+    [...sharedTextureCache.keys()].forEach(url => {
+        if (!url.startsWith('server_side/load_texture.php?')) return;
+        // Existing scene materials may still reference the texture, so leave
+        // its GPU resource alive. Removing the account-scoped cache entry
+        // guarantees new assignments cannot reuse another account's image.
+        sharedTextureCache.delete(url);
+    });
 }
 
 function setSkyboxVisible(visible) {
@@ -512,6 +590,53 @@ const availableTextureNames = [
     "woodtype11.png",
     "working_fence.png"
 ];
+let personalTextureNames = [];
+
+function mergedTextureEntries() {
+    const entries = [];
+    const seen = new Set();
+    personalTextureNames.forEach(name => {
+        const key = name.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push({ name, personal: true });
+    });
+    availableTextureNames.forEach(name => {
+        const key = name.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push({ name, personal: false });
+    });
+    return entries;
+}
+
+async function refreshPersonalTextureLibrary() {
+    const requestedNick = loggedInNick;
+    if (!requestedNick) {
+        personalTextureNames = [];
+        if (texturePicker.style.display === 'block') {
+            renderTextureChoices(textureSearch.value);
+        }
+        return [];
+    }
+
+    const response = await fetch(
+        `server_side/load_texture.php?scope=${encodeURIComponent(requestedNick)}`,
+        {
+        credentials: 'same-origin',
+        cache: 'no-store'
+        }
+    );
+    const result = await readApiResponse(response);
+    if (requestedNick !== loggedInNick) return [];
+    personalTextureNames = (Array.isArray(result.textures) ? result.textures : [])
+        .map(entry => typeof entry === 'string' ? entry : entry?.name)
+        .filter(name => flatTextureFilename(name));
+    if (texturePicker.style.display === 'block') {
+        renderTextureChoices(textureSearch.value);
+    }
+    return personalTextureNames;
+}
 
 function selectObjectEditorTexture(textureName) {
     selectedObjectTexture = textureName;
@@ -530,23 +655,37 @@ function renderTextureChoices(filterText = '') {
     const fragment = document.createDocumentFragment();
     textureGrid.innerHTML = '';
 
-    availableTextureNames
-        .filter(textureName => textureName.toLowerCase().includes(filter))
-        .forEach(textureName => {
+    mergedTextureEntries()
+        .filter(entry => entry.name.toLowerCase().includes(filter))
+        .forEach(entry => {
+            const textureName = entry.name;
             const option = document.createElement('button');
             option.type = 'button';
             option.className = 'texture-option';
             option.dataset.texture = textureName;
-            option.title = textureName;
+            option.title = entry.personal
+                ? `${textureName} (My texture)`
+                : textureName;
             option.classList.toggle('selected', textureName === selectedObjectTexture);
 
             const preview = document.createElement('img');
-            preview.src = `Textures/${encodeURIComponent(textureName)}`;
+            preview.src = entry.personal
+                ? personalTextureResourceUrl(textureName)
+                : staticTextureResourceUrl(textureName);
             preview.alt = textureName;
             preview.loading = 'lazy';
+            if (entry.personal) {
+                preview.onerror = () => {
+                    if (preview.dataset.staticFallback === '1') return;
+                    preview.dataset.staticFallback = '1';
+                    preview.src = staticTextureResourceUrl(textureName);
+                };
+            }
 
             const label = document.createElement('span');
-            label.textContent = textureName;
+            label.textContent = entry.personal
+                ? `${textureName} • Mine`
+                : textureName;
             option.append(preview, label);
             option.onclick = () => selectObjectEditorTexture(textureName);
             fragment.appendChild(option);
@@ -643,11 +782,14 @@ const fallbackMapObjectNames = [
 const previewPathForMapObject = filename =>
     `Preview/${filename.substring(filename.lastIndexOf('/') + 1)
         .replace(/\.json$/i, '')}.png`;
-let availableMapObjects = fallbackMapObjectNames.map(filename => ({
+let sharedMapObjects = fallbackMapObjectNames.map(filename => ({
     file: filename,
     label: filename,
-    preview: previewPathForMapObject(filename)
+    preview: previewPathForMapObject(filename),
+    personal: false
 }));
+let personalMapObjects = [];
+let availableMapObjects = [...sharedMapObjects];
 let mapObjectLibraryRevision = 'fallback-20260820';
 let mapObjectLibraryMessage =
     `${availableMapObjects.length} built-in JSON objects available`;
@@ -676,6 +818,66 @@ const mapObjectCount = document.getElementById('map-object-count');
 function updateMapObjectCount() {
     const count = cubes.filter(object => object.userData.mapEditorObject).length;
     mapObjectCount.textContent = `Placed objects: ${count}`;
+}
+
+function rebuildMapObjectLibrary() {
+    const seen = new Set();
+    availableMapObjects = [...personalMapObjects, ...sharedMapObjects]
+        .filter(entry => {
+            const key = entry.file.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .sort((left, right) => left.label.localeCompare(right.label));
+    mapObjectLibraryMessage = personalMapObjects.length > 0
+        ? `${sharedMapObjects.length} shared • ${personalMapObjects.length} of my objects`
+        : `${sharedMapObjects.length} shared JSON objects available`;
+    mapObjectLibraryMessageColor = '#aaaaaa';
+}
+
+async function refreshPersonalObjectLibrary() {
+    const requestedNick = loggedInNick;
+    if (!requestedNick) {
+        personalMapObjects = [];
+        rebuildMapObjectLibrary();
+        if (mapObjectPicker.style.display === 'flex') {
+            renderMapObjectChoices(mapObjectSearch.value);
+        }
+        return [];
+    }
+
+    const response = await fetch(
+        `server_side/download_object.php?scope=${encodeURIComponent(requestedNick)}`,
+        {
+        credentials: 'same-origin',
+        cache: 'no-store'
+        }
+    );
+    const result = await readApiResponse(response);
+    if (requestedNick !== loggedInNick) return [];
+
+    const seen = new Set();
+    personalMapObjects = (Array.isArray(result.objects) ? result.objects : [])
+        .map(entry => typeof entry === 'string' ? entry : entry?.name)
+        .filter(name => {
+            if (!flatPersonalJSONName(name)) return false;
+            const key = name.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .map(name => ({
+            file: name,
+            label: `${name} • Mine`,
+            preview: '',
+            personal: true
+        }));
+    rebuildMapObjectLibrary();
+    if (mapObjectPicker.style.display === 'flex') {
+        renderMapObjectChoices(mapObjectSearch.value);
+    }
+    return personalMapObjects;
 }
 
 function removeMapObjectPreview() {
@@ -874,7 +1076,8 @@ function normalizeMapObjectLibraryEntry(record) {
         preview: normalizeObjectPreviewReference(
             record?.preview,
             fallbackPreview
-        )
+        ),
+        personal: false
     };
 }
 
@@ -909,15 +1112,13 @@ async function loadMapObjectLibrary() {
             throw new Error('Manifest contains no JSON objects.');
         }
 
-        availableMapObjects = manifestObjects;
+        sharedMapObjects = manifestObjects;
+        rebuildMapObjectLibrary();
         mapObjectLibraryRevision = String(data.revision || Date.now());
-        mapObjectLibraryMessage =
-            `${availableMapObjects.length} JSON objects loaded from the server`;
-        mapObjectLibraryMessageColor = '#aaaaaa';
         return true;
     } catch (error) {
         mapObjectLibraryMessage =
-            `Could not refresh object list; showing ${availableMapObjects.length} built-in objects.`;
+            `Could not refresh shared object list; showing ${availableMapObjects.length} available objects.`;
         mapObjectLibraryMessageColor = '#ffcc66';
         console.warn('Object manifest load error:', error);
         return false;
@@ -937,13 +1138,14 @@ function renderMapObjectChoices(filterText = '') {
 
     let loadedPreviews = 0;
     let failedPreviews = 0;
+    const previewCount = matchingObjects.filter(entry => !entry.personal).length;
     const updateLibraryStatus = () => {
         if (renderId !== mapObjectPickerRenderId) return;
         const matchMessage = filter
             ? ` • ${matchingObjects.length} search matches`
             : '';
-        const previewMessage = matchingObjects.length > 0
-            ? ` • previews ${loadedPreviews}/${matchingObjects.length}`
+        const previewMessage = previewCount > 0
+            ? ` • previews ${loadedPreviews}/${previewCount}`
             : '';
         const failureMessage = failedPreviews > 0
             ? ` • ${failedPreviews} preview files missing`
@@ -966,30 +1168,36 @@ function renderMapObjectChoices(filterText = '') {
 
         const previewFrame = document.createElement('span');
         previewFrame.className = 'map-object-preview';
-        const preview = document.createElement('img');
-        preview.alt = `${entry.label} preview`;
-        preview.loading = 'lazy';
-        preview.decoding = 'async';
-
         const placeholder = document.createElement('span');
         placeholder.className = 'map-object-preview-placeholder';
-        placeholder.textContent = 'Preview file missing';
-        placeholder.title = `Missing Objects/${entry.preview}`;
-        placeholder.style.display = 'none';
-        preview.onload = () => {
-            if (renderId !== mapObjectPickerRenderId) return;
-            loadedPreviews++;
-            updateLibraryStatus();
-        };
-        preview.onerror = () => {
-            if (renderId !== mapObjectPickerRenderId) return;
-            failedPreviews++;
-            preview.style.display = 'none';
+        if (entry.personal) {
+            placeholder.textContent = 'My object\nNo preview';
+            placeholder.title = 'Personal object (no preview image uploaded)';
             placeholder.style.display = 'flex';
-            updateLibraryStatus();
-        };
-        preview.src = objectLibraryAssetUrl(entry.preview);
-        previewFrame.append(preview, placeholder);
+            previewFrame.appendChild(placeholder);
+        } else {
+            const preview = document.createElement('img');
+            preview.alt = `${entry.label} preview`;
+            preview.loading = 'lazy';
+            preview.decoding = 'async';
+            placeholder.textContent = 'Preview file missing';
+            placeholder.title = `Missing Objects/${entry.preview}`;
+            placeholder.style.display = 'none';
+            preview.onload = () => {
+                if (renderId !== mapObjectPickerRenderId) return;
+                loadedPreviews++;
+                updateLibraryStatus();
+            };
+            preview.onerror = () => {
+                if (renderId !== mapObjectPickerRenderId) return;
+                failedPreviews++;
+                preview.style.display = 'none';
+                placeholder.style.display = 'flex';
+                updateLibraryStatus();
+            };
+            preview.src = objectLibraryAssetUrl(entry.preview);
+            previewFrame.append(preview, placeholder);
+        }
 
         const label = document.createElement('span');
         label.className = 'map-object-option-label';
@@ -1217,7 +1425,17 @@ selectMapObjectButton.onclick = async () => {
         `Refreshing server list; showing ${availableMapObjects.length} objects...`;
     mapObjectLibraryMessageColor = '#aaaaaa';
     renderMapObjectChoices('');
-    await loadMapObjectLibrary();
+    const personalLibraryNick = loggedInNick;
+    await Promise.all([
+        loadMapObjectLibrary(),
+        personalLibraryNick ? refreshPersonalObjectLibrary().catch(error => {
+            if (loggedInNick === personalLibraryNick &&
+                (error.status === 401 || error.status === 403)) {
+                setLoggedInNick('');
+            }
+            console.warn('Personal object list error:', error);
+        }) : Promise.resolve()
+    ]);
 
     if (mapObjectPicker.style.display === 'flex') {
         renderMapObjectChoices('');
@@ -1376,11 +1594,25 @@ const loginForm = document.getElementById('login-form');
 const authDialogTitle = document.getElementById('auth-dialog-title');
 const authMessage = document.getElementById('auth-message');
 const accountStatus = document.getElementById('account-status');
-let loggedInNick = sessionStorage.getItem('3dplLoggedInNick') || '';
 
 function setLoggedInNick(nick) {
     const normalizedNick = nick || '';
-    if (normalizedNick !== loggedInNick) clearPersonalObjectCaches();
+    const accountChanged = normalizedNick !== loggedInNick;
+    if (accountChanged) {
+        clearLoadedSounds();
+        closeCloudFileModal();
+        clearPersonalObjectCaches();
+        clearPersonalTextureCache();
+        personalMapObjects = [];
+        personalTextureNames = [];
+        rebuildMapObjectLibrary();
+        if (mapObjectPicker.style.display === 'flex') {
+            renderMapObjectChoices(mapObjectSearch.value);
+        }
+        if (texturePicker.style.display === 'block') {
+            renderTextureChoices(textureSearch.value);
+        }
+    }
     loggedInNick = normalizedNick;
     if (loggedInNick) {
         sessionStorage.setItem('3dplLoggedInNick', loggedInNick);
@@ -1390,6 +1622,21 @@ function setLoggedInNick(nick) {
         sessionStorage.removeItem('3dplLoggedInNick');
         accountStatus.textContent = 'Not logged in';
         accountStatus.title = 'Not logged in';
+    }
+
+    if (loggedInNick && (accountChanged || personalMapObjects.length === 0)) {
+        const expectedNick = loggedInNick;
+        Promise.all([
+            refreshPersonalObjectLibrary(),
+            refreshPersonalTextureLibrary()
+        ]).catch(error => {
+            if (expectedNick !== loggedInNick) return;
+            if (error.status === 401 || error.status === 403) {
+                setLoggedInNick('');
+            } else {
+                console.warn('Personal library refresh failed:', error);
+            }
+        });
     }
 }
 
@@ -1436,6 +1683,21 @@ async function readApiResponse(response) {
         throw requestError;
     }
     return body;
+}
+
+function activeAccountChangedError() {
+    const error = new Error(
+        'The active account changed while this request was running. Please try again.'
+    );
+    error.status = 409;
+    error.code = 'session_scope_mismatch';
+    return error;
+}
+
+function assertActiveAccount(expectedNick) {
+    if (!expectedNick || loggedInNick !== expectedNick) {
+        throw activeAccountChangedError();
+    }
 }
 
 async function postAccountForm(url, fields) {
@@ -1526,6 +1788,12 @@ window.addEventListener('keydown', e => {
     if (e.code === 'Escape' && document.getElementById('cloud-object-modal').classList.contains('open')) {
         e.preventDefault();
         closeCloudObjectModal();
+        return;
+    }
+
+    if (e.code === 'Escape' && document.getElementById('cloud-file-modal').classList.contains('open')) {
+        e.preventDefault();
+        closeCloudFileModal();
         return;
     }
 
@@ -2263,6 +2531,7 @@ window.cdcm = function(obj, colliderName) {
 window.dl = function(name) {
     for (let i = cubes.length - 1; i >= 0; i--) {
         if (cubes[i].name === name) {
+            removeSoundsAttachedTo(cubes[i]);
             cancelObjectLoads(cubes[i]);
             cubes[i].removeFromParent();
             disposeObjectMaterials(cubes[i]);
@@ -2280,47 +2549,255 @@ window.cs = function() {
     cubes = [];
     vars = {}; 
     
-    Object.values(sounds).forEach(s => {
-        if (s.isPlaying) s.stop();
-    });
-    sounds = {};
+    clearLoadedSounds();
 };
 
 // Audio Engine
+function flatAudioFilename(reference) {
+    const value = String(reference || '').trim();
+    if (!value || /[/?#\\]/.test(value) || value.length > 128) return '';
+    return /^[A-Za-z0-9][A-Za-z0-9 ._-]*\.(?:mp3|wav|ogg|oga|opus|m4a|aac|flac|webm)$/i.test(value)
+        ? value
+        : '';
+}
+
+function audioLibraryFilename(reference) {
+    let value = String(reference || '').trim().replace(/\\/g, '/');
+    while (value.startsWith('./')) value = value.substring(2);
+    if (/^Audio\//i.test(value)) value = value.substring('Audio/'.length);
+    if (/^Sounds\//i.test(value)) value = value.substring('Sounds/'.length);
+    return flatAudioFilename(value);
+}
+
+function sharedAudioUrl(reference) {
+    const fileName = audioLibraryFilename(reference);
+    return fileName ? `Audio/${encodeURIComponent(fileName)}` : '';
+}
+
+function legacySoundUrl(reference) {
+    let value = String(reference || '').trim().replace(/\\/g, '/');
+    while (value.startsWith('./')) value = value.substring(2);
+    if (/^Sounds\//i.test(value)) value = value.substring('Sounds/'.length);
+    if (!value || value.startsWith('/') || value.split('/').includes('..') ||
+        /^(?:[a-z]+:|\/\/)/i.test(value)) {
+        return '';
+    }
+    return 'Sounds/' + value.split('/').map(segment => encodeURIComponent(segment)).join('/');
+}
+
+async function readApiError(response) {
+    let body = null;
+    try { body = await response.json(); } catch (error) { /* Status is enough. */ }
+    return httpResponseError(response, body);
+}
+
+async function decodeAudioResponse(response, requestedNick = '') {
+    const encodedAudio = await response.arrayBuffer();
+    if (requestedNick) assertActiveAccount(requestedNick);
+    const buffer = await listener.context.decodeAudioData(encodedAudio.slice(0));
+    if (requestedNick) assertActiveAccount(requestedNick);
+    return buffer;
+}
+
+async function loadSoundBufferPersonalFirst(fileName) {
+    const personalName = audioLibraryFilename(fileName);
+    if (!personalName) throw new Error('The audio filename is not valid.');
+
+    const requestedNick = loggedInNick;
+    // Always ask the authenticated PHP session for a private file. This also
+    // works after a tab restore where the secure login cookie still exists but
+    // sessionStorage has lost the displayed nickname.
+    const privateUrl =
+        `server_side/load_audio.php?name=${encodeURIComponent(personalName)}` +
+        (requestedNick ? `&scope=${encodeURIComponent(requestedNick)}` : '');
+    const response = await fetch(privateUrl, {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    if (requestedNick) assertActiveAccount(requestedNick);
+    if (response.ok) {
+        return decodeAudioResponse(response, requestedNick);
+    }
+    const privateError = await readApiError(response);
+    if (requestedNick) assertActiveAccount(requestedNick);
+    const canUseSharedAudio = [401, 403, 404].includes(response.status) ||
+        privateError.code === 'session_scope_mismatch';
+    if (!canUseSharedAudio) throw privateError;
+
+    const sharedUrl = sharedAudioUrl(personalName);
+    const sharedResponse = await fetch(sharedUrl, { cache: 'no-store' });
+    if (sharedResponse.ok) return decodeAudioResponse(sharedResponse);
+    if (sharedResponse.status !== 404) throw httpResponseError(sharedResponse);
+
+    // Keep old deployments with a Sounds/ directory working after Audio/
+    // becomes the standard shared library.
+    const legacyUrl = legacySoundUrl(personalName);
+    const legacyResponse = await fetch(legacyUrl, { cache: 'no-store' });
+    if (legacyResponse.ok) return decodeAudioResponse(legacyResponse);
+
+    const error = new Error(
+        `"${personalName}" was not found in your private Audio library, shared Audio/, or legacy Sounds/.`
+    );
+    error.status = legacyResponse.status;
+    throw error;
+}
+
+function playSoundIfReady(cubeName, sound) {
+    if (sounds[cubeName] !== sound || !sound.userData.threeDPLPlayRequested) {
+        return;
+    }
+    if (sound.userData.threeDPLLoadError) {
+        setDebugError(sound.userData.threeDPLLoadError);
+        return;
+    }
+    if (!isExecuting || !sound.buffer || sound.isPlaying ||
+        listener.context.state !== 'running') {
+        return;
+    }
+    sound.play();
+}
+
+function findSoundEntry(soundReference) {
+    const requestedKey = String(soundReference ?? '');
+    return {
+        soundKey: requestedKey,
+        sound: sounds[requestedKey] || null
+    };
+}
+
+function requestSoundPlayback(soundReference, loop) {
+    const { soundKey, sound } = findSoundEntry(soundReference);
+    if (!sound) {
+        setDebugError(
+            'PlaySound error: no sound is attached to that object or camera. Call AttachSound first.'
+        );
+        return;
+    }
+
+    sound.userData.threeDPLPlayRequested = true;
+    sound.setLoop(loop);
+    playSoundIfReady(soundKey, sound);
+}
+
+function playQueuedSounds() {
+    Object.entries(sounds).forEach(([cubeName, sound]) => {
+        playSoundIfReady(cubeName, sound);
+    });
+}
+
+function disposeLoadedSound(sound) {
+    if (!sound) return;
+    sound.userData.threeDPLPlayRequested = false;
+    if (sound.isPlaying) sound.stop();
+    if (sound.source) {
+        try { sound.source.disconnect(); } catch (error) { /* Already disconnected. */ }
+        try { sound.source.buffer = null; } catch (error) { /* Read-only after playback. */ }
+        sound.source = null;
+    }
+    sound.removeFromParent();
+    try { sound.disconnect(); } catch (error) { /* Already disconnected. */ }
+    sound.buffer = null;
+    sound.userData.threeDPLReady = null;
+    sound.userData.threeDPLTarget = null;
+}
+
+function removeSoundsAttachedTo(target) {
+    Object.entries(sounds).forEach(([soundKey, sound]) => {
+        if (sound?.userData.threeDPLTarget !== target) return;
+        disposeLoadedSound(sound);
+        delete sounds[soundKey];
+    });
+}
+
+function resolveSoundTarget(objectName) {
+    if (String(objectName).toLowerCase() === 'camera') return camera;
+    const namedVariable = vars[objectName];
+    if (namedVariable?.isObject3D) return namedVariable;
+    return cubes.find(object => object.name === objectName) || null;
+}
+
 window.AttachSound = function(cubeName, fileName) {
-    const sound = new THREE.Audio(listener);
-    audioLoader.load('Sounds/' + fileName, (buffer) => {
-        sound.setBuffer(buffer);
-        sound.setVolume(1.0);
-    }, undefined, () => setDebugError(`Audio load error: Sounds/${fileName}`));
-    sounds[cubeName] = sound;
+    const soundKey = String(cubeName ?? '');
+    if (!soundKey.trim()) {
+        setDebugError('AttachSound error: the object or channel name is missing.');
+        return null;
+    }
+
+    const target = resolveSoundTarget(soundKey);
+    if (!target) {
+        setDebugError(
+            `AttachSound error: object or camera "${soundKey}" does not exist.`
+        );
+        return null;
+    }
+
+    const previousSound = sounds[soundKey];
+    if (previousSound) disposeLoadedSound(previousSound);
+
+    const sound = new THREE.PositionalAudio(listener);
+    sound.setVolume(1.0);
+    sound.setRefDistance(20);
+    sound.setMaxDistance(100);
+    sound.setDistanceModel('inverse');
+    sound.setRolloffFactor(1);
+    sound.userData.threeDPLPlayRequested = false;
+    sound.userData.threeDPLLoadError = '';
+    sound.userData.threeDPLFileName = String(fileName ?? '');
+    sound.userData.threeDPLTarget = target;
+    sound.userData.threeDPLTargetName = soundKey;
+    target.add(sound);
+    sounds[soundKey] = sound;
+    sound.userData.threeDPLReady = loadSoundBufferPersonalFirst(fileName)
+        .then(buffer => {
+            if (sounds[soundKey] !== sound) return sound;
+            sound.userData.threeDPLLoadError = '';
+            sound.setBuffer(buffer);
+            playSoundIfReady(soundKey, sound);
+            return sound;
+        })
+        .catch(error => {
+            if (sounds[soundKey] !== sound) return sound;
+            sound.userData.threeDPLLoadError =
+                `Audio load error: ${fileName} — ${error.message}`;
+            setDebugError(sound.userData.threeDPLLoadError);
+            console.error('Audio load error:', error);
+            return sound;
+        });
+    return sound;
 };
 
 window.PlaySound = function(cubeName) {
-    if (sounds[cubeName] && !sounds[cubeName].isPlaying) sounds[cubeName].play();
+    requestSoundPlayback(cubeName, false);
 };
 
 window.PlaySoundLoop = function(cubeName) {
-    if (sounds[cubeName]) {
-        sounds[cubeName].setLoop(true);
-        if (!sounds[cubeName].isPlaying) sounds[cubeName].play();
-    }
+    requestSoundPlayback(cubeName, true);
 };
 
 window.StopSound = function(cubeName) {
-    if (sounds[cubeName] && sounds[cubeName].isPlaying) sounds[cubeName].stop();
+    const { sound } = findSoundEntry(cubeName);
+    if (!sound) return;
+    sound.userData.threeDPLPlayRequested = false;
+    if (sound.isPlaying) sound.stop();
 };
 
 window.SetPitch = function(cubeName, pitch) {
-    if (sounds[cubeName]) sounds[cubeName].setPlaybackRate(pitch);
+    const { sound } = findSoundEntry(cubeName);
+    if (sound) sound.setPlaybackRate(pitch);
 };
 
 window.SetVolume = function(cubeName, vol) {
-    if (sounds[cubeName]) sounds[cubeName].setVolume(vol);
+    const { sound } = findSoundEntry(cubeName);
+    if (sound) sound.setVolume(vol);
 };
 
 // --- Object and XML Loading ---
 const personalFallbackStatuses = new Set([401, 403, 404]);
+
+function isPersonalFallbackError(error) {
+    return personalFallbackStatuses.has(error?.status) ||
+        error?.code === 'session_scope_mismatch';
+}
 
 function httpResponseError(response, body = null) {
     const message = body?.message || body?.error ||
@@ -2346,8 +2823,15 @@ function personalObjectResourceUrl(reference, nick = loggedInNick) {
         `&scope=${encodeURIComponent(nick)}`;
 }
 
+function personalObjectCacheKey(reference, nick = loggedInNick) {
+    const filename = flatPersonalJSONName(reference);
+    return nick && filename
+        ? `personal-object:${nick.toLowerCase()}:${filename.toLowerCase()}`
+        : '';
+}
+
 function clearPersonalObjectCaches() {
-    const prefix = 'server_side/download_object.php?';
+    const prefix = 'personal-object:';
     Object.keys(loadedObjectCache).forEach(key => {
         if (key.startsWith(prefix)) delete loadedObjectCache[key];
     });
@@ -2362,16 +2846,16 @@ function clearPersonalObjectCaches() {
 }
 
 function invalidatePersonalObjectCache(reference) {
-    const url = personalObjectResourceUrl(reference);
-    if (!url) return;
-    delete loadedObjectCache[url];
-    delete pendingObjectDataPromises[url];
-    objectCollisionDataCache.delete(url);
+    const key = personalObjectCacheKey(reference);
+    if (!key) return;
+    delete loadedObjectCache[key];
+    delete pendingObjectDataPromises[key];
+    objectCollisionDataCache.delete(key);
 }
 
-function fetchObjectData(url) {
-    if (pendingObjectDataPromises[url]) {
-        return pendingObjectDataPromises[url];
+function fetchObjectData(url, cacheKey = url) {
+    if (pendingObjectDataPromises[cacheKey]) {
+        return pendingObjectDataPromises[cacheKey];
     }
 
     const isPersonalRequest = url.startsWith('server_side/download_object.php?');
@@ -2388,31 +2872,39 @@ function fetchObjectData(url) {
             return response.json();
         })
         .then(data => {
-            loadedObjectCache[url] = data;
+            loadedObjectCache[cacheKey] = data;
             return data;
         });
 
-    pendingObjectDataPromises[url] = request;
+    pendingObjectDataPromises[cacheKey] = request;
     request.then(
-        () => delete pendingObjectDataPromises[url],
-        () => delete pendingObjectDataPromises[url]
+        () => delete pendingObjectDataPromises[cacheKey],
+        () => delete pendingObjectDataPromises[cacheKey]
     );
     return request;
 }
 
-async function fetchObjectDataPersonalFirst(personalUrl, sharedUrl) {
+async function fetchObjectDataPersonalFirst(
+    personalUrl,
+    personalCacheKey,
+    sharedUrl,
+    requestedNick
+) {
     if (!personalUrl) {
         return { data: await fetchObjectData(sharedUrl), resolvedUrl: sharedUrl };
     }
 
     try {
         return {
-            data: await fetchObjectData(personalUrl),
-            resolvedUrl: personalUrl
+            data: await fetchObjectData(personalUrl, personalCacheKey),
+            resolvedUrl: personalCacheKey
         };
     } catch (error) {
-        if (!personalFallbackStatuses.has(error.status)) throw error;
-        if (error.status === 401 || error.status === 403) setLoggedInNick('');
+        if (!isPersonalFallbackError(error)) throw error;
+        if (loggedInNick === requestedNick &&
+            (error.status === 401 || error.status === 403)) {
+            setLoggedInNick('');
+        }
         return { data: await fetchObjectData(sharedUrl), resolvedUrl: sharedUrl };
     }
 }
@@ -2421,7 +2913,9 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
     const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
     const sharedUrl = objectJSONUrl(normalizedReference);
+    const personalNick = loggedInNick;
     const personalUrl = personalObjectResourceUrl(normalizedReference);
+    const personalCacheKey = personalObjectCacheKey(normalizedReference);
     x = x || 0; y = y || 0; z = z || 0;
     instanceName = instanceName || ("obj_" + Math.random().toString(36).substr(2, 5));
 
@@ -2496,8 +2990,8 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
         return axisGroup;
     };
 
-    const synchronouslyCachedUrl = personalUrl && loadedObjectCache[personalUrl]
-        ? personalUrl
+    const synchronouslyCachedUrl = personalUrl && loadedObjectCache[personalCacheKey]
+        ? personalCacheKey
         : (!personalUrl && loadedObjectCache[sharedUrl] ? sharedUrl : '');
     if (synchronouslyCachedUrl) {
         try {
@@ -2512,7 +3006,12 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
         }
         axisGroup.userData.ready = Promise.resolve(axisGroup);
     } else {
-        axisGroup.userData.ready = fetchObjectDataPersonalFirst(personalUrl, sharedUrl)
+        axisGroup.userData.ready = fetchObjectDataPersonalFirst(
+            personalUrl,
+            personalCacheKey,
+            sharedUrl,
+            personalNick
+        )
             .then(result => finishObjectLoad(result.data, result.resolvedUrl))
             .catch(err => {
                 axisGroup.userData.loadError = err.message;
@@ -2935,8 +3434,10 @@ window.LoadMap = function(mapJsonFile, objectName) {
 
     const mapUrl = `Maps/${relativeMapFile}`;
     const personalMapName = flatPersonalJSONName(relativeMapFile);
-    const personalMapUrl = loggedInNick && personalMapName
-        ? `server_side/load_map.php?name=${encodeURIComponent(personalMapName)}`
+    const personalMapNick = loggedInNick;
+    const personalMapUrl = personalMapNick && personalMapName
+        ? `server_side/load_map.php?name=${encodeURIComponent(personalMapName)}` +
+            `&scope=${encodeURIComponent(personalMapNick)}`
         : '';
 
     objectName = objectName || (`map_${Math.random().toString(36).substr(2, 5)}`);
@@ -2962,12 +3463,12 @@ window.LoadMap = function(mapJsonFile, objectName) {
                     resolvedUrl: personalMapUrl
                 };
             }
-            if (!personalFallbackStatuses.has(personalResponse.status)) {
-                let body = null;
-                try { body = await personalResponse.json(); } catch (error) { /* Status is enough. */ }
-                throw httpResponseError(personalResponse, body);
-            }
-            if (personalResponse.status === 401 || personalResponse.status === 403) {
+            let body = null;
+            try { body = await personalResponse.json(); } catch (error) { /* Status is enough. */ }
+            const personalError = httpResponseError(personalResponse, body);
+            if (!isPersonalFallbackError(personalError)) throw personalError;
+            if (loggedInNick === personalMapNick &&
+                (personalResponse.status === 401 || personalResponse.status === 403)) {
                 setLoggedInNick('');
             }
         }
@@ -3119,9 +3620,9 @@ document.getElementById('file-input-json').onchange = (e) => {
 const cloudObjectModal = document.getElementById('cloud-object-modal');
 const cloudObjectList = document.getElementById('cloud-object-list');
 
-function requireLoggedInUser() {
+function requireLoggedInUser(assetType = 'online files') {
     if (loggedInNick) return true;
-    window.alert('You must log in before using online object storage.');
+    window.alert(`You must log in before using ${assetType}.`);
     openAuthModal('login');
     return false;
 }
@@ -3131,20 +3632,31 @@ function closeCloudObjectModal() {
     cloudObjectModal.setAttribute('aria-hidden', 'true');
 }
 
-function handleCloudObjectError(error) {
+function handleCloudError(error, assetType = 'file', expectedNick = null) {
+    if (expectedNick !== null && loggedInNick !== expectedNick) {
+        window.alert(activeAccountChangedError().message);
+        return;
+    }
+    if (error.code === 'session_scope_mismatch') {
+        window.alert('The active account changed while this request was running. Please try again.');
+        return;
+    }
     if (error.status === 401 || error.status === 403) {
         setLoggedInNick('');
-        window.alert('You must log in before using online object storage.');
+        window.alert(`You must log in before using online ${assetType} storage.`);
         openAuthModal('login');
         return;
     }
-    window.alert(error.message || 'The object request failed.');
+    window.alert(error.message || `The ${assetType} request failed.`);
 }
+
+const handleCloudObjectError = error => handleCloudError(error, 'object');
 
 async function sendCloudObject(objectName, overwrite = false) {
     const payload = JSON.stringify(serializeObjectEditor(), null, 2);
     const formData = new FormData();
     formData.append('object', new Blob([payload], { type: 'application/json' }), `${objectName}.json`);
+    formData.append('scope', loggedInNick);
     if (overwrite) formData.append('overwrite', '1');
     const response = await fetch('server_side/upload_object.php', {
         method: 'POST',
@@ -3155,7 +3667,7 @@ async function sendCloudObject(objectName, overwrite = false) {
 }
 
 document.getElementById('btn-upload-cloud-object').onclick = async () => {
-    if (!requireLoggedInUser()) return;
+    if (!requireLoggedInUser('online object storage')) return;
     const requestedName = window.prompt('Object name:', 'my_object');
     if (requestedName === null) return;
     const objectName = requestedName.trim().replace(/\.json$/i, '');
@@ -3166,16 +3678,25 @@ document.getElementById('btn-upload-cloud-object').onclick = async () => {
 
     try {
         const result = await sendCloudObject(objectName);
+        invalidatePersonalObjectCache(result.name || `${objectName}.json`);
         window.alert(`Uploaded ${result.name || `${objectName}.json`}`);
+        refreshPersonalObjectLibrary().catch(error =>
+            console.warn('Object library refresh failed:', error));
     } catch (error) {
-        if (error.status === 409 && window.confirm('That object already exists. Replace it?')) {
+        if (error.code === 'shared_name_exists') {
+            window.alert('A shared object already uses that filename. Give your object a novel name.');
+        } else if (error.code === 'object_exists' &&
+            window.confirm('That object already exists in your account. Replace it?')) {
             try {
                 const result = await sendCloudObject(objectName, true);
+                invalidatePersonalObjectCache(result.name || `${objectName}.json`);
                 window.alert(`Uploaded ${result.name || `${objectName}.json`}`);
+                refreshPersonalObjectLibrary().catch(error =>
+                    console.warn('Object library refresh failed:', error));
             } catch (overwriteError) {
                 handleCloudObjectError(overwriteError);
             }
-        } else if (error.status !== 409) {
+        } else if (error.code !== 'object_exists') {
             handleCloudObjectError(error);
         }
     }
@@ -3189,10 +3710,13 @@ async function refreshCloudObjectList() {
     loadingOption.disabled = true;
     cloudObjectList.appendChild(loadingOption);
 
-    const response = await fetch('server_side/download_object.php', {
+    const response = await fetch(
+        `server_side/download_object.php?scope=${encodeURIComponent(loggedInNick)}`,
+        {
         credentials: 'same-origin',
         cache: 'no-store'
-    });
+        }
+    );
     const result = await readApiResponse(response);
     cloudObjectList.replaceChildren();
     const objects = Array.isArray(result.objects) ? result.objects : [];
@@ -3216,7 +3740,7 @@ async function refreshCloudObjectList() {
 }
 
 document.getElementById('btn-download-cloud-object').onclick = async () => {
-    if (!requireLoggedInUser()) return;
+    if (!requireLoggedInUser('online object storage')) return;
     if (document.pointerLockElement) document.exitPointerLock();
     cloudObjectModal.classList.add('open');
     cloudObjectModal.setAttribute('aria-hidden', 'false');
@@ -3241,13 +3765,14 @@ document.getElementById('btn-load-cloud-object').onclick = async () => {
     const filename = cloudObjectList.value;
     if (!filename) return;
     try {
-        const response = await fetch(`server_side/download_object.php?name=${encodeURIComponent(filename)}`, {
+        const response = await fetch(personalObjectResourceUrl(filename), {
             credentials: 'same-origin',
             cache: 'no-store'
         });
         if (!response.ok) await readApiResponse(response);
         const data = await response.json();
         loadObjectEditorData(data.object || data);
+        invalidatePersonalObjectCache(filename);
         closeCloudObjectModal();
         window.alert(`Loaded ${filename}`);
     } catch (error) {
@@ -3259,6 +3784,451 @@ document.getElementById('btn-close-cloud-objects').onclick = closeCloudObjectMod
 cloudObjectModal.addEventListener('pointerdown', event => {
     if (event.target === cloudObjectModal) closeCloudObjectModal();
 });
+
+// --- Authenticated program, map, audio, and texture storage ---
+const cloudFileModal = document.getElementById('cloud-file-modal');
+const cloudFileTitle = document.getElementById('cloud-file-title');
+const cloudFileMessage = document.getElementById('cloud-file-message');
+const cloudFileList = document.getElementById('cloud-file-list');
+const cloudFileLoadButton = document.getElementById('btn-load-cloud-file');
+let cloudFileDialog = null;
+
+function closeCloudFileModal() {
+    cloudFileModal.classList.remove('open');
+    cloudFileModal.setAttribute('aria-hidden', 'true');
+    cloudFileList.replaceChildren();
+    cloudFileMessage.textContent = '';
+    cloudFileDialog = null;
+}
+
+function scopedPersonalEndpoint(endpoint, params = {}, nick = loggedInNick) {
+    const query = new URLSearchParams(params);
+    query.set('scope', nick);
+    return `${endpoint}?${query}`;
+}
+
+function handleCloudFileError(dialog, error) {
+    handleCloudError(error, dialog.assetType, dialog.accountNick ?? null);
+}
+
+async function refreshCloudFileList() {
+    if (!cloudFileDialog) return;
+    const dialog = cloudFileDialog;
+    cloudFileMessage.textContent = 'Loading...';
+    cloudFileList.replaceChildren();
+    const response = await fetch(dialog.listUrl(), {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    const result = await readApiResponse(response);
+    if (dialog !== cloudFileDialog) return;
+    if (dialog.accountNick !== undefined) {
+        assertActiveAccount(dialog.accountNick);
+    }
+
+    const records = Array.isArray(result[dialog.listKey])
+        ? result[dialog.listKey]
+        : [];
+    records.forEach(record => {
+        const name = typeof record === 'string' ? record : record?.name;
+        if (!name) return;
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = dialog.describe
+            ? dialog.describe(record, name)
+            : name;
+        cloudFileList.appendChild(option);
+    });
+    if (cloudFileList.options.length > 0) {
+        cloudFileList.selectedIndex = 0;
+        cloudFileMessage.textContent = `${cloudFileList.options.length} file(s)`;
+        cloudFileLoadButton.disabled = false;
+    } else {
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = dialog.emptyText;
+        emptyOption.disabled = true;
+        cloudFileList.appendChild(emptyOption);
+        cloudFileMessage.textContent = dialog.emptyText;
+        cloudFileLoadButton.disabled = true;
+    }
+}
+
+async function openCloudFileModal(config) {
+    if (!requireLoggedInUser(config.storageLabel)) return;
+    if (document.pointerLockElement) document.exitPointerLock();
+    cloudFileDialog = config;
+    cloudFileTitle.textContent = config.title;
+    cloudFileLoadButton.textContent = config.actionLabel;
+    cloudFileLoadButton.disabled = true;
+    cloudFileModal.classList.add('open');
+    cloudFileModal.setAttribute('aria-hidden', 'false');
+    try {
+        await refreshCloudFileList();
+    } catch (error) {
+        if (cloudFileDialog !== config) return;
+        closeCloudFileModal();
+        handleCloudFileError(config, error);
+    }
+}
+
+document.getElementById('btn-close-cloud-files').onclick = closeCloudFileModal;
+cloudFileModal.addEventListener('pointerdown', event => {
+    if (event.target === cloudFileModal) closeCloudFileModal();
+});
+document.getElementById('btn-refresh-cloud-files').onclick = async () => {
+    if (!cloudFileDialog) return;
+    const dialog = cloudFileDialog;
+    try {
+        await refreshCloudFileList();
+    } catch (error) {
+        if (cloudFileDialog !== dialog) return;
+        closeCloudFileModal();
+        handleCloudFileError(dialog, error);
+    }
+};
+cloudFileLoadButton.onclick = async () => {
+    if (!cloudFileDialog || !cloudFileList.value) return;
+    const dialog = cloudFileDialog;
+    cloudFileLoadButton.disabled = true;
+    cloudFileMessage.textContent = `${dialog.actionLabel}...`;
+    try {
+        await dialog.load(cloudFileList.value);
+        if (dialog.accountNick !== undefined) {
+            assertActiveAccount(dialog.accountNick);
+        }
+        closeCloudFileModal();
+    } catch (error) {
+        if (cloudFileDialog !== dialog) return;
+        cloudFileMessage.textContent = error.message;
+        handleCloudFileError(dialog, error);
+    } finally {
+        if (cloudFileDialog === dialog) cloudFileLoadButton.disabled = false;
+    }
+};
+cloudFileList.ondblclick = () => cloudFileLoadButton.click();
+
+async function downloadCloudResponse(response, filename, expectedNick = null) {
+    if (!response.ok) await readApiResponse(response);
+    if (expectedNick !== null) assertActiveAccount(expectedNick);
+    const blob = await response.blob();
+    if (expectedNick !== null) assertActiveAccount(expectedNick);
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+
+function validCloudProgramName(name) {
+    return name.length <= 128 &&
+        /^[A-Za-z0-9](?:[A-Za-z0-9 ._-]*[A-Za-z0-9_-])?$/.test(name);
+}
+
+async function sendCloudProgram(programName, overwrite = false) {
+    const formData = new FormData();
+    formData.append('declarations', new Blob(
+        [editorDeclarations.getValue()],
+        { type: 'text/plain;charset=utf-8' }
+    ), `${programName}.declarations`);
+    formData.append('update', new Blob(
+        [editorUpdate.getValue()],
+        { type: 'text/plain;charset=utf-8' }
+    ), `${programName}.update`);
+    formData.append('program_name', programName);
+    formData.append('scope', loggedInNick);
+    if (overwrite) formData.append('overwrite', '1');
+    const response = await fetch('server_side/upload_program.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    });
+    return readApiResponse(response);
+}
+
+document.getElementById('btn-upload-cloud-program').onclick = async () => {
+    if (!requireLoggedInUser('online program storage')) return;
+    const requestedName = window.prompt('Program name:', currentProgramName);
+    if (requestedName === null) return;
+    const programName = requestedName.trim()
+        .replace(/\.(?:declarations|update)$/i, '')
+        .trim();
+    if (!validCloudProgramName(programName)) {
+        window.alert('Use a name up to 128 characters containing letters, numbers, spaces, dots, underscores, or hyphens.');
+        return;
+    }
+
+    try {
+        const result = await sendCloudProgram(programName);
+        setCurrentProgramName(result.name || programName);
+        window.alert(`Uploaded program ${result.name || programName}`);
+    } catch (error) {
+        if (error.code === 'program_exists' &&
+            window.confirm('That program already exists in your account. Replace it?')) {
+            try {
+                const result = await sendCloudProgram(programName, true);
+                setCurrentProgramName(result.name || programName);
+                window.alert(`Uploaded program ${result.name || programName}`);
+            } catch (overwriteError) {
+                handleCloudError(overwriteError, 'program');
+            }
+        } else if (error.code !== 'program_exists') {
+            handleCloudError(error, 'program');
+        }
+    }
+};
+
+document.getElementById('btn-load-cloud-program').onclick = () =>
+    openCloudFileModal({
+        title: 'My Programs',
+        storageLabel: 'online program storage',
+        assetType: 'program',
+        listUrl: () => scopedPersonalEndpoint('server_side/load_program.php'),
+        listKey: 'programs',
+        emptyText: 'No uploaded programs',
+        actionLabel: 'Load program',
+        load: async name => {
+            const response = await fetch(scopedPersonalEndpoint(
+                'server_side/load_program.php',
+                { name }
+            ), { credentials: 'same-origin', cache: 'no-store' });
+            const result = await readApiResponse(response);
+            applyProgramCode(result.declarations, result.update, result.name || name);
+            window.alert(`Loaded program ${result.name || name}`);
+        }
+    });
+
+function normalizeCloudJSONName(value) {
+    let name = String(value || '').trim();
+    if (name && !/\.json$/i.test(name)) name += '.json';
+    return name.length <= 128 &&
+        /^[A-Za-z0-9][A-Za-z0-9 ._-]*\.json$/i.test(name)
+        ? name
+        : '';
+}
+
+async function sendCloudMap(mapName, overwrite = false) {
+    const payload = JSON.stringify(serializeMapEditor(), null, 2);
+    const formData = new FormData();
+    formData.append('map', new Blob([payload], { type: 'application/json' }), mapName);
+    formData.append('map_name', mapName);
+    formData.append('scope', loggedInNick);
+    if (overwrite) formData.append('overwrite', '1');
+    const response = await fetch('server_side/upload_map.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    });
+    return readApiResponse(response);
+}
+
+document.getElementById('btn-upload-cloud-map').onclick = async () => {
+    if (!requireLoggedInUser('online map storage')) return;
+    const requestedName = window.prompt('Map filename:', currentMapName);
+    if (requestedName === null) return;
+    const mapName = normalizeCloudJSONName(requestedName);
+    if (!mapName) {
+        window.alert('Use a JSON filename containing letters, numbers, spaces, dots, underscores, or hyphens.');
+        return;
+    }
+
+    try {
+        const result = await sendCloudMap(mapName);
+        currentMapName = result.name || mapName;
+        window.alert(`Uploaded ${currentMapName}`);
+    } catch (error) {
+        if (error.code === 'shared_name_exists') {
+            window.alert('A shared map already uses that filename. Give your map a novel name.');
+        } else if (error.code === 'map_exists' &&
+            window.confirm('That map already exists in your account. Replace it?')) {
+            try {
+                const result = await sendCloudMap(mapName, true);
+                currentMapName = result.name || mapName;
+                window.alert(`Uploaded ${currentMapName}`);
+            } catch (overwriteError) {
+                handleCloudError(overwriteError, 'map');
+            }
+        } else if (error.code !== 'map_exists') {
+            handleCloudError(error, 'map');
+        }
+    }
+};
+
+document.getElementById('btn-load-cloud-map').onclick = () =>
+    openCloudFileModal({
+        title: 'My Maps',
+        storageLabel: 'online map storage',
+        assetType: 'map',
+        listUrl: () => scopedPersonalEndpoint('server_side/load_map.php'),
+        listKey: 'maps',
+        emptyText: 'No uploaded maps',
+        actionLabel: 'Load map',
+        load: async name => {
+            const response = await fetch(scopedPersonalEndpoint(
+                'server_side/load_map.php',
+                { name }
+            ), { credentials: 'same-origin', cache: 'no-store' });
+            if (!response.ok) await readApiResponse(response);
+            await loadMapEditorData(await response.json(), name);
+            window.alert(`Loaded ${name}`);
+        }
+    });
+
+function chooseUploadFile(input, storageLabel) {
+    if (!requireLoggedInUser(storageLabel)) return;
+    input.value = '';
+    input.click();
+}
+
+const audioFileInput = document.getElementById('file-input-audio');
+document.getElementById('btn-upload-cloud-audio').onclick = () =>
+    chooseUploadFile(audioFileInput, 'your private audio storage');
+audioFileInput.onchange = async () => {
+    const file = audioFileInput.files[0];
+    if (!file) return;
+    if (!requireLoggedInUser('your private audio storage')) {
+        audioFileInput.value = '';
+        return;
+    }
+    const requestedNick = loggedInNick;
+    const requestedName = window.prompt('Audio filename:', file.name);
+    audioFileInput.value = '';
+    if (requestedName === null) return;
+    const audioName = flatAudioFilename(requestedName);
+    if (!audioName) {
+        window.alert('Use a supported audio filename without folders.');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('audio', file, audioName);
+    formData.append('audio_name', audioName);
+    formData.append('scope', requestedNick);
+    try {
+        const response = await fetch('server_side/upload_audio.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData
+        });
+        const result = await readApiResponse(response);
+        assertActiveAccount(requestedNick);
+        window.alert(`Uploaded ${result.name || audioName}`);
+    } catch (error) {
+        if (loggedInNick !== requestedNick) {
+            handleCloudError(error, 'audio', requestedNick);
+        } else if (error.code === 'audio_exists') {
+            window.alert('An audio file with that name already exists. Give it a novel name.');
+        } else {
+            handleCloudError(error, 'audio', requestedNick);
+        }
+    }
+};
+
+document.getElementById('btn-load-cloud-audio').onclick = () => {
+    const requestedNick = loggedInNick;
+    return openCloudFileModal({
+        title: 'My Audio',
+        storageLabel: 'your private audio storage',
+        assetType: 'audio',
+        accountNick: requestedNick,
+        listUrl: () => scopedPersonalEndpoint(
+            'server_side/load_audio.php',
+            {},
+            requestedNick
+        ),
+        listKey: 'audio',
+        emptyText: 'No audio uploaded to your account',
+        actionLabel: 'Download audio',
+        load: async name => {
+            assertActiveAccount(requestedNick);
+            const response = await fetch(scopedPersonalEndpoint(
+                'server_side/load_audio.php',
+                { name },
+                requestedNick
+            ), { credentials: 'same-origin', cache: 'no-store' });
+            await downloadCloudResponse(response, name, requestedNick);
+        }
+    });
+};
+
+async function sendCloudTexture(file, textureName, overwrite = false) {
+    const formData = new FormData();
+    formData.append('texture', file, textureName);
+    formData.append('texture_name', textureName);
+    formData.append('scope', loggedInNick);
+    if (overwrite) formData.append('overwrite', '1');
+    const response = await fetch('server_side/upload_texture.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    });
+    return readApiResponse(response);
+}
+
+async function finishTextureUpload(result, fallbackName) {
+    clearPersonalTextureCache();
+    window.alert(`Uploaded ${result.name || fallbackName}`);
+    try {
+        await refreshPersonalTextureLibrary();
+    } catch (error) {
+        console.warn('Texture library refresh failed:', error);
+    }
+}
+
+const textureFileInput = document.getElementById('file-input-texture');
+document.getElementById('btn-upload-cloud-texture').onclick = () =>
+    chooseUploadFile(textureFileInput, 'online texture storage');
+textureFileInput.onchange = async () => {
+    const file = textureFileInput.files[0];
+    if (!file) return;
+    const requestedName = window.prompt('Texture filename:', file.name);
+    textureFileInput.value = '';
+    if (requestedName === null) return;
+    const textureName = flatTextureFilename(requestedName);
+    if (!textureName) {
+        window.alert('Use a PNG, JPEG, WebP, or GIF filename without folders.');
+        return;
+    }
+    try {
+        await finishTextureUpload(await sendCloudTexture(file, textureName), textureName);
+    } catch (error) {
+        if (error.code === 'shared_name_exists') {
+            window.alert('A shared texture already uses that filename. Give your texture a novel name.');
+        } else if (error.code === 'texture_exists' &&
+            window.confirm('That texture already exists in your account. Replace it?')) {
+            try {
+                await finishTextureUpload(
+                    await sendCloudTexture(file, textureName, true),
+                    textureName
+                );
+            } catch (overwriteError) {
+                handleCloudError(overwriteError, 'texture');
+            }
+        } else if (error.code !== 'texture_exists') {
+            handleCloudError(error, 'texture');
+        }
+    }
+};
+
+document.getElementById('btn-load-cloud-texture').onclick = () =>
+    openCloudFileModal({
+        title: 'My Textures',
+        storageLabel: 'online texture storage',
+        assetType: 'texture',
+        listUrl: () => scopedPersonalEndpoint('server_side/load_texture.php'),
+        listKey: 'textures',
+        emptyText: 'No uploaded textures',
+        actionLabel: 'Download texture',
+        load: async name => {
+            const response = await fetch(scopedPersonalEndpoint(
+                'server_side/load_texture.php',
+                { name }
+            ), { credentials: 'same-origin', cache: 'no-store' });
+            await downloadCloudResponse(response, name);
+        }
+    });
 
 document.getElementById('btn-import-xml').onclick = () => document.getElementById('file-input-xml').click();
 document.getElementById('file-input-xml').onchange = (e) => {
@@ -3423,7 +4393,7 @@ const tutorials = {
     },
     26: {
         title: "car audio",
-        decl: `// AttachSound(objectName, fileName) loads a file from Sounds/.\n// PlaySoundLoop(objectName) starts it and repeats it.\n// SetVolume(objectName, value) uses 0 for silent and 1 for full volume.\n// Audio must start after the user presses START / STOP.\n\n// These are the exact calls used by Car Simulator 6:\n// AttachSound("car0", "car.wav");\n// PlaySoundLoop("car0");\n// AttachSound("camera", "NOW7.wav");\n// PlaySoundLoop("camera");\n// SetVolume("camera", 0.1);\n\n// They are commented because this project currently has no Sounds folder.\nqb("car0", 0, 0, 0);\nsc("car0", 3, 1, 5);\ncl("car0", Color.red);`,
+        decl: `// AttachSound(objectName, fileName) creates positional 3D audio.\n// It checks your private Audio library first, then shared Audio/, then Sounds/.\n// The object must exist before AttachSound is called; "camera" is also valid.\n// AttachSound("camera", "dunce alarm.mp3");\n// PlaySound("camera");\n//\n// Use PlaySoundLoop(objectName) to repeat, StopSound(objectName) to stop,\n// SetPitch(objectName, value) for pitch, and SetVolume(objectName, 0..1).\n// Object audio becomes quieter after 20 units and is inaudible after 100.\n// Audio begins after the user presses START / STOP. These calls are\n// commented so the tutorial works without an uploaded or shared file.\nqb("car0", 0, 0, 0);\nsc("car0", 3, 1, 5);\ncl("car0", Color.red);`,
         upd: ``
     },
     27: {
@@ -3443,12 +4413,12 @@ const tutorials = {
     },
     30: {
         title: "Full Car Simulator 6",
-        decl: `// FULL CAR SIMULATOR 6\n// Arrow keys drive and steer. Space launches the car upward.\nvars["land"] = XMLObj("3DLP_MAP_ISLAND_extended.xml", "land", 0, 0, 0);\nvars["car"] = Obj("sports-car.json", "car0", -2, 0, -10);\nvars["car_colliders"] = Obj("car_colliders.json", "car_colliders", 0, 0, 0);\nvars["car_colliders"].transform.parent = vars["car"].transform;\n\nvars["car_colliders"].traverse(function(obj) {\n    if (obj.isMesh)\n        console.log("CAR COLLIDER:", obj.name, obj.position);\n});\n\nsr("land", 0, 180, 0);\nmv("land", 0, 0, -20);\nsc("car0", 0.19, 0.19, 0.19);\n\nvars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);\nvars["tire2"] = Obj("sports-car-tires.json", "tire2", 0, 0, 0);\nvars["tire3"] = Obj("sports-car-tires.json", "tire3", 0, 0, 0);\nvars["tire4"] = Obj("sports-car-tires.json", "tire4", 0, 0, 0);\nsc("tire1", 0.10, 0.10, 0.10);\nsc("tire2", 0.10, 0.10, 0.10);\nsc("tire3", 0.10, 0.10, 0.10);\nsc("tire4", 0.10, 0.10, 0.10);\n\nsp("tire1", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire2", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire3", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\nsp("tire4", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\n\nvars["tire1"].transform.parent = vars["car"].transform;\nvars["tire2"].transform.parent = vars["car"].transform;\nvars["tire3"].transform.parent = vars["car"].transform;\nvars["tire4"].transform.parent = vars["car"].transform;\n\n// Uncomment these when car.wav and NOW7.wav exist in Sounds/.\n// AttachSound("car0", "car.wav");\n// PlaySoundLoop("car0");\n// AttachSound("camera", "NOW7.wav");\n// PlaySoundLoop("camera");\n// SetVolume("camera", 0.1);\n\n// Functions are stored in vars so declarations and update share them.\nvars["move_camera"] = function() {\n    sp("camera", vars["car"].transform.position.x,\n        vars["car"].transform.position.y,\n        vars["car"].transform.position.z);\n    mv("camera", 3, 3, -30);\n};\n\nvars["rotate_tires"] = function() {\n    sr("tire1", vars["tire1"].transform.eulerAngles.x+45, vars["tire1"].transform.eulerAngles.y, vars["tire1"].transform.eulerAngles.z);\n    sr("tire2", vars["tire2"].transform.eulerAngles.x+45, vars["tire2"].transform.eulerAngles.y, vars["tire2"].transform.eulerAngles.z);\n    sr("tire3", vars["tire3"].transform.eulerAngles.x+45, vars["tire3"].transform.eulerAngles.y, vars["tire3"].transform.eulerAngles.z);\n    sr("tire4", vars["tire4"].transform.eulerAngles.x+45, vars["tire4"].transform.eulerAngles.y, vars["tire4"].transform.eulerAngles.z);\n};`,
+        decl: `// FULL CAR SIMULATOR 6\n// Arrow keys drive and steer. Space launches the car upward.\nvars["land"] = XMLObj("3DLP_MAP_ISLAND_extended.xml", "land", 0, 0, 0);\nvars["car"] = Obj("sports-car.json", "car0", -2, 0, -10);\nvars["car_colliders"] = Obj("car_colliders.json", "car_colliders", 0, 0, 0);\nvars["car_colliders"].transform.parent = vars["car"].transform;\n\nvars["car_colliders"].traverse(function(obj) {\n    if (obj.isMesh)\n        console.log("CAR COLLIDER:", obj.name, obj.position);\n});\n\nsr("land", 0, 180, 0);\nmv("land", 0, 0, -20);\nsc("car0", 0.19, 0.19, 0.19);\n\nvars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);\nvars["tire2"] = Obj("sports-car-tires.json", "tire2", 0, 0, 0);\nvars["tire3"] = Obj("sports-car-tires.json", "tire3", 0, 0, 0);\nvars["tire4"] = Obj("sports-car-tires.json", "tire4", 0, 0, 0);\nsc("tire1", 0.10, 0.10, 0.10);\nsc("tire2", 0.10, 0.10, 0.10);\nsc("tire3", 0.10, 0.10, 0.10);\nsc("tire4", 0.10, 0.10, 0.10);\n\nsp("tire1", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire2", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z-1);\nsp("tire3", vars["car"].transform.position.x-0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\nsp("tire4", vars["car"].transform.position.x+0.7, vars["car"].transform.position.y, vars["car"].transform.position.z+1);\n\nvars["tire1"].transform.parent = vars["car"].transform;\nvars["tire2"].transform.parent = vars["car"].transform;\nvars["tire3"].transform.parent = vars["car"].transform;\nvars["tire4"].transform.parent = vars["car"].transform;\n\n// AttachSound checks your private Audio library first, then legacy Sounds/.\n// Uncomment these after uploading car.wav and NOW7.wav to your account.\n// AttachSound("car0", "car.wav");\n// PlaySoundLoop("car0");\n// AttachSound("camera", "NOW7.wav");\n// PlaySoundLoop("camera");\n// SetVolume("camera", 0.1);\n\n// Functions are stored in vars so declarations and update share them.\nvars["move_camera"] = function() {\n    sp("camera", vars["car"].transform.position.x,\n        vars["car"].transform.position.y,\n        vars["car"].transform.position.z);\n    mv("camera", 3, 3, -30);\n};\n\nvars["rotate_tires"] = function() {\n    sr("tire1", vars["tire1"].transform.eulerAngles.x+45, vars["tire1"].transform.eulerAngles.y, vars["tire1"].transform.eulerAngles.z);\n    sr("tire2", vars["tire2"].transform.eulerAngles.x+45, vars["tire2"].transform.eulerAngles.y, vars["tire2"].transform.eulerAngles.z);\n    sr("tire3", vars["tire3"].transform.eulerAngles.x+45, vars["tire3"].transform.eulerAngles.y, vars["tire3"].transform.eulerAngles.z);\n    sr("tire4", vars["tire4"].transform.eulerAngles.x+45, vars["tire4"].transform.eulerAngles.y, vars["tire4"].transform.eulerAngles.z);\n};`,
         upd: `// Get user input.\nif (Input.GetKey(KeyCode.RightArrow)) {\n    rt("car0", 0, 3, 0);\n    rt("camcol", 0, 3, 0);\n}\nif (Input.GetKey(KeyCode.LeftArrow)) {\n    rt("car0", 0, -3, 0);\n    rt("camcol", 0, -3, 0);\n}\nif (Input.GetKey(KeyCode.Space)) {\n    mv("car0", 0, 100, 0);\n    mv("camcol", 0, 100, 0);\n}\n\nif (Input.GetKey(KeyCode.DownArrow) &&\n    !is_touching_voxel(vars["land"], vars["car_colliders"], "collider_back")) {\n    mv("car0", 0, 0, 1);\n    mv("camcol", 0, 0, 1);\n    vars["rotate_tires"]();\n}\n\nif (Input.GetKey(KeyCode.UpArrow) &&\n    !is_touching_voxel(vars["land"], vars["car_colliders"], "collider_front")) {\n    mv("car0", 0, 0, -1);\n    mv("camcol", 0, 0, -1);\n    vars["rotate_tires"]();\n}\n\n// Follow the car every frame.\nvars["move_camera"]();`
     },
     31: {
         title: "Helicopet Flight Simulator 3",
-        decl: "// HELICOPET FLIGHT SIMULATOR 3 - converted for 3DPL Web\n// W/S: up/down, A/D: turn, arrow keys: forward/back/sideways.\n\n// Use the same island as Car Simulator 6.\nvars[\"land\"] = XMLObj(\"3DLP_MAP_ISLAND_extended.xml\", \"land\", 0, 0, 0);\nsr(\"land\", 0, 180, 0);\nmv(\"land\", 0, 0, -20);\n\n// Load the complete helicopter and its separate rotor at the same origin.\nvars[\"helicopter\"] = Obj(\n    \"heli_no_proeller.json\", \"helicopter\", 0, 0, -10);\nvars[\"propeller\"] = Obj(\n    \"propeller.json\", \"propeller\", 0, 0, -10);\nsc(\"helicopter\", 0.25, 0.25, 0.25);\nsc(\"propeller\", 0.25, 0.25, 0.25);\nvars[\"propeller\"].transform.parent = vars[\"helicopter\"].transform;\n\n// Load four invisible collision probes, just like the car simulator.\nvars[\"helicopter_colliders\"] = Obj(\n    \"helicpter_colliders.json\", \"helicopter_colliders\", -2, 0, -10);\nsc(\"helicopter_colliders\", 0.25, 0.25, 0.25);\nvars[\"helicopter_colliders\"].transform.parent =\n    vars[\"helicopter\"].transform;\n\nvars[\"flightSpeed\"] = 1;\nvars[\"turnSpeed\"] = 5;\nvars[\"idleRotorSpeed\"] = 15\nvars[\"fastRotorSpeed\"] = 30\n\n// Follow from behind using the helicopter's current turning angle.\nvars[\"move_camera\"] = function() {\n    sp(\"camera\",\n        vars[\"helicopter\"].transform.position.x,\n        vars[\"helicopter\"].transform.position.y + 8,\n        vars[\"helicopter\"].transform.position.z);\n    sr(\"camera\", 18, vars[\"helicopter\"].transform.eulerAngles.y, 0);\n    mv(\"camera\", 3, 3, -30);\n};\n\n// Positive rt input becomes clockwise rotation in this web engine.\nvars[\"rotate_propeller\"] = function(amount) {\n    rt(\"propeller\", 0, amount, 0);\n};\n\n// Uncomment when these files exist in Sounds/.\n// AttachSound(\"helicopter\", \"helicopter.wav\");\n// PlaySoundLoop(\"helicopter\");\n// AttachSound(\"camera\", \"NOW1.wav\");\n// PlaySoundLoop(\"camera\");\n// SetVolume(\"camera\", 0.05);\n\nvars[\"move_camera\"]();",
+        decl: "// HELICOPET FLIGHT SIMULATOR 3 - converted for 3DPL Web\n// W/S: up/down, A/D: turn, arrow keys: forward/back/sideways.\n\n// Use the same island as Car Simulator 6.\nvars[\"land\"] = XMLObj(\"3DLP_MAP_ISLAND_extended.xml\", \"land\", 0, 0, 0);\nsr(\"land\", 0, 180, 0);\nmv(\"land\", 0, 0, -20);\n\n// Load the complete helicopter and its separate rotor at the same origin.\nvars[\"helicopter\"] = Obj(\n    \"heli_no_proeller.json\", \"helicopter\", 0, 0, -10);\nvars[\"propeller\"] = Obj(\n    \"propeller.json\", \"propeller\", 0, 0, -10);\nsc(\"helicopter\", 0.25, 0.25, 0.25);\nsc(\"propeller\", 0.25, 0.25, 0.25);\nvars[\"propeller\"].transform.parent = vars[\"helicopter\"].transform;\n\n// Load four invisible collision probes, just like the car simulator.\nvars[\"helicopter_colliders\"] = Obj(\n    \"helicpter_colliders.json\", \"helicopter_colliders\", -2, 0, -10);\nsc(\"helicopter_colliders\", 0.25, 0.25, 0.25);\nvars[\"helicopter_colliders\"].transform.parent =\n    vars[\"helicopter\"].transform;\n\nvars[\"flightSpeed\"] = 1;\nvars[\"turnSpeed\"] = 5;\nvars[\"idleRotorSpeed\"] = 15\nvars[\"fastRotorSpeed\"] = 30\n\n// Follow from behind using the helicopter's current turning angle.\nvars[\"move_camera\"] = function() {\n    sp(\"camera\",\n        vars[\"helicopter\"].transform.position.x,\n        vars[\"helicopter\"].transform.position.y + 8,\n        vars[\"helicopter\"].transform.position.z);\n    sr(\"camera\", 18, vars[\"helicopter\"].transform.eulerAngles.y, 0);\n    mv(\"camera\", 3, 3, -30);\n};\n\n// Positive rt input becomes clockwise rotation in this web engine.\nvars[\"rotate_propeller\"] = function(amount) {\n    rt(\"propeller\", 0, amount, 0);\n};\n\n// AttachSound checks your private Audio library first, then legacy Sounds/.\n// Uncomment after uploading these files to your account.\n// AttachSound(\"helicopter\", \"helicopter.wav\");\n// PlaySoundLoop(\"helicopter\");\n// AttachSound(\"camera\", \"NOW1.wav\");\n// PlaySoundLoop(\"camera\");\n// SetVolume(\"camera\", 0.05);\n\nvars[\"move_camera\"]();",
         upd: "var speed = vars[\"flightSpeed\"];\nvar colliders = vars[\"helicopter_colliders\"];\nvar land = vars[\"land\"];\nvar goingUp = Input.GetKey(KeyCode.W);\nvar goingDown = Input.GetKey(KeyCode.S);\n\n// W goes up; the top probe prevents entering terrain from below.\nif (goingUp &&\n    !is_touching_voxel(land, colliders, \"collider_top\"))\n    mv(\"helicopter\", 0, speed, 0);\n\n// S goes down; the bottom probe prevents entering the ground.\nif (goingDown &&\n    !is_touching_voxel(land, colliders, \"collider_bottom\"))\n    mv(\"helicopter\", 0, -speed, 0);\n\n// A turns counterclockwise; D turns clockwise.\nif (Input.GetKey(KeyCode.A))\n    rt(\"helicopter\", 0, -vars[\"turnSpeed\"], 0);\nif (Input.GetKey(KeyCode.D))\n    rt(\"helicopter\", 0, vars[\"turnSpeed\"], 0);\n\n// Arrow keys move in the helicopter's local directions.\nif (Input.GetKey(KeyCode.UpArrow) &&\n    !is_touching_voxel(land, colliders, \"collider_front\"))\n    mv(\"helicopter\", 0, 0, speed);\nif (Input.GetKey(KeyCode.DownArrow) &&\n    !is_touching_voxel(land, colliders, \"collider_back\"))\n    mv(\"helicopter\", 0, 0, -speed);\nif (Input.GetKey(KeyCode.LeftArrow))\n    mv(\"helicopter\", -speed, 0, 0);\nif (Input.GetKey(KeyCode.RightArrow))\n    mv(\"helicopter\", speed, 0, 0);\n\n// The rotor always spins clockwise and speeds up during ascent/descent.\nvar rotorSpeed = (goingUp || goingDown)\n    ? vars[\"fastRotorSpeed\"]\n    : vars[\"idleRotorSpeed\"];\nvars[\"rotate_propeller\"](rotorSpeed);\nvars[\"move_camera\"]();"
     },
     32: {
@@ -3907,6 +4877,20 @@ document.getElementById('btn-load-program').onclick = () => {
     programFileInput.click();
 };
 
+function applyProgramCode(declarationsCode, updateCode, programName) {
+    isExecuting = false;
+    suppressDeclarationEvaluation = true;
+    try {
+        editorDeclarations.setValue(String(declarationsCode ?? ''));
+        editorUpdate.setValue(String(updateCode ?? ''));
+    } finally {
+        suppressDeclarationEvaluation = false;
+    }
+    setCurrentProgramName(programName);
+    evalDeclarations();
+    refreshCodeEditors();
+}
+
 programFileInput.onchange = async () => {
     const files = [...programFileInput.files];
     const declarationsFile = files.find(file => file.name.toLowerCase().endsWith('.declarations'));
@@ -3929,16 +4913,8 @@ programFileInput.onchange = async () => {
             declarationsFile.text(),
             updateFile.text()
         ]);
-        isExecuting = false;
-        suppressDeclarationEvaluation = true;
-        editorDeclarations.setValue(declarationsCode);
-        editorUpdate.setValue(updateCode);
-        suppressDeclarationEvaluation = false;
-        setCurrentProgramName(declarationsName);
-        evalDeclarations();
-        refreshCodeEditors();
+        applyProgramCode(declarationsCode, updateCode, declarationsName);
     } catch (error) {
-        suppressDeclarationEvaluation = false;
         setDebugError(`Load Program: ${error.message}`);
     }
 };
@@ -3979,6 +4955,11 @@ document.getElementById('btn-obj-editor').onclick = () => {
     objectEditorMode = true;
 };
 
+document.getElementById('btn-audio').onclick = () => {
+    hideAllMenus();
+    document.getElementById('audio-ui').style.display = 'flex';
+};
+
 document.getElementById('btn-map-editor').onclick = () => {
     hideAllMenus();
     document.getElementById('map-editor-ui').style.display = 'flex';
@@ -4001,6 +4982,7 @@ const backToMain = () => {
 document.getElementById('btn-back-main').onclick = backToMain;
 document.getElementById('btn-exit-obj').onclick = backToMain;
 document.getElementById('btn-exit-map').onclick = backToMain;
+document.getElementById('btn-exit-audio').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
 
 document.getElementById('btn-run').onclick = (e) => {
@@ -4011,15 +4993,21 @@ document.getElementById('btn-run').onclick = (e) => {
         renderer.domElement.focus({ preventScroll: true });
     }
     
-    if (listener.context.state === 'suspended') {
-        listener.context.resume();
-    }
-
     if (!isExecuting) {
         document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
         evalDeclarations(); 
     } else {
         clearDebug();
+        if (listener.context.state !== 'running') {
+            Promise.resolve(listener.context.resume())
+                .then(playQueuedSounds)
+                .catch(error => {
+                    setDebugError(`Audio could not start: ${error.message}`);
+                    console.error('Audio resume error:', error);
+                });
+        } else {
+            playQueuedSounds();
+        }
     }
 };
 

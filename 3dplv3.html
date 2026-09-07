@@ -109,8 +109,8 @@
         .file-ops-row button { flex: 1; font-size: 12px; background: #28a745; }
         .file-ops-row button:hover { background: #218838; }
         .file-ops-row button.alt { background: #17a2b8; }
-        .cloud-object-row, .cloud-map-row { display: flex; gap: 5px; }
-        .cloud-object-row button, .cloud-map-row button {
+        .cloud-object-row, .cloud-map-row, .cloud-media-row { display: flex; gap: 5px; }
+        .cloud-object-row button, .cloud-map-row button, .cloud-media-row button {
             flex: 1;
             min-height: 42px;
             font-size: 21px;
@@ -525,7 +525,20 @@
             <h2>Creative Mode</h2>
             <button id="btn-obj-editor">Object Editor</button>
             <button id="btn-map-editor">Map Editor</button>
+            <button id="btn-audio">Audio</button>
             <button id="btn-back-main">Back to Main Menu</button>
+        </div>
+
+        <!-- Audio Library UI -->
+        <div id="audio-ui" class="menu-panel center-menu" style="display: none;">
+            <h3>My Audio</h3>
+            <p>Upload audio to your private account library or download one of your files. Programs check your private files before the shared Audio/ folder.</p>
+            <div class="cloud-media-row" aria-label="My private audio storage">
+                <button id="btn-upload-cloud-audio" type="button" aria-label="Upload audio to my account" title="Upload audio to my account">☁️↑</button>
+                <button id="btn-load-cloud-audio" type="button" aria-label="Download audio from my account" title="Download audio from my account">☁️↓</button>
+            </div>
+            <input type="file" id="file-input-audio" style="display: none;" accept="audio/*,.mp3,.wav,.ogg,.oga,.opus,.m4a,.aac,.flac,.webm">
+            <button id="btn-exit-audio">Exit to Menu</button>
         </div>
 
         <!-- Object Editor UI -->
@@ -568,6 +581,11 @@
                 <button id="btn-select-texture">Select Texture</button>
                 <button id="btn-clear-texture" title="Place color-only blocks">Clear</button>
             </div>
+            <div class="cloud-media-row" aria-label="Online texture storage">
+                <button id="btn-upload-cloud-texture" type="button" aria-label="Upload texture to my account" title="Upload texture to my account">☁️↑</button>
+                <button id="btn-load-cloud-texture" type="button" aria-label="Download texture from my account" title="Download texture from my account">☁️↓</button>
+            </div>
+            <input type="file" id="file-input-texture" style="display: none;" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif">
             <div id="selected-texture-name">Selected: None (color only)</div>
             <div id="texture-picker">
                 <input type="search" id="texture-search" placeholder="Search textures...">
@@ -655,6 +673,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260826-cloud-files-1"></script>
+    <script type="module" src="main.js?v=20260828-spatial-audio-5"></script>
 </body>
 </html>

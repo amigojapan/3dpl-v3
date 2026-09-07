@@ -6,6 +6,9 @@ require_once __DIR__ . '/api_common.php';
 api_require_method('POST');
 $nick = api_require_user();
 session_write_close();
+api_require_matching_scope($_POST, $nick);
+$userLayout = api_require_user_layout($nick);
+$programsDirectory = $userLayout['Programs'];
 
 /** @return array{name: string, tmp_name: string, size: int} */
 function program_upload_part(string $field, string $extension): array
@@ -55,11 +58,13 @@ $updateUpload = program_upload_part('update', 'update');
 $declarationsBase = api_normalize_program_name($declarationsUpload['name']);
 $updateBase = api_normalize_program_name($updateUpload['name']);
 $programName = api_normalize_program_name((string)($_POST['program_name'] ?? ''));
+if (strcasecmp($declarationsBase, $updateBase) !== 0) {
+    api_fail('program_name_mismatch', 'The declarations and update filenames must have the same program name.', 422);
+}
 if ($programName === '') {
-    if (strcasecmp($declarationsBase, $updateBase) !== 0) {
-        api_fail('program_name_mismatch', 'The declarations and update filenames must have the same program name.', 422);
-    }
     $programName = $declarationsBase;
+} elseif (strcasecmp($programName, $declarationsBase) !== 0) {
+    api_fail('program_name_mismatch', 'The submitted program name must match both uploaded filenames.', 422);
 }
 if (!api_valid_program_name($programName)) {
     api_fail(
@@ -82,8 +87,11 @@ $declarationsDestination = null;
 $updateDestination = null;
 
 try {
-    $programsDirectory = api_programs_directory($nick, true);
-    $lock = fopen($programsDirectory . DIRECTORY_SEPARATOR . '.programs.lock', 'c');
+    $lockPath = $programsDirectory . DIRECTORY_SEPARATOR . '.programs.lock';
+    if (is_link($lockPath)) {
+        throw new RuntimeException('The program storage lock path is unsafe.');
+    }
+    $lock = fopen($lockPath, 'c');
     if ($lock === false || !flock($lock, LOCK_EX)) {
         throw new RuntimeException('The program storage lock could not be acquired.');
     }

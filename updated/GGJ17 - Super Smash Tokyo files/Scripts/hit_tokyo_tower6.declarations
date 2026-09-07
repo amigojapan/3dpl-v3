@@ -1,0 +1,58 @@
+//Time Lord diversifyer
+if(new Date().getHours() > 18) {
+  SetSkyStarryNight();
+}else{
+  SetSkyNone();
+}
+
+vars["TT_SDC"]=30;
+vars["dragon_head"]=Obj("DragonHead5.json","dragon_head",0,0,0);
+((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_head"], 0,180,0);
+for(var i=0;i<6;i++){ 
+  vars["dragon_body"+i]=Obj("DragonTrunk2.json","dragon_body"+i,0,-5,-13*(i+1));
+  ((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_body"+i], 0,180,0);
+  //adding parent child relationship to be able to scale based on just one scale to retain same ratio
+  if(i==0){
+    vars["dragon_head"].attach(vars["dragon_body0"]);
+  }
+else{
+    vars["dragon_head"].attach(vars["dragon_body"+i]);
+  }
+}
+vars["TokyoTower"]=Obj("TokyoTower3.json","TT",0,0,20);
+vars["dragon_tail"]=Obj("DragonTail.json","dragon_tail",0,0,-13*8);
+((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_tail"], 0,180,0);
+vars["dragon_head"].attach(vars["dragon_tail"]);
+function sc_(name, x, y, z) {
+    sc(name, x, y, z);
+}
+vars["dragon_y_max"]=vars["dragon_head"].position.y+1;
+vars["dragon_y_min"]=vars["dragon_head"].position.y-1;
+vars["rad"]=0;
+
+//===========================================
+sc_("dragon_head",0.1,0.1,0.1);
+class breath {
+    constructor(name, x, y, z) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
+        if (name) {
+            vars[name] = qb(
+                name + "_",
+                vars["BreathOrigine"].position.x,
+                vars["BreathOrigine"].position.y,
+                vars["BreathOrigine"].position.z
+            );
+        }
+    }
+}
+vars["breath_"]=new breath();
+vars["breathCount"]=0;
+vars["time"]=0;
+vars["BreathOrigine"]=qb("BreathOrigine",vars["dragon_head"].position.x,vars["dragon_head"].position.y,vars["dragon_head"].position.z+10);
+vars["dragon_head"].attach(vars["BreathOrigine"]);
+cl("BreathOrigine", Color.black);
+alpha("BreathOrigine", 0);
+vars["TTHP"]=10;
+vars["TTBreak"]=false;

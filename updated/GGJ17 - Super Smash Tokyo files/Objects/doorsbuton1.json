@@ -1,0 +1,14 @@
+[
+  {
+    "cubename": "1f212d62-a19a-4c97-8dea-a3d94bb35adc",
+    "x": -1,
+    "y": 0,
+    "z": 0,
+    "r": 55,
+    "g": 55,
+    "b": 55,
+    "alpha": 1,
+    "TextureName": "doorsbuton1.png",
+    "WrapOnSides": 1
+  }
+]

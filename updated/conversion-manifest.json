@@ -1,0 +1,3016 @@
+{
+  "format": "3DPLv3 archive conversion manifest",
+  "source_root": "obsolete",
+  "destination_root": "updated",
+  "source_file_count": 343,
+  "output_file_count_excluding_manifest_and_report": 343,
+  "counts": {
+    "copied": 43,
+    "converted-binary-object": 219,
+    "converted-xml-object": 21,
+    "converted-program": 60
+  },
+  "legacy_object_aliases": {
+    "sstmixground.obj": "sstmixbiggrass1.json",
+    "sstground.obj": "sstroad1.json",
+    "sstcrossground.obj": "sstcrossroad1.json",
+    "sstdground.obj": "sstdgrass1.json",
+    "sstbground.obj": "sstbgrass1.json",
+    "Senouziv.obj": "Senouzi.json"
+  },
+  "files": [
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/8bit-color-palette.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/8bit-color-palette.png",
+      "action": "copied",
+      "source_sha256": "0c4766fba631ed1d32f0ae11395c880951a2b897896bb61b748b62c237d49a70",
+      "destination_sha256": "0c4766fba631ed1d32f0ae11395c880951a2b897896bb61b748b62c237d49a70"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Buildings concepts 2D - Tokyo Tower BASE.xlsx",
+      "destination": "GGJ17 - Super Smash Tokyo files/Buildings concepts 2D - Tokyo Tower BASE.xlsx",
+      "action": "copied",
+      "source_sha256": "add7800398b533446fdcd9f371b4b3d59ab3d69f9aa4b8044ff41e687acf03f1",
+      "destination_sha256": "add7800398b533446fdcd9f371b4b3d59ab3d69f9aa4b8044ff41e687acf03f1"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/buildings-2D-conept.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/buildings-2D-conept.png",
+      "action": "copied",
+      "source_sha256": "e4aae06d79259122da3c6bff1a477b46a9c0ce4607514409ba76461dcb3271ca",
+      "destination_sha256": "e4aae06d79259122da3c6bff1a477b46a9c0ce4607514409ba76461dcb3271ca"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Color palette with RGB numbers.xlsx",
+      "destination": "GGJ17 - Super Smash Tokyo files/Color palette with RGB numbers.xlsx",
+      "action": "copied",
+      "source_sha256": "099529d90e1d448737529eccc0684419c5e26675a45e3c09917623d91775da8c",
+      "destination_sha256": "099529d90e1d448737529eccc0684419c5e26675a45e3c09917623d91775da8c"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/dragon sceencapture-trimmed.mov",
+      "destination": "GGJ17 - Super Smash Tokyo files/dragon sceencapture-trimmed.mov",
+      "action": "copied",
+      "source_sha256": "0aeddfaa361aab33f760a7cc11b58ce40ab8ace7291fc2c8f59305dcc4ee8390",
+      "destination_sha256": "0aeddfaa361aab33f760a7cc11b58ce40ab8ace7291fc2c8f59305dcc4ee8390"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/dragon-2D.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/dragon-2D.png",
+      "action": "copied",
+      "source_sha256": "a4308292db6ac2637a89f0ce85796f793f5810ff8d23b3487a5cabef6e6e1fdc",
+      "destination_sha256": "a4308292db6ac2637a89f0ce85796f793f5810ff8d23b3487a5cabef6e6e1fdc"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/house-3D.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/house-3D.jpg",
+      "action": "copied",
+      "source_sha256": "8010435311f8c8d7dfbcde5de0363412d23737498f821dd4994189c7bca01ad2",
+      "destination_sha256": "8010435311f8c8d7dfbcde5de0363412d23737498f821dd4994189c7bca01ad2"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/map-done.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/map-done.png",
+      "action": "copied",
+      "source_sha256": "ddc0ac0e99fff5fc32935af6e203fc379ec503e374154044bee8f2c89a4dffb7",
+      "destination_sha256": "ddc0ac0e99fff5fc32935af6e203fc379ec503e374154044bee8f2c89a4dffb7"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/map-for-splash.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/map-for-splash.png",
+      "action": "copied",
+      "source_sha256": "7228faf16ca2e971770218c840b7c7da094548d9f8e3ee1c9c7ebc6645cb03f5",
+      "destination_sha256": "7228faf16ca2e971770218c840b7c7da094548d9f8e3ee1c9c7ebc6645cb03f5"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/1tree.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/1tree.json",
+      "action": "converted-binary-object",
+      "source_sha256": "64fb9c6f4f6f423292b8eec5d7ca5d0d7e214e1a24c97d71a78aed1c90fbe189",
+      "destination_sha256": "2d46bfd3febae918629bc93ecb63b14bdd0bd4979850218863ab22b2e2e342fb",
+      "voxel_count": 18
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/1tree.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/1tree.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "64fb9c6f4f6f423292b8eec5d7ca5d0d7e214e1a24c97d71a78aed1c90fbe189",
+      "destination_sha256": "2d46bfd3febae918629bc93ecb63b14bdd0bd4979850218863ab22b2e2e342fb",
+      "voxel_count": 18
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/24v-template.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/24v-template.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c64bc1a02ce4dda26879cc9ece5227a24a58eff2d1bc81b0b386d85058d80b0b",
+      "destination_sha256": "2e8074dd262ed647485a7f686c137a83122d3326dbd85084450ff4792be6fbee",
+      "voxel_count": 70
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/24v-template.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/24v-template.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c64bc1a02ce4dda26879cc9ece5227a24a58eff2d1bc81b0b386d85058d80b0b",
+      "destination_sha256": "2e8074dd262ed647485a7f686c137a83122d3326dbd85084450ff4792be6fbee",
+      "voxel_count": 70
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/3DLP_MAP_ISLAND_extended.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/3DLP_MAP_ISLAND_extended.json",
+      "action": "converted-xml-object",
+      "source_sha256": "fd2898d8eafe2bc64e11f07fa94ea6d6d44a92acc95157883c8ff6a5df1661ee",
+      "destination_sha256": "6f18926416067e185c67c26ab3adaebc7ef0c178b3486d8283bf804876cde03d",
+      "voxel_count": 5991,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/3DLP_MAP_ISLAND_extended.xml のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/3DLP_MAP_ISLAND_extended.xml-copy.json",
+      "action": "converted-xml-object",
+      "source_sha256": "fd2898d8eafe2bc64e11f07fa94ea6d6d44a92acc95157883c8ff6a5df1661ee",
+      "destination_sha256": "6f18926416067e185c67c26ab3adaebc7ef0c178b3486d8283bf804876cde03d",
+      "voxel_count": 5991,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/A_TokyoTower3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/A_TokyoTower3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f26cfd8e70d4e3eea71ed44501b24a2651e5bc26004dbf295341bb1d76b1c588",
+      "destination_sha256": "4bca940fc12de6cca35da3094bd7321092b40301abaa589730fb6b635a14170a",
+      "voxel_count": 605
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/A_TokyoTower3.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/A_TokyoTower3.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f26cfd8e70d4e3eea71ed44501b24a2651e5bc26004dbf295341bb1d76b1c588",
+      "destination_sha256": "4bca940fc12de6cca35da3094bd7321092b40301abaa589730fb6b635a14170a",
+      "voxel_count": 605
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/airplane_jet.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/airplane_jet.json",
+      "action": "converted-binary-object",
+      "source_sha256": "53c3cd163a9b5996513e4ade1970c471d29b99a2aa397e1199089d0bb15dd78c",
+      "destination_sha256": "6b9bd5bde6cef7f185c1db7845db5f7693bf61828f5c428a849ed21d78be9d80",
+      "voxel_count": 782
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/airplane_jet.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/airplane_jet.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "53c3cd163a9b5996513e4ade1970c471d29b99a2aa397e1199089d0bb15dd78c",
+      "destination_sha256": "6b9bd5bde6cef7f185c1db7845db5f7693bf61828f5c428a849ed21d78be9d80",
+      "voxel_count": 782
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Airport.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Airport.json",
+      "action": "converted-binary-object",
+      "source_sha256": "951ba9bb278d2e024f145dea39a657acec20697ad8181a78fff44151b02c9b4b",
+      "destination_sha256": "1da99737f355642ef247dd1ff5bf9c7f725ff91ff60487cc2d1f3eb28013b68e",
+      "voxel_count": 3949
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Airport.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Airport.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "951ba9bb278d2e024f145dea39a657acec20697ad8181a78fff44151b02c9b4b",
+      "destination_sha256": "1da99737f355642ef247dd1ff5bf9c7f725ff91ff60487cc2d1f3eb28013b68e",
+      "voxel_count": 3949
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/airport_terrain_for_cloning.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/airport_terrain_for_cloning.json",
+      "action": "converted-binary-object",
+      "source_sha256": "174df483c21d8c5b43ce41910d7f13147d4a4f87611d982c401c487485bf1a8c",
+      "destination_sha256": "fce03269d56cfa8379455b685003274abf9f0d96a2b5db820b61769b5d5d3055",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/airport_terrain_for_cloning.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/airport_terrain_for_cloning.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "174df483c21d8c5b43ce41910d7f13147d4a4f87611d982c401c487485bf1a8c",
+      "destination_sha256": "fce03269d56cfa8379455b685003274abf9f0d96a2b5db820b61769b5d5d3055",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/axis_0_object.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/axis_0_object.json",
+      "action": "converted-binary-object",
+      "source_sha256": "196881a0b2afab0ba92787cb4caeb9a9821a2c208b9353910670035e482a1774",
+      "destination_sha256": "f76c653e4d8ea989e15b965edfb8e3467b0d64fa5b907254d73e5f4368bc294a",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/axis_0_object.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/axis_0_object.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "196881a0b2afab0ba92787cb4caeb9a9821a2c208b9353910670035e482a1774",
+      "destination_sha256": "f76c653e4d8ea989e15b965edfb8e3467b0d64fa5b907254d73e5f4368bc294a",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/axis_above_object.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/axis_above_object.json",
+      "action": "converted-binary-object",
+      "source_sha256": "173b2008c1548f88709fc75df11b23df4a7e5c2c879774aea762525a7960bad2",
+      "destination_sha256": "a15983e31392f0b0a5d62b61bd08c3f03a042a2a8b37a900cb8462db46365365",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/axis_above_object.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/axis_above_object.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "173b2008c1548f88709fc75df11b23df4a7e5c2c879774aea762525a7960bad2",
+      "destination_sha256": "a15983e31392f0b0a5d62b61bd08c3f03a042a2a8b37a900cb8462db46365365",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/big_building1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/big_building1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68de7626905e6817c6788bd269fe45ab0aae72d5bce3563034c0e385f975702c",
+      "destination_sha256": "71191a7720a7fdf0b3f078a481f163bc458494f049500b11dfdda5d3b78de7d4",
+      "voxel_count": 1925
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/big_building1.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/big_building1.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68de7626905e6817c6788bd269fe45ab0aae72d5bce3563034c0e385f975702c",
+      "destination_sha256": "71191a7720a7fdf0b3f078a481f163bc458494f049500b11dfdda5d3b78de7d4",
+      "voxel_count": 1925
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_left_side.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_left_side.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d34056136a086d990ecb8ab44d0d81442e3902e63d7f8c4dd4a09860ef40fac6",
+      "destination_sha256": "18cab4d576efe991753b5dcdaff80561f349d064284ac247048e212040d984d9",
+      "voxel_count": 904
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_left_side.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_left_side.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d34056136a086d990ecb8ab44d0d81442e3902e63d7f8c4dd4a09860ef40fac6",
+      "destination_sha256": "18cab4d576efe991753b5dcdaff80561f349d064284ac247048e212040d984d9",
+      "voxel_count": 904
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_middle_for_clone.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_middle_for_clone.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ab4e12627604ea9fbfa1fcde1078a87b2367a9043b2b0041b84a9ed51fd038ac",
+      "destination_sha256": "b7688cc57a1b714ad0159baf6809dce1a224086421abaaf64623968c9dd992dd",
+      "voxel_count": 679
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_middle_for_clone.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Bridge_middle_for_clone.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ab4e12627604ea9fbfa1fcde1078a87b2367a9043b2b0041b84a9ed51fd038ac",
+      "destination_sha256": "b7688cc57a1b714ad0159baf6809dce1a224086421abaaf64623968c9dd992dd",
+      "voxel_count": 679
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/buildings_area.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/buildings_area.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8910afa5dc4788984866b849ec79192d16c6d50f28504c8c4ea77786f7bf9492",
+      "destination_sha256": "2abd9f8550a47fb4d8643d0018a1cb45d79b2db2597fd9d8b9af1968db7335a4",
+      "voxel_count": 3603
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/buildings_area.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/buildings_area.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8910afa5dc4788984866b849ec79192d16c6d50f28504c8c4ea77786f7bf9492",
+      "destination_sha256": "2abd9f8550a47fb4d8643d0018a1cb45d79b2db2597fd9d8b9af1968db7335a4",
+      "voxel_count": 3603
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/buildings_starting_terrain.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/buildings_starting_terrain.json",
+      "action": "converted-binary-object",
+      "source_sha256": "85e83e16c602a261c4704b094f3a5de90be5dc19ab40a1a4e915c4f3ab823957",
+      "destination_sha256": "5f6263a8a18caf5b6087b0fd7fbd1d3ce5179d6e52ab5d48f29cfadfe27ddb58",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/buildings_starting_terrain.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/buildings_starting_terrain.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "85e83e16c602a261c4704b094f3a5de90be5dc19ab40a1a4e915c4f3ab823957",
+      "destination_sha256": "5f6263a8a18caf5b6087b0fd7fbd1d3ce5179d6e52ab5d48f29cfadfe27ddb58",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Camera_Coliders.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Camera_Coliders.json",
+      "action": "converted-binary-object",
+      "source_sha256": "30af48dd1a0ecfc11518919fbb86a35a23fa874c3962db02c4e0cb0ec118c4aa",
+      "destination_sha256": "3d9bd476053b4978e5770cab77e2bd2a9a17fea3291032636c77f5ea2da0dac9",
+      "voxel_count": 2
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Camera_Coliders.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Camera_Coliders.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "30af48dd1a0ecfc11518919fbb86a35a23fa874c3962db02c4e0cb0ec118c4aa",
+      "destination_sha256": "3d9bd476053b4978e5770cab77e2bd2a9a17fea3291032636c77f5ea2da0dac9",
+      "voxel_count": 2
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/car_ugly.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/car_ugly.json",
+      "action": "converted-binary-object",
+      "source_sha256": "358bb6fed8ff41cc4db65cf418be972bad04a2dfa106d2a479fad389fab8ff4e",
+      "destination_sha256": "885797ba116895e4d90dc3a860ea8b3ec302da6da6bb84b5e4567f7ff206325a",
+      "voxel_count": 33
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/car_ugly.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/car_ugly.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "358bb6fed8ff41cc4db65cf418be972bad04a2dfa106d2a479fad389fab8ff4e",
+      "destination_sha256": "885797ba116895e4d90dc3a860ea8b3ec302da6da6bb84b5e4567f7ff206325a",
+      "voxel_count": 33
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cemetary.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cemetary.json",
+      "action": "converted-xml-object",
+      "source_sha256": "c2baa530098e4bb6949d8e88d511eaf1b1588962bffec1eca332a54cfe86c957",
+      "destination_sha256": "f9dc74c2685815203d27f3aab7d967b1ab13cb9c5b87687736f9045ba8172eda",
+      "voxel_count": 169,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cemetary.xml のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cemetary.xml-copy.json",
+      "action": "converted-xml-object",
+      "source_sha256": "c2baa530098e4bb6949d8e88d511eaf1b1588962bffec1eca332a54cfe86c957",
+      "destination_sha256": "f9dc74c2685815203d27f3aab7d967b1ab13cb9c5b87687736f9045ba8172eda",
+      "voxel_count": 169,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/circle.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/circle.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e4ff82135cb497cc101c0f2bff2bb3133012b8916ee389105782fabdc41c1686",
+      "destination_sha256": "7d7c72ce2ef84ef6838baa8d522a351135a5b4967757e4fc0d4161f8a4fc17c1",
+      "voxel_count": 14,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/circle.xml のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/circle.xml-copy.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e4ff82135cb497cc101c0f2bff2bb3133012b8916ee389105782fabdc41c1686",
+      "destination_sha256": "7d7c72ce2ef84ef6838baa8d522a351135a5b4967757e4fc0d4161f8a4fc17c1",
+      "voxel_count": 14,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cross.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cross.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ee1ed5f586d899c246a88fa9fb592e8d8728497992cb11a4b2f28ad6281b17df",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cross.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cross.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ee1ed5f586d899c246a88fa9fb592e8d8728497992cb11a4b2f28ad6281b17df",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cross.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cross.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "841932578c14f6d49b3cf4311a2b2e2c836c6775e7418a8632acb497ebf0b4e2",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/cross.xml のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/cross.xml-copy.json",
+      "action": "converted-xml-object",
+      "source_sha256": "841932578c14f6d49b3cf4311a2b2e2c836c6775e7418a8632acb497ebf0b4e2",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Cute_character_creating_broken_heart.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Cute_character_creating_broken_heart.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8893a28f3c722fd19519de01430fca4410d95f03b98288dad8cb41d1c53f3686",
+      "destination_sha256": "7098b343862a7448c6a6ba2bce538f4f2f2e967507ff96a8febb2a155e3e64b5",
+      "voxel_count": 668
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Cute_character_creating_broken_heart.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Cute_character_creating_broken_heart.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8893a28f3c722fd19519de01430fca4410d95f03b98288dad8cb41d1c53f3686",
+      "destination_sha256": "7098b343862a7448c6a6ba2bce538f4f2f2e967507ff96a8febb2a155e3e64b5",
+      "voxel_count": 668
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c78c912fd13abb59332707ebf90c2e47f7aa17dde54b22dec7727dfbd3c9c666",
+      "destination_sha256": "635a4910850ff7122fb4407333c3e157489ca8fc736f9134e5d01da2a7962884",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door1.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door1.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c78c912fd13abb59332707ebf90c2e47f7aa17dde54b22dec7727dfbd3c9c666",
+      "destination_sha256": "635a4910850ff7122fb4407333c3e157489ca8fc736f9134e5d01da2a7962884",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eab8d822c69d71fc0af5458de97fa6e3266c309e041060b8eb92d11f928f41a2",
+      "destination_sha256": "e98fd0f32e104a8be0bb6b10e10ec07958eae8276b69b102957df57d9aa63852",
+      "voxel_count": 12
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door2.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door2.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eab8d822c69d71fc0af5458de97fa6e3266c309e041060b8eb92d11f928f41a2",
+      "destination_sha256": "e98fd0f32e104a8be0bb6b10e10ec07958eae8276b69b102957df57d9aa63852",
+      "voxel_count": 12
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "648b44dd4bf5f88d80b21acbc2879a5438071867bbd8dd21e43de04d0f91d8bf",
+      "destination_sha256": "c13a482d03090d3d3d3eae2f5657343c485958491398e87f876bf031a58cfc0f",
+      "voxel_count": 54
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/door3.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/door3.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "648b44dd4bf5f88d80b21acbc2879a5438071867bbd8dd21e43de04d0f91d8bf",
+      "destination_sha256": "c13a482d03090d3d3d3eae2f5657343c485958491398e87f876bf031a58cfc0f",
+      "voxel_count": 54
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/doorsbuton1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/doorsbuton1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "444047c431c77aeee83935a9e2a5f2aafc3bb81347f961298c2f612aa72d28f6",
+      "destination_sha256": "307fa716c0a545e364a809c5e3dfea5945b7441e40b1795bdb2cea0f27403ec1",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/doorsbuton1.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/doorsbuton1.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "444047c431c77aeee83935a9e2a5f2aafc3bb81347f961298c2f612aa72d28f6",
+      "destination_sha256": "307fa716c0a545e364a809c5e3dfea5945b7441e40b1795bdb2cea0f27403ec1",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/dragon-test.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/dragon-test.json",
+      "action": "converted-binary-object",
+      "source_sha256": "be899381a0f0816819467a69469026a1643e457da55fe7b6bc76e8a7ca9fc7f8",
+      "destination_sha256": "2834f47e0b96cf0dc6f26c8ded0eb5f19978ff5b63424b67100d5c1e7aadb3b0",
+      "voxel_count": 24
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/dragon-test.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/dragon-test.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "be899381a0f0816819467a69469026a1643e457da55fe7b6bc76e8a7ca9fc7f8",
+      "destination_sha256": "2834f47e0b96cf0dc6f26c8ded0eb5f19978ff5b63424b67100d5c1e7aadb3b0",
+      "voxel_count": 24
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonHead5.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonHead5.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68755684f1d970fcb542d42e2cb46135c65e74bc945fcb12a90da5bc4aee3ea1",
+      "destination_sha256": "a9072f030ef3106d59123a420e7942c7a9f6aabe195b565f700c89755b3c6bed",
+      "voxel_count": 1052
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonHead5.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonHead5.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68755684f1d970fcb542d42e2cb46135c65e74bc945fcb12a90da5bc4aee3ea1",
+      "destination_sha256": "a9072f030ef3106d59123a420e7942c7a9f6aabe195b565f700c89755b3c6bed",
+      "voxel_count": 1052
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonTail.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonTail.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8f9d72967ac3177b81f7b45108ee90b9c1549ad059f1a4b2e9380d43e910f0ad",
+      "destination_sha256": "37fa2f18839ba2b3082779664c77c7a689801eb8ddc79b6429376c9cb1e07fec",
+      "voxel_count": 254
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonTail.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonTail.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8f9d72967ac3177b81f7b45108ee90b9c1549ad059f1a4b2e9380d43e910f0ad",
+      "destination_sha256": "37fa2f18839ba2b3082779664c77c7a689801eb8ddc79b6429376c9cb1e07fec",
+      "voxel_count": 254
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonTrunk2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonTrunk2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b2e9486abf102dbdd2c11c84d9e0cbab7420748de98887181cfc339a95777faf",
+      "destination_sha256": "de76584e17216e81916c1df48bbfc6cd36bddbcbbcd6be62f6fde4781c6275a2",
+      "voxel_count": 258
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/DragonTrunk2.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/DragonTrunk2.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b2e9486abf102dbdd2c11c84d9e0cbab7420748de98887181cfc339a95777faf",
+      "destination_sha256": "de76584e17216e81916c1df48bbfc6cd36bddbcbbcd6be62f6fde4781c6275a2",
+      "voxel_count": 258
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon.json",
+      "action": "converted-binary-object",
+      "source_sha256": "59e98e8fa34f4c4cbf2d1a6bd8a3a51a4f898810edad2194f12c2df6cbe2876e",
+      "destination_sha256": "37da0a60c78d6466bb3697acbbd2d7834ae00637e66987ea6cafc020c6bad6f6",
+      "voxel_count": 2516
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "59e98e8fa34f4c4cbf2d1a6bd8a3a51a4f898810edad2194f12c2df6cbe2876e",
+      "destination_sha256": "37da0a60c78d6466bb3697acbbd2d7834ae00637e66987ea6cafc020c6bad6f6",
+      "voxel_count": 2516
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1dff38d402535d30b6f53f817526693367dfb205560cb384b2243612f9b9a77f",
+      "destination_sha256": "8861981a38efcdb0a0fbc61123958f04fff19824f33fe9e64871c77425bf7f19",
+      "voxel_count": 4532
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon2.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Dungeon2.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1dff38d402535d30b6f53f817526693367dfb205560cb384b2243612f9b9a77f",
+      "destination_sha256": "8861981a38efcdb0a0fbc61123958f04fff19824f33fe9e64871c77425bf7f19",
+      "voxel_count": 4532
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/dungeonkeys.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/dungeonkeys.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a7f5e4f4b290189ec086bed031f51bf39bedde7d36555bf2eed6471be4e5731a",
+      "destination_sha256": "959637c68c3071825f4031e6eca59f87f8f0e739652c7efda4002dd164b7ce3d",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/dungeonkeys.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/dungeonkeys.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a7f5e4f4b290189ec086bed031f51bf39bedde7d36555bf2eed6471be4e5731a",
+      "destination_sha256": "959637c68c3071825f4031e6eca59f87f8f0e739652c7efda4002dd164b7ce3d",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/first_house.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/first_house.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6c7ae3dd818369a6e4eea41574381a935f0ac89ba6f06cbfd63a8709cc887a82",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/first_house.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/first_house.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6c7ae3dd818369a6e4eea41574381a935f0ac89ba6f06cbfd63a8709cc887a82",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/first_house.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/first_house.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e89b794275313b08aba128c2dc5593e290bc811eff1302959db794fd93e398fc",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/first_house.xml のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/first_house.xml-copy.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e89b794275313b08aba128c2dc5593e290bc811eff1302959db794fd93e398fc",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Fountain_place.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Fountain_place.json",
+      "action": "converted-binary-object",
+      "source_sha256": "96bf5f0a3b90ba777533728e10beaabb0f8b40b284e086b35128c3ab7cb02fbc",
+      "destination_sha256": "e96defa79a46142f40b8f9be3d232a5856a0ca388554d632ad7722aebd4e8749",
+      "voxel_count": 234
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Fountain_place.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Fountain_place.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "96bf5f0a3b90ba777533728e10beaabb0f8b40b284e086b35128c3ab7cb02fbc",
+      "destination_sha256": "e96defa79a46142f40b8f9be3d232a5856a0ca388554d632ad7722aebd4e8749",
+      "voxel_count": 234
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter.json",
+      "action": "converted-binary-object",
+      "source_sha256": "3f2be7d4d8cd7a599c5a51748c6b0da6b9782c928dfc47f542c4ea6f5c7af014",
+      "destination_sha256": "ae32e90c018666043799ebd90e74db8e6777d8dc0d764fee67e09082c25dfbff",
+      "voxel_count": 944
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_propeller.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_propeller.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9213081c480d7d6d2d7cc9f41d529c1d845357e3ca0df71e88dea9c0ce544ca5",
+      "destination_sha256": "c99eed889678c785024ef86bd81041f5b6471febe2ee09b0472a63c515dcf9ff",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_propeller.obj のコピー",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_propeller.copy.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9213081c480d7d6d2d7cc9f41d529c1d845357e3ca0df71e88dea9c0ce544ca5",
+      "destination_sha256": "c99eed889678c785024ef86bd81041f5b6471febe2ee09b0472a63c515dcf9ff",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_without_wings.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_without_wings.json",
+      "action": "converted-binary-object",
+      "source_sha256": "5037f144cdc39cd186d4f11918f200fe00e578f8be885a3fbbb9217a4e62cd70",
+      "destination_sha256": "4e803d3e5c888a48d5a8aae3d3efdfa63919286eb3d5c8cbe3ab48ce57da1a53",
+      "voxel_count": 854
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_without_wings_with_colliders.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Futuristic_Helycopter_without_wings_with_colliders.json",
+      "action": "converted-binary-object",
+      "source_sha256": "804c188ad73a4597222063b51f93db2b28df87a827ecb4e029f9cbfbef62d4be",
+      "destination_sha256": "04d7704c96781d92238c812cba8a3fd445a37d25806b40ea3d1b7cb460b04853",
+      "voxel_count": 859
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Hightower_A.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Hightower_A.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9286ebfa419cb1c632036b10c1e62e1ef0e7e578ce99d9dd111759cb1339966e",
+      "destination_sha256": "7a23ee76d7a3bcea2280703d12ba189b3ef0bcc8049f421e84341f1203044605",
+      "voxel_count": 1738
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Hightower_B.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Hightower_B.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eae46d3ef8a0e64a713162d7a70175b388b353ce1c1b88f188666784245c4d18",
+      "destination_sha256": "1f81caa46592b9b0612a9f0d7d5dfe5ad8ddc35085e41072a12b95dbe92bc283",
+      "voxel_count": 2038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/house2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/house2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "0ce841a80b27b64d03b46a5d41d5715b159a605f14d0e21147065f48478b1881",
+      "destination_sha256": "7b3fa450f312180e33e15aa7b2d2bc83a0885724a3b1ec75a07f3ffb4a530c98",
+      "voxel_count": 948
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/house3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/house3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "47106548421b36631b933089c7125fe0bd05610ea698de397ee286b3d713bbf8",
+      "destination_sha256": "71bdf42588753438a17ab55c1572dcf3b27838e64d674c46d43dc2b4975e4fe3",
+      "voxel_count": 457
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/house4.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/house4.json",
+      "action": "converted-binary-object",
+      "source_sha256": "e987141e4b3fabac6b16689e09a85f0ee2aac5b35931f60782ebc4cd9bc35a45",
+      "destination_sha256": "4ca63fb5d0bfae9057745668c09613d79d092887cf92d52d3635683c7c0d6277",
+      "voxel_count": 984
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/houses_and_terrain.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/houses_and_terrain.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c26e534e805bba0f22187789b4d09ff99e9cfec027beb14a0949b6271cd6d2fb",
+      "destination_sha256": "d84364a038805690a5c8383cd05a4d472f735b844fa54fd73083600fe5b908c2",
+      "voxel_count": 3733
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/houses_and_terrain1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/houses_and_terrain1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c027a307572dbfdf25c5d7a2e09b1c856b727cf55f48c7262f35e9e697ddd45f",
+      "destination_sha256": "ff0cab89c94839cda98b4f7a69753c7f463c07067ce54744569bdfaee37a700c",
+      "voxel_count": 6726
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/ido1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/ido1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8b2713db6ff872180c52902baa03eab355b88c5f3f26da864c6d17f499af6eb8",
+      "destination_sha256": "260513823b634421355eba402b3914cd15afac988bfeb613180d780598f4e2f0",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/key_stone.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/key_stone.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ebeff91bdae09d701526f34f153b93a6c07e93d8c822c28d90800f8321c9be20",
+      "destination_sha256": "54ee8c492e11477a23d5606a99bfed1f73ccb9543c7eb1625666adc0845384f7",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/ladder_to_helly.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/ladder_to_helly.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9d1f87e06a42eacdef52550d7b18d086d10426cd86aae64fef2fac60737294b6",
+      "destination_sha256": "2be247eebe6458cb07d3580d8c6c7896db626d2dba8e1fe2d04f63d972ed1019",
+      "voxel_count": 30
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/main_road.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/main_road.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a1fa6cdb5ef2fa6740b8faa7ff643a35632f0474d0e2c2767ac1e6706532e7b1",
+      "destination_sha256": "78c3fb1309cabf141ce750cfdb57c576f70fa57db3baab20cdb04e0b86cf9283",
+      "voxel_count": 63
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/main_road1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/main_road1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d798a1664814a2de7944c262e20dae6f4ba36fe3c607c87ac1e03a88b6fea898",
+      "destination_sha256": "75a18c4c8fc015233a24c96f48cedd8d4b6a3ddb4f714a6809978873a9125967",
+      "voxel_count": 1731
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/new_House_blue1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/new_House_blue1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "18fb0c3f2538ddc3b89d991799908bd92aa3748695106b6788e991bd99191570",
+      "destination_sha256": "b2ba4f0d9476d4391e815347bc3aaf75c1d102759a129e8e2e51fd8fe26239eb",
+      "voxel_count": 1029
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/new_House_red1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/new_House_red1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2309c11518307872d3531ac4f9310a526868b2cb75b16c929d737b0e04efec2a",
+      "destination_sha256": "f70a3652f5d420da658c658936ed896602eab9bf510a9f0da1e89b134e192dc5",
+      "voxel_count": 1038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/new_road_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/new_road_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "97b322b39862e4ac08e3965ad1db398bc9962b6024a411c3edcb7b4cb60c13e3",
+      "destination_sha256": "a2eb15fb983d06495f924c67f3a33622aab331efb4106f33a7d6d31c5e3f0af7",
+      "voxel_count": 189
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/new_road_part_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/new_road_part_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7484dc76967497269142ba290846b346cf22aac0d158404e90f80b93c6ddf477",
+      "destination_sha256": "a8c43e0fb571e6d450a8a275969b6f8abd21bcd71758c42fd57b23f5e654d692",
+      "voxel_count": 72
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/new_road_part_a_vertical.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/new_road_part_a_vertical.json",
+      "action": "converted-binary-object",
+      "source_sha256": "241fc2bf372e1b4a48581e3cf78eaf2bfa95685d50fbd2847f3ee03f53040660",
+      "destination_sha256": "75b21413d56ead6baf812be542a9ec8930aa229bdb1b38d45b4a74ec0285c50b",
+      "voxel_count": 190
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/O1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/O1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a83e4157c259cc61e5ee5c7d4ac35459a7cfd067c610133c821035528f6cf1b8",
+      "destination_sha256": "89101f1aa7157fae1491b0221f8e09e0a3bda8cf682c8b4d6b801e78f6325fbc",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/PerspectiveTemplate.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/PerspectiveTemplate.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f144d10c544221ea9b19bbc63bdc37ce7b2eba9d339a7cc06baa5e839b9d6af4",
+      "destination_sha256": "93132ac9622c679da3ee833f4ba47eb905a813765aed8250162cebfe31ae51ea",
+      "voxel_count": 134
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/PerspectiveTemplate.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/PerspectiveTemplate.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "b457cc6a15a878fb64e2e4a01fd758562efdaaec2247010db3e3a202993ec827",
+      "destination_sha256": "93132ac9622c679da3ee833f4ba47eb905a813765aed8250162cebfe31ae51ea",
+      "voxel_count": 134,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/picasso.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/picasso.json",
+      "action": "converted-xml-object",
+      "source_sha256": "bdb98be02f053546903b845564380d0a15c8f6228d6df0fc47ea642ba757f0c6",
+      "destination_sha256": "3ae27850a321f8993116ddf1f1d2c11dded27ee32c3588308f663475fde2bbc2",
+      "voxel_count": 19,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/pillars.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/pillars.json",
+      "action": "converted-binary-object",
+      "source_sha256": "514767aaeeb0316b6b8b975017b8350ca903cee5a1920e20bc489db03d72a6bb",
+      "destination_sha256": "1fb52349afcb95ec8d1d61a9167b1931b77b3dda7003343b150bf9c85bd9110c",
+      "voxel_count": 73
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road.json",
+      "action": "converted-binary-object",
+      "source_sha256": "0358fadc66aa1d02c06d5a9a4842b705b8393f997656c36060b7924cbcc7c6b5",
+      "destination_sha256": "53dd88c5c467a215b32a4476a0af0f7f659afdc7a0dc7767863a9fe00a97f551",
+      "voxel_count": 35
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road_1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road_1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "724e9dd32d4f5b92c8c8686c1ffd3e3442b6230f652c1fc97b321b552a96b4a8",
+      "destination_sha256": "fb25a24316b6bca6add493f49c536ab5af32b5d4fbed813558093a632b280f88",
+      "voxel_count": 140
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "44535b773cb93581edf4305b634f7efdae140483bf95fd75ac66e95851b54b46",
+      "destination_sha256": "5bd2657b9f2b6d701480fa1e9a71ea87eaf2daa1c3917a913e6262de61ada6ac",
+      "voxel_count": 180
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road_b.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road_b.json",
+      "action": "converted-binary-object",
+      "source_sha256": "98687a0fe3cc7dad1ad45f405f62f858a27eaf4db6fd8c733b771bcc6fbbd997",
+      "destination_sha256": "b7a8f9f1ec27724d65dbb1a9c7a6ae59d5ade713bd866b0823b59e20800f24a2",
+      "voxel_count": 180
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road_part_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road_part_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b4031f0261439b2c026e3b956db2347b7eaef09e9602924ddb28a9e3e621e4d0",
+      "destination_sha256": "a04d44046a3d77de8506579ea3081195657194fecebf4490203303109f489b6e",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/road_part_b.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/road_part_b.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8a7b095e75d9dcf7398c71b8b3c3f47fb29e7a9ca1bb99ad09b1037896c5e609",
+      "destination_sha256": "18c55c53a2fe7251fba1cc75db2e09e3bb2a57c29c0d334e01b5cb8b3ac2520d",
+      "voxel_count": 99
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Senouzi.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Senouzi.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f0d08518d6f2c58d4946101295510bbe0de020c425550e0a132f1486dd70b52b",
+      "destination_sha256": "5097947b42796d7511fdc66f2cd31f810a2e683859e75e9157ea505ec14a68bd",
+      "voxel_count": 2899
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/skyscraper1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/skyscraper1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4dcef4ab0d8b8146c720f11d88b7953a7f173d27d6bb006f5d6b0845574406bc",
+      "destination_sha256": "b0298f6fa6d24955586e95ce1682ae459230f57570429389cc5262cd5662cd19",
+      "voxel_count": 3053
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/skytree2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/skytree2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4c4dff30821b73f65a98ae2255ef5f645aa74567a616dcc93ce666a0ef2b54bb",
+      "destination_sha256": "884f97bc57761130ba9ded4d57c7021a782c3ade07dd6d73e65f30d060011b40",
+      "voxel_count": 1093
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/skytree3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/skytree3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "50c4e26b6d8f4850cee6ef7c10604c1a0f805508706cb4712a0744c993b37b5e",
+      "destination_sha256": "be452cb6790fa3a31235b34792fa8c2595fe24fd9649eedc92424341abc41082",
+      "voxel_count": 1082
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/spider.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/spider.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ac8acaece8ea427bb446c37eb87d48822f8f43b0a570a7a8719aede3852d1c4f",
+      "destination_sha256": "f678eccd0ac1d316e7f306fd0387cd0f24705e0a862087ac3d518adc959c351d",
+      "voxel_count": 138
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sport_car.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sport_car.json",
+      "action": "converted-binary-object",
+      "source_sha256": "844ffcd5baa17ccbfacf88766d4ead08063796546fbf8bcc3b3315e9e2af931a",
+      "destination_sha256": "67aa9f91a4ab6d9baaf3273b739ef841373283f3ffef94b619255f111f1fc14b",
+      "voxel_count": 278
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sport_car_tires.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sport_car_tires.json",
+      "action": "converted-binary-object",
+      "source_sha256": "00fd3eaac1024a91b3aa12e9828ab952fc36ec6e6d832fe13da68b7a3264f523",
+      "destination_sha256": "523389c39497586af1b48166af58a1c21fc1f92da824a96032fc094757a459ed",
+      "voxel_count": 76
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sst_TokyoTower4.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sst_TokyoTower4.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9e64709521e291b24cef2add73fa67a598bc45d9c65f104185b8ee25ba5cf724",
+      "destination_sha256": "aa04d0a622decf45a2112df19103490d352115464847c6b59c0ea52145178276",
+      "voxel_count": 597
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstbbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstbbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "bcb0fd08576b50d2c50f1f6c61fec4b6bb1efad7987612b43e61e1d6115c2cfd",
+      "destination_sha256": "83dba0d8a4de4bf1bda6f2883e434c2044de4005b2c492d39a8e8d21895b3936",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstbgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstbgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1586939a937abcd0cc81a773ac864fe560f0f618e427575efd97bb0aaa3d4a4f",
+      "destination_sha256": "0e78ae4b1c9b0510c8ec0aa883fc171cae3822ef5a6782cfc710dfa93a792b40",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstcrossroad1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstcrossroad1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "5e463cdd213f543378d6a7c5aed91df02c03e425228009ddced47acfbc760b73",
+      "destination_sha256": "b7ea7297c281aad6fde58cc58ec6eb12fc66485e098f22b92729590d95fe9265",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstdgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstdgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d75a392994376b8399baf67e384fcef93aebf7ba2169429abc3920bdc2564c07",
+      "destination_sha256": "ffa7b4933e457dffdff7cdfe784653113df9e5f235af3a8259a798b2f97d9363",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstmixbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstmixbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "059b01f40db3ea71e55f3d26df9367e5e6337a49986e459083e13a873fc224ac",
+      "destination_sha256": "271fb1452431178084c4201af5784917331f304bad8a4a256b0c4ced8b72c21f",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstriver1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstriver1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c4a451beeececa2dd3b0516160d6e50ab056aac24fee52e7adbd4283ef555616",
+      "destination_sha256": "ba18e236d9fd6b01444b38ffe132da7148f3c008ba9b8cc4b00ebef1e4aec438",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/sstroad1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/sstroad1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7592394688f8d6c3ce42403239a40bc122e0aa0b20f62ffe574eac1f24c8793b",
+      "destination_sha256": "52e41b2aede63bf782c73394814c703ae2bc39afb8d50804092e700746e8c8bb",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Station.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Station.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7e8dd9e5f995bc40ccdc01ff01754548d83f1c8cf24a84151f618426622b6e9d",
+      "destination_sha256": "3d4116c192a0940c97851797cf26062c236b6ec18b694e19263b39f98e7039ea",
+      "voxel_count": 829
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/test_delete_this.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/test_delete_this.json",
+      "action": "converted-binary-object",
+      "source_sha256": "db4e6157a9882c8f0291628bc91b53173f0624b6191d8e88228a47126be75b1c",
+      "destination_sha256": "5e5799bc98687d436d3dd4492271378b9e450e78af12ec8e0e522d70ba233d56",
+      "voxel_count": 18
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/test_delete_this1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/test_delete_this1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9c0d5dca2f99d34730ad7b2fef69ee510af2b0d9170f13618f00385842eaf526",
+      "destination_sha256": "0a9748d7347bb393c056d6c040aa84db3a0dab0be603dbd2bfe95431aecd6389",
+      "voxel_count": 63
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/TokyoTower3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/TokyoTower3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f26cfd8e70d4e3eea71ed44501b24a2651e5bc26004dbf295341bb1d76b1c588",
+      "destination_sha256": "4bca940fc12de6cca35da3094bd7321092b40301abaa589730fb6b635a14170a",
+      "voxel_count": 605
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/TransparentTexturedCross.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/TransparentTexturedCross.json",
+      "action": "converted-xml-object",
+      "source_sha256": "2cd1780c9883ffb38feaa4ba4703aa1c461df45ab1c71fae81641ec2010bed6c",
+      "destination_sha256": "e2bfb69c0647c219d2a567dd519ef024a83aa51042de17fffc272b3e9ec0e469",
+      "voxel_count": 7,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/trap1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/trap1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "08f8e1015063d8f125dd3028f010d6713c4506bfa50a2f3cc88209de8afb1bb5",
+      "destination_sha256": "866838c4102ae32bc569f7f14476479a65aa9faa02a3d659a87f2740332eb199",
+      "voxel_count": 59
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/trap2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/trap2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4048b23948a2b3626f844217130eba23078dd76aa1167b3468914cd3901a7878",
+      "destination_sha256": "82570c085b15ee2962999f568a4438dc7e21764d963b07f94635279d73714840",
+      "voxel_count": 60
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/tree1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/tree1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2ca665cb57a315829622ecded4e3715dada5a8bb3cbf5dd4563011860f8a3334",
+      "destination_sha256": "d9eaae0a594cf0c96542aa386d56d1420bdc40379105106a66aa9e191e9bcfd4",
+      "voxel_count": 202
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Objects/Trees.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Objects/Trees.json",
+      "action": "converted-binary-object",
+      "source_sha256": "fd41054037fa1410b132be8db4f9cc902b0fed981100c33e77b5c60db8e68b2c",
+      "destination_sha256": "3b86ba4ec3dbca3b5acc5f3193f67fa7cd86e99dd6f2ebdc014e6c95eba5f5da",
+      "voxel_count": 594
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/ROGOidea.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/ROGOidea.png",
+      "action": "copied",
+      "source_sha256": "f2d682095ecfa2d7bcc4732f9bb3d99bd33a1b168a68c6bcbbe6806e5095b60d",
+      "destination_sha256": "f2d682095ecfa2d7bcc4732f9bb3d99bd33a1b168a68c6bcbbe6806e5095b60d"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/ROGOidea_dot.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/ROGOidea_dot.png",
+      "action": "copied",
+      "source_sha256": "4991ab103e6b1d480a42acdc5db25a1dc135eff4116bc63485d1f9577a713e40",
+      "destination_sha256": "4991ab103e6b1d480a42acdc5db25a1dc135eff4116bc63485d1f9577a713e40"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/final.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/final.declarations",
+      "action": "converted-program",
+      "source_sha256": "630aec7c96b3e627045b9a16a4abafdf8efe79226df8edc81b762272b54bb137",
+      "destination_sha256": "1ea56533b7e273d844e8e824bbb83c2acd1e6bfd2a766a2b75c85a53a301f934",
+      "transformations": [
+        "asset alias sstmixground.obj -> sstmixbiggrass1.json: 57",
+        "asset alias sstground.obj -> sstroad1.json: 24",
+        "asset alias sstcrossground.obj -> sstcrossroad1.json: 17",
+        "asset alias sstdground.obj -> sstdgrass1.json: 13",
+        "asset alias sstbground.obj -> sstbgrass1.json: 11",
+        "object extension .obj -> .json: 28",
+        "UnityScript class -> JavaScript class: 1",
+        "legacy scale helper -> sc(): 1",
+        "remove UnityScript parameter types: 1",
+        "parent assignment -> attach(): 4",
+        "Transform.Rotate -> Three.js object rotation: 3",
+        "remove .transform: 5",
+        "ToString -> toString: 1",
+        "System.DateTime -> Date: 1",
+        "transparent Unity Color -> cl()/alpha(): 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/final.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/final.update",
+      "action": "converted-program",
+      "source_sha256": "e449f25cea7cb730edb2fe7175b4f4557f00b1ff71249bddc3a232919036ac37",
+      "destination_sha256": "774fc63310e1426db2487fd091cd765e20f6c484d911bbb15a7beeaeb3748288",
+      "transformations": [
+        "remove float suffix: 6",
+        "Transform.Translate -> Three.js object translation: 5",
+        "remove .gameObject: 7",
+        "remove .transform: 18",
+        "childCount -> children.length: 2",
+        "GetChild -> children[]: 2",
+        "ToString -> toString: 9",
+        "Object.Destroy -> removeFromParent(): 2",
+        "Vertical axis -> arrow keys: 1",
+        "Horizontal axis -> arrow keys: 1",
+        "Left Shift -> onscreen S: 1",
+        "P action -> onscreen Right Control: 1",
+        "debugString -> window.debugString: 12",
+        "Mathf.Deg2Rad -> radians: 4",
+        "Mathf.Sin -> Math.sin: 4",
+        "Mathf.Cos -> Math.cos: 2",
+        "Mathf.Round -> Math.round: 4",
+        "Mathf.PI -> Math.PI: 2",
+        "Random.Range -> Math.random: 12",
+        "Color32 -> RGB hex: 4"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/finalx2.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/finalx2.declarations",
+      "action": "converted-program",
+      "source_sha256": "bdc8f2da933790f49b4080b05f6e5cd861195446057f5a876b2b408ff1b9324f",
+      "destination_sha256": "1c072c4fd08af7ca0b82f7db2274eb995a9c60f85f1b5ee2874c2546911a1435",
+      "transformations": [
+        "object extension .obj -> .json: 152",
+        "UnityScript class -> JavaScript class: 1",
+        "legacy scale helper -> sc(): 1",
+        "remove UnityScript parameter types: 2",
+        "parent assignment -> attach(): 4",
+        "Transform.Rotate -> Three.js object rotation: 3",
+        "remove .transform: 5",
+        "ToString -> toString: 1",
+        "System.DateTime -> Date: 1",
+        "transparent Unity Color -> cl()/alpha(): 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/finalx2.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/finalx2.update",
+      "action": "converted-program",
+      "source_sha256": "8d0ebf1431d17a262a96c846e8b9e423a8b5a605998b65288d05a198a2bae203",
+      "destination_sha256": "7ba27a49f238802dcc473e0a9dcc4e31d16bf7958dfd700baa0b16ab6ebe54dd",
+      "transformations": [
+        "remove float suffix: 9",
+        "Transform.Translate -> Three.js object translation: 6",
+        "remove .gameObject: 10",
+        "remove .transform: 20",
+        "childCount -> children.length: 3",
+        "GetChild -> children[]: 3",
+        "ToString -> toString: 11",
+        "Object.Destroy -> removeFromParent(): 3",
+        "Vertical axis -> arrow keys: 1",
+        "Horizontal axis -> arrow keys: 1",
+        "Left Shift -> onscreen S: 1",
+        "P action -> onscreen Right Control: 1",
+        "declare legacy loop variable: 3",
+        "debugString -> window.debugString: 13",
+        "Mathf.Deg2Rad -> radians: 4",
+        "Mathf.Sin -> Math.sin: 4",
+        "Mathf.Cos -> Math.cos: 2",
+        "Mathf.Round -> Math.round: 6",
+        "Mathf.PI -> Math.PI: 2",
+        "Random.Range -> Math.random: 17",
+        "Color32 -> RGB hex: 4"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/finalx3.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/finalx3.declarations",
+      "action": "converted-program",
+      "source_sha256": "727ced074d0053b13d39b09bd52c6f9dc4c7f5c1152776676dc45e4f4f84b4e2",
+      "destination_sha256": "52b4d2926993fd918382e9f527a98d6c10a75b00f116245fc1201eae6ebd3c96",
+      "transformations": [
+        "object extension .obj -> .json: 152",
+        "UnityScript class -> JavaScript class: 1",
+        "legacy scale helper -> sc(): 1",
+        "remove UnityScript parameter types: 2",
+        "parent assignment -> attach(): 4",
+        "Transform.Rotate -> Three.js object rotation: 3",
+        "remove .transform: 5",
+        "ToString -> toString: 1",
+        "System.DateTime -> Date: 1",
+        "transparent Unity Color -> cl()/alpha(): 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/finalx3.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/finalx3.update",
+      "action": "converted-program",
+      "source_sha256": "5a1ca9b6745a2f1cef8213fb2708e86218d29e09a97d1a66a3fd77a250cd4564",
+      "destination_sha256": "ac54f48acd66a6b263010759cfac78047ccbefd9cdb9d3b9f29d6f46d857246b",
+      "transformations": [
+        "remove float suffix: 12",
+        "Transform.Translate -> Three.js object translation: 7",
+        "remove .gameObject: 13",
+        "remove .transform: 22",
+        "childCount -> children.length: 4",
+        "GetChild -> children[]: 4",
+        "ToString -> toString: 13",
+        "Object.Destroy -> removeFromParent(): 4",
+        "Vertical axis -> arrow keys: 1",
+        "Horizontal axis -> arrow keys: 1",
+        "Left Shift -> onscreen S: 1",
+        "P action -> onscreen Right Control: 1",
+        "declare legacy loop variable: 4",
+        "debugString -> window.debugString: 14",
+        "Mathf.Deg2Rad -> radians: 4",
+        "Mathf.Sin -> Math.sin: 4",
+        "Mathf.Cos -> Math.cos: 2",
+        "Mathf.Round -> Math.round: 8",
+        "Mathf.PI -> Math.PI: 2",
+        "Random.Range -> Math.random: 22",
+        "Color32 -> RGB hex: 4"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/hit_tokyo_tower6.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/hit_tokyo_tower6.declarations",
+      "action": "converted-program",
+      "source_sha256": "194308fafbbde4db580734f709b9ace1a28dcad8c9ca77766520e24460940ff6",
+      "destination_sha256": "905823d956f7696c89c3d28f96c3e5b8712c6d6326add9edf8b0b32132eb12e0",
+      "transformations": [
+        "object extension .obj -> .json: 4",
+        "UnityScript class -> JavaScript class: 1",
+        "legacy scale helper -> sc(): 1",
+        "remove UnityScript parameter types: 1",
+        "parent assignment -> attach(): 4",
+        "Transform.Rotate -> Three.js object rotation: 3",
+        "remove .transform: 5",
+        "ToString -> toString: 1",
+        "System.DateTime -> Date: 1",
+        "transparent Unity Color -> cl()/alpha(): 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/hit_tokyo_tower6.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/hit_tokyo_tower6.update",
+      "action": "converted-program",
+      "source_sha256": "3bdfebad93fda5c173dcadbcaf5af0f5f6d63953e2b2465376cb1a9b0c65a8ff",
+      "destination_sha256": "ce2d9d73b48832d2378c82e7c70585a28931156cb464dfae187fb7280a751b2c",
+      "transformations": [
+        "remove float suffix: 3",
+        "Transform.Translate -> Three.js object translation: 4",
+        "remove .gameObject: 4",
+        "remove .transform: 16",
+        "childCount -> children.length: 1",
+        "GetChild -> children[]: 1",
+        "ToString -> toString: 7",
+        "Object.Destroy -> removeFromParent(): 1",
+        "Vertical axis -> arrow keys: 1",
+        "Horizontal axis -> arrow keys: 1",
+        "Left Shift -> onscreen S: 1",
+        "P action -> onscreen Right Control: 1",
+        "debugString -> window.debugString: 11",
+        "Mathf.Deg2Rad -> radians: 4",
+        "Mathf.Sin -> Math.sin: 4",
+        "Mathf.Cos -> Math.cos: 2",
+        "Mathf.Round -> Math.round: 2",
+        "Mathf.PI -> Math.PI: 2",
+        "Random.Range -> Math.random: 7",
+        "Color32 -> RGB hex: 4"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/1tree.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/1tree.json",
+      "action": "converted-binary-object",
+      "source_sha256": "64fb9c6f4f6f423292b8eec5d7ca5d0d7e214e1a24c97d71a78aed1c90fbe189",
+      "destination_sha256": "2d46bfd3febae918629bc93ecb63b14bdd0bd4979850218863ab22b2e2e342fb",
+      "voxel_count": 18
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/3DLP_MAP_ISLAND_extended.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/3DLP_MAP_ISLAND_extended.json",
+      "action": "converted-xml-object",
+      "source_sha256": "fd2898d8eafe2bc64e11f07fa94ea6d6d44a92acc95157883c8ff6a5df1661ee",
+      "destination_sha256": "6f18926416067e185c67c26ab3adaebc7ef0c178b3486d8283bf804876cde03d",
+      "voxel_count": 5991,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/airplane_jet.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/airplane_jet.json",
+      "action": "converted-binary-object",
+      "source_sha256": "53c3cd163a9b5996513e4ade1970c471d29b99a2aa397e1199089d0bb15dd78c",
+      "destination_sha256": "6b9bd5bde6cef7f185c1db7845db5f7693bf61828f5c428a849ed21d78be9d80",
+      "voxel_count": 782
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Airport.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Airport.json",
+      "action": "converted-binary-object",
+      "source_sha256": "951ba9bb278d2e024f145dea39a657acec20697ad8181a78fff44151b02c9b4b",
+      "destination_sha256": "1da99737f355642ef247dd1ff5bf9c7f725ff91ff60487cc2d1f3eb28013b68e",
+      "voxel_count": 3949
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/airport_terrain_for_cloning.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/airport_terrain_for_cloning.json",
+      "action": "converted-binary-object",
+      "source_sha256": "174df483c21d8c5b43ce41910d7f13147d4a4f87611d982c401c487485bf1a8c",
+      "destination_sha256": "fce03269d56cfa8379455b685003274abf9f0d96a2b5db820b61769b5d5d3055",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/big_building1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/big_building1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68de7626905e6817c6788bd269fe45ab0aae72d5bce3563034c0e385f975702c",
+      "destination_sha256": "71191a7720a7fdf0b3f078a481f163bc458494f049500b11dfdda5d3b78de7d4",
+      "voxel_count": 1925
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Bridge_left_side.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Bridge_left_side.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d34056136a086d990ecb8ab44d0d81442e3902e63d7f8c4dd4a09860ef40fac6",
+      "destination_sha256": "18cab4d576efe991753b5dcdaff80561f349d064284ac247048e212040d984d9",
+      "voxel_count": 904
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Bridge_middle_for_clone.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Bridge_middle_for_clone.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ab4e12627604ea9fbfa1fcde1078a87b2367a9043b2b0041b84a9ed51fd038ac",
+      "destination_sha256": "b7688cc57a1b714ad0159baf6809dce1a224086421abaaf64623968c9dd992dd",
+      "voxel_count": 679
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/buildings_area.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/buildings_area.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8910afa5dc4788984866b849ec79192d16c6d50f28504c8c4ea77786f7bf9492",
+      "destination_sha256": "2abd9f8550a47fb4d8643d0018a1cb45d79b2db2597fd9d8b9af1968db7335a4",
+      "voxel_count": 3603
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/buildings_starting_terrain.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/buildings_starting_terrain.json",
+      "action": "converted-binary-object",
+      "source_sha256": "85e83e16c602a261c4704b094f3a5de90be5dc19ab40a1a4e915c4f3ab823957",
+      "destination_sha256": "5f6263a8a18caf5b6087b0fd7fbd1d3ce5179d6e52ab5d48f29cfadfe27ddb58",
+      "voxel_count": 399
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Camera_Coliders.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Camera_Coliders.json",
+      "action": "converted-binary-object",
+      "source_sha256": "30af48dd1a0ecfc11518919fbb86a35a23fa874c3962db02c4e0cb0ec118c4aa",
+      "destination_sha256": "3d9bd476053b4978e5770cab77e2bd2a9a17fea3291032636c77f5ea2da0dac9",
+      "voxel_count": 2
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/car_ugly.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/car_ugly.json",
+      "action": "converted-binary-object",
+      "source_sha256": "358bb6fed8ff41cc4db65cf418be972bad04a2dfa106d2a479fad389fab8ff4e",
+      "destination_sha256": "885797ba116895e4d90dc3a860ea8b3ec302da6da6bb84b5e4567f7ff206325a",
+      "voxel_count": 33
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cemetary.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cemetary.json",
+      "action": "converted-xml-object",
+      "source_sha256": "c2baa530098e4bb6949d8e88d511eaf1b1588962bffec1eca332a54cfe86c957",
+      "destination_sha256": "f9dc74c2685815203d27f3aab7d967b1ab13cb9c5b87687736f9045ba8172eda",
+      "voxel_count": 169,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/circle.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/circle.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e4ff82135cb497cc101c0f2bff2bb3133012b8916ee389105782fabdc41c1686",
+      "destination_sha256": "7d7c72ce2ef84ef6838baa8d522a351135a5b4967757e4fc0d4161f8a4fc17c1",
+      "voxel_count": 14,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cloud.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cloud.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6020fec252ef9e0006de62f3a5a6e0946260016e79413c8b56f084950f067a8a",
+      "destination_sha256": "1c4a51a5d16f3640b1f8153fe7d6207af94ea7a93db2032d9944ff20394ef4a7",
+      "voxel_count": 93
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Cloud2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Cloud2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "bcd939e0ff7b1ff45ec3b9dd0f0c574b8e0fa79077c06a2b29b89a9be0e7e561",
+      "destination_sha256": "2593340af6e457a8dda989b885a3732eb535dddff2454eb731216188149a75df",
+      "voxel_count": 295
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cross.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cross.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ee1ed5f586d899c246a88fa9fb592e8d8728497992cb11a4b2f28ad6281b17df",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cross.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cross.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "841932578c14f6d49b3cf4311a2b2e2c836c6775e7418a8632acb497ebf0b4e2",
+      "destination_sha256": "4b4d45667e68162c4280d535bb9cf2eb763f6f2d07d40b7db1b39b0e51aba8f5",
+      "voxel_count": 6,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cube25_25_12.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cube25_25_12.json",
+      "action": "converted-binary-object",
+      "source_sha256": "19248391696654d068b3de0eadef823ec15083407a2b3d7178ba14a91a0208f6",
+      "destination_sha256": "cb81f86379af6bebbdb9d3af1742b2ab8205c78e5a7ec43e0c72426a845ddf3c",
+      "voxel_count": 288
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cube25_25_24.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/cube25_25_24.json",
+      "action": "converted-binary-object",
+      "source_sha256": "3aff2e47d4f2ee6faf32f35859c48b210ac96ed1f6dcd4c581a41b9de00c31bb",
+      "destination_sha256": "8949c71687ccd403829e1d68a438074b36808a8be136d523a754642fa88e9bca",
+      "voxel_count": 365
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Cute_character_creating_broken_heart.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Cute_character_creating_broken_heart.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8893a28f3c722fd19519de01430fca4410d95f03b98288dad8cb41d1c53f3686",
+      "destination_sha256": "7098b343862a7448c6a6ba2bce538f4f2f2e967507ff96a8febb2a155e3e64b5",
+      "voxel_count": 668
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c78c912fd13abb59332707ebf90c2e47f7aa17dde54b22dec7727dfbd3c9c666",
+      "destination_sha256": "635a4910850ff7122fb4407333c3e157489ca8fc736f9134e5d01da2a7962884",
+      "voxel_count": 6
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eab8d822c69d71fc0af5458de97fa6e3266c309e041060b8eb92d11f928f41a2",
+      "destination_sha256": "e98fd0f32e104a8be0bb6b10e10ec07958eae8276b69b102957df57d9aa63852",
+      "voxel_count": 12
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/door3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "648b44dd4bf5f88d80b21acbc2879a5438071867bbd8dd21e43de04d0f91d8bf",
+      "destination_sha256": "c13a482d03090d3d3d3eae2f5657343c485958491398e87f876bf031a58cfc0f",
+      "voxel_count": 54
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/doorsbuton1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/doorsbuton1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "444047c431c77aeee83935a9e2a5f2aafc3bb81347f961298c2f612aa72d28f6",
+      "destination_sha256": "307fa716c0a545e364a809c5e3dfea5945b7441e40b1795bdb2cea0f27403ec1",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonHead5.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonHead5.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68755684f1d970fcb542d42e2cb46135c65e74bc945fcb12a90da5bc4aee3ea1",
+      "destination_sha256": "a9072f030ef3106d59123a420e7942c7a9f6aabe195b565f700c89755b3c6bed",
+      "voxel_count": 1052
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTail.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTail.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8f9d72967ac3177b81f7b45108ee90b9c1549ad059f1a4b2e9380d43e910f0ad",
+      "destination_sha256": "37fa2f18839ba2b3082779664c77c7a689801eb8ddc79b6429376c9cb1e07fec",
+      "voxel_count": 254
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b2e9486abf102dbdd2c11c84d9e0cbab7420748de98887181cfc339a95777faf",
+      "destination_sha256": "de76584e17216e81916c1df48bbfc6cd36bddbcbbcd6be62f6fde4781c6275a2",
+      "voxel_count": 258
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk_Hand.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk_Hand.json",
+      "action": "converted-binary-object",
+      "source_sha256": "363e0e65057b65181d1368ca617b0582bc6c4fd79acb3614e1e7fc941f7ca7f8",
+      "destination_sha256": "d28bbf48739a5090831bdd63ea2aff1844995962b26a567c32000a7af20d8871",
+      "voxel_count": 299
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk_Leg.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dragon/DragonTrunk_Leg.json",
+      "action": "converted-binary-object",
+      "source_sha256": "80f61c6fe7b66ebe1b95cd23689379fbda3be44ba1489b6f4ee1fd4dcd3d41ef",
+      "destination_sha256": "221337c5460fd8730531aafbe7cd5ef4366ff1130b77762136fb77d9247fe10f",
+      "voxel_count": 342
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonHead5.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonHead5.json",
+      "action": "converted-binary-object",
+      "source_sha256": "68755684f1d970fcb542d42e2cb46135c65e74bc945fcb12a90da5bc4aee3ea1",
+      "destination_sha256": "a9072f030ef3106d59123a420e7942c7a9f6aabe195b565f700c89755b3c6bed",
+      "voxel_count": 1052
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonTail.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonTail.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8f9d72967ac3177b81f7b45108ee90b9c1549ad059f1a4b2e9380d43e910f0ad",
+      "destination_sha256": "37fa2f18839ba2b3082779664c77c7a689801eb8ddc79b6429376c9cb1e07fec",
+      "voxel_count": 254
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonTrunk2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/DragonTrunk2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b2e9486abf102dbdd2c11c84d9e0cbab7420748de98887181cfc339a95777faf",
+      "destination_sha256": "de76584e17216e81916c1df48bbfc6cd36bddbcbbcd6be62f6fde4781c6275a2",
+      "voxel_count": 258
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dungeon.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dungeon.json",
+      "action": "converted-binary-object",
+      "source_sha256": "59e98e8fa34f4c4cbf2d1a6bd8a3a51a4f898810edad2194f12c2df6cbe2876e",
+      "destination_sha256": "37da0a60c78d6466bb3697acbbd2d7834ae00637e66987ea6cafc020c6bad6f6",
+      "voxel_count": 2516
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dungeon2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Dungeon2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1dff38d402535d30b6f53f817526693367dfb205560cb384b2243612f9b9a77f",
+      "destination_sha256": "8861981a38efcdb0a0fbc61123958f04fff19824f33fe9e64871c77425bf7f19",
+      "voxel_count": 4532
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/dungeonkeys.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/dungeonkeys.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a7f5e4f4b290189ec086bed031f51bf39bedde7d36555bf2eed6471be4e5731a",
+      "destination_sha256": "959637c68c3071825f4031e6eca59f87f8f0e739652c7efda4002dd164b7ce3d",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/fake_tank.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/fake_tank.json",
+      "action": "converted-binary-object",
+      "source_sha256": "de14f8c0e65081ed6330eceb8f60b6b52b43ded466031050edc321e1571b5f7f",
+      "destination_sha256": "fc98614a0745d80cd01c685b31563f03f52b8aa6eeee358b543c4248a6bdda4f",
+      "voxel_count": 26
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/fake_tank_torret.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/fake_tank_torret.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8d92cc0376354c17713ffaf39bad9206097aace21e28894029919573ffb50487",
+      "destination_sha256": "62d6d9fe03d84d0c735a45bc9f848d8458e83a59bf7484e376bcfab1791e0bac",
+      "voxel_count": 16
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/first_house.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/first_house.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6c7ae3dd818369a6e4eea41574381a935f0ac89ba6f06cbfd63a8709cc887a82",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/first_house.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/first_house.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "e89b794275313b08aba128c2dc5593e290bc811eff1302959db794fd93e398fc",
+      "destination_sha256": "1104ff7abd265f653eaa463d9f0ce25679605fb934128a28103b73abb3c9aec2",
+      "voxel_count": 2153,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Fountain_place.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Fountain_place.json",
+      "action": "converted-binary-object",
+      "source_sha256": "96bf5f0a3b90ba777533728e10beaabb0f8b40b284e086b35128c3ab7cb02fbc",
+      "destination_sha256": "e96defa79a46142f40b8f9be3d232a5856a0ca388554d632ad7722aebd4e8749",
+      "voxel_count": 234
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter.json",
+      "action": "converted-binary-object",
+      "source_sha256": "3f2be7d4d8cd7a599c5a51748c6b0da6b9782c928dfc47f542c4ea6f5c7af014",
+      "destination_sha256": "ae32e90c018666043799ebd90e74db8e6777d8dc0d764fee67e09082c25dfbff",
+      "voxel_count": 944
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_propeller.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_propeller.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9213081c480d7d6d2d7cc9f41d529c1d845357e3ca0df71e88dea9c0ce544ca5",
+      "destination_sha256": "c99eed889678c785024ef86bd81041f5b6471febe2ee09b0472a63c515dcf9ff",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_without_wings.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_without_wings.json",
+      "action": "converted-binary-object",
+      "source_sha256": "5037f144cdc39cd186d4f11918f200fe00e578f8be885a3fbbb9217a4e62cd70",
+      "destination_sha256": "4e803d3e5c888a48d5a8aae3d3efdfa63919286eb3d5c8cbe3ab48ce57da1a53",
+      "voxel_count": 854
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_without_wings_with_colliders.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Futuristic_Helycopter_without_wings_with_colliders.json",
+      "action": "converted-binary-object",
+      "source_sha256": "804c188ad73a4597222063b51f93db2b28df87a827ecb4e029f9cbfbef62d4be",
+      "destination_sha256": "04d7704c96781d92238c812cba8a3fd445a37d25806b40ea3d1b7cb460b04853",
+      "voxel_count": 859
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Game Design Doc Super Smash Tokyo.docx",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Game Design Doc Super Smash Tokyo.docx",
+      "action": "copied",
+      "source_sha256": "e7faf39ae5c6f3afc11f4c1222a7816e13067110688e0554da86141c7cf05197",
+      "destination_sha256": "e7faf39ae5c6f3afc11f4c1222a7816e13067110688e0554da86141c7cf05197"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Helycopter3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Helycopter3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6cd260267921cfbd7de24a2a87b1735fef1dfaba13d40ab5cd8ee31794b4ef2e",
+      "destination_sha256": "deca78d1f0f683c3461786e53b5a27fed462f6faa0fc2cd74d61381ca2d9531c",
+      "voxel_count": 860
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Helycopter_propeller.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Helycopter_propeller.json",
+      "action": "converted-binary-object",
+      "source_sha256": "91c93167c8fdde8748149b5de826e539fe7251d5d8596d68cc5ae4781e40f475",
+      "destination_sha256": "29d608f93319ba6bb29da96d4e40372d992d768e5809f1a6d9e92790dee15e9c",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Hightower_A.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Hightower_A.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9286ebfa419cb1c632036b10c1e62e1ef0e7e578ce99d9dd111759cb1339966e",
+      "destination_sha256": "7a23ee76d7a3bcea2280703d12ba189b3ef0bcc8049f421e84341f1203044605",
+      "voxel_count": 1738
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Hightower_B.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Hightower_B.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eae46d3ef8a0e64a713162d7a70175b388b353ce1c1b88f188666784245c4d18",
+      "destination_sha256": "1f81caa46592b9b0612a9f0d7d5dfe5ad8ddc35085e41072a12b95dbe92bc283",
+      "voxel_count": 2038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "0ce841a80b27b64d03b46a5d41d5715b159a605f14d0e21147065f48478b1881",
+      "destination_sha256": "7b3fa450f312180e33e15aa7b2d2bc83a0885724a3b1ec75a07f3ffb4a530c98",
+      "voxel_count": 948
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "47106548421b36631b933089c7125fe0bd05610ea698de397ee286b3d713bbf8",
+      "destination_sha256": "71bdf42588753438a17ab55c1572dcf3b27838e64d674c46d43dc2b4975e4fe3",
+      "voxel_count": 457
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house4.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/house4.json",
+      "action": "converted-binary-object",
+      "source_sha256": "e987141e4b3fabac6b16689e09a85f0ee2aac5b35931f60782ebc4cd9bc35a45",
+      "destination_sha256": "4ca63fb5d0bfae9057745668c09613d79d092887cf92d52d3635683c7c0d6277",
+      "voxel_count": 984
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/houses_and_terrain.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/houses_and_terrain.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c26e534e805bba0f22187789b4d09ff99e9cfec027beb14a0949b6271cd6d2fb",
+      "destination_sha256": "d84364a038805690a5c8383cd05a4d472f735b844fa54fd73083600fe5b908c2",
+      "voxel_count": 3733
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/houses_and_terrain1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/houses_and_terrain1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c027a307572dbfdf25c5d7a2e09b1c856b727cf55f48c7262f35e9e697ddd45f",
+      "destination_sha256": "ff0cab89c94839cda98b4f7a69753c7f463c07067ce54744569bdfaee37a700c",
+      "voxel_count": 6726
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/key_stone.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/key_stone.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ebeff91bdae09d701526f34f153b93a6c07e93d8c822c28d90800f8321c9be20",
+      "destination_sha256": "54ee8c492e11477a23d5606a99bfed1f73ccb9543c7eb1625666adc0845384f7",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/ladder_to_helly.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/ladder_to_helly.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9d1f87e06a42eacdef52550d7b18d086d10426cd86aae64fef2fac60737294b6",
+      "destination_sha256": "2be247eebe6458cb07d3580d8c6c7896db626d2dba8e1fe2d04f63d972ed1019",
+      "voxel_count": 30
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/main_road.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/main_road.json",
+      "action": "converted-binary-object",
+      "source_sha256": "a1fa6cdb5ef2fa6740b8faa7ff643a35632f0474d0e2c2767ac1e6706532e7b1",
+      "destination_sha256": "78c3fb1309cabf141ce750cfdb57c576f70fa57db3baab20cdb04e0b86cf9283",
+      "voxel_count": 63
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/main_road1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/main_road1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d798a1664814a2de7944c262e20dae6f4ba36fe3c607c87ac1e03a88b6fea898",
+      "destination_sha256": "75a18c4c8fc015233a24c96f48cedd8d4b6a3ddb4f714a6809978873a9125967",
+      "voxel_count": 1731
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Map.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Map.png",
+      "action": "copied",
+      "source_sha256": "16fdf59e1c7d30d42e01aba5df7d605eef5c4528ac5839198da7de839400f2fd",
+      "destination_sha256": "16fdf59e1c7d30d42e01aba5df7d605eef5c4528ac5839198da7de839400f2fd"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_House_blue1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_House_blue1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "18fb0c3f2538ddc3b89d991799908bd92aa3748695106b6788e991bd99191570",
+      "destination_sha256": "b2ba4f0d9476d4391e815347bc3aaf75c1d102759a129e8e2e51fd8fe26239eb",
+      "voxel_count": 1029
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_House_red1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_House_red1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2309c11518307872d3531ac4f9310a526868b2cb75b16c929d737b0e04efec2a",
+      "destination_sha256": "f70a3652f5d420da658c658936ed896602eab9bf510a9f0da1e89b134e192dc5",
+      "voxel_count": 1038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "97b322b39862e4ac08e3965ad1db398bc9962b6024a411c3edcb7b4cb60c13e3",
+      "destination_sha256": "a2eb15fb983d06495f924c67f3a33622aab331efb4106f33a7d6d31c5e3f0af7",
+      "voxel_count": 189
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_part_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_part_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7484dc76967497269142ba290846b346cf22aac0d158404e90f80b93c6ddf477",
+      "destination_sha256": "a8c43e0fb571e6d450a8a275969b6f8abd21bcd71758c42fd57b23f5e654d692",
+      "voxel_count": 72
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_part_a_vertical.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/new_road_part_a_vertical.json",
+      "action": "converted-binary-object",
+      "source_sha256": "241fc2bf372e1b4a48581e3cf78eaf2bfa95685d50fbd2847f3ee03f53040660",
+      "destination_sha256": "75b21413d56ead6baf812be542a9ec8930aa229bdb1b38d45b4a74ec0285c50b",
+      "voxel_count": 190
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/PerspectiveTemplate.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/PerspectiveTemplate.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f144d10c544221ea9b19bbc63bdc37ce7b2eba9d339a7cc06baa5e839b9d6af4",
+      "destination_sha256": "93132ac9622c679da3ee833f4ba47eb905a813765aed8250162cebfe31ae51ea",
+      "voxel_count": 134
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/PerspectiveTemplate.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/PerspectiveTemplate.xml.json",
+      "action": "converted-xml-object",
+      "source_sha256": "b457cc6a15a878fb64e2e4a01fd758562efdaaec2247010db3e3a202993ec827",
+      "destination_sha256": "93132ac9622c679da3ee833f4ba47eb905a813765aed8250162cebfe31ae51ea",
+      "voxel_count": 134,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/picasso.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/picasso.json",
+      "action": "converted-xml-object",
+      "source_sha256": "bdb98be02f053546903b845564380d0a15c8f6228d6df0fc47ea642ba757f0c6",
+      "destination_sha256": "3ae27850a321f8993116ddf1f1d2c11dded27ee32c3588308f663475fde2bbc2",
+      "voxel_count": 19,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/pillars.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/pillars.json",
+      "action": "converted-binary-object",
+      "source_sha256": "514767aaeeb0316b6b8b975017b8350ca903cee5a1920e20bc489db03d72a6bb",
+      "destination_sha256": "1fb52349afcb95ec8d1d61a9167b1931b77b3dda7003343b150bf9c85bd9110c",
+      "voxel_count": 73
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road.json",
+      "action": "converted-binary-object",
+      "source_sha256": "0358fadc66aa1d02c06d5a9a4842b705b8393f997656c36060b7924cbcc7c6b5",
+      "destination_sha256": "53dd88c5c467a215b32a4476a0af0f7f659afdc7a0dc7767863a9fe00a97f551",
+      "voxel_count": 35
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "724e9dd32d4f5b92c8c8686c1ffd3e3442b6230f652c1fc97b321b552a96b4a8",
+      "destination_sha256": "fb25a24316b6bca6add493f49c536ab5af32b5d4fbed813558093a632b280f88",
+      "voxel_count": 140
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "44535b773cb93581edf4305b634f7efdae140483bf95fd75ac66e95851b54b46",
+      "destination_sha256": "5bd2657b9f2b6d701480fa1e9a71ea87eaf2daa1c3917a913e6262de61ada6ac",
+      "voxel_count": 180
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_b.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_b.json",
+      "action": "converted-binary-object",
+      "source_sha256": "98687a0fe3cc7dad1ad45f405f62f858a27eaf4db6fd8c733b771bcc6fbbd997",
+      "destination_sha256": "b7a8f9f1ec27724d65dbb1a9c7a6ae59d5ade713bd866b0823b59e20800f24a2",
+      "voxel_count": 180
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_part_a.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_part_a.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b4031f0261439b2c026e3b956db2347b7eaef09e9602924ddb28a9e3e621e4d0",
+      "destination_sha256": "a04d44046a3d77de8506579ea3081195657194fecebf4490203303109f489b6e",
+      "voxel_count": 90
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_part_b.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/road_part_b.json",
+      "action": "converted-binary-object",
+      "source_sha256": "8a7b095e75d9dcf7398c71b8b3c3f47fb29e7a9ca1bb99ad09b1037896c5e609",
+      "destination_sha256": "18c55c53a2fe7251fba1cc75db2e09e3bb2a57c29c0d334e01b5cb8b3ac2520d",
+      "voxel_count": 99
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Senouzi.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Senouzi.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f0d08518d6f2c58d4946101295510bbe0de020c425550e0a132f1486dd70b52b",
+      "destination_sha256": "5097947b42796d7511fdc66f2cd31f810a2e683859e75e9157ea505ec14a68bd",
+      "voxel_count": 2899
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/shake.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/shake.declarations",
+      "action": "converted-program",
+      "source_sha256": "16f83d7b4632c6149fd27600adc0d8070fa7c7ba386c7c6a94b32871a778a748",
+      "destination_sha256": "8208dabd4ca7864121fc25908178e16daf6d1f258cbdd3284fb9f90f2b4a7e01",
+      "transformations": [
+        "object extension .obj -> .json: 10",
+        "remove .gameObject: 1",
+        "remove .transform: 1",
+        "childCount -> children.length: 1",
+        "ToString -> toString: 1",
+        "debugString -> window.debugString: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/shake.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/shake.update",
+      "action": "converted-program",
+      "source_sha256": "6fb8dcdef00132f9adb75e9051b96d38452ed4ace7792acfc78479e4c8a85ea8",
+      "destination_sha256": "f0e0b0e42aa0ae7e663bc0aed1b2abdcb8c307cd45ce319da6e427a3a400b1a6",
+      "transformations": [
+        "Transform.Translate -> Three.js object translation: 1",
+        "debugString -> window.debugString: 1",
+        "Mathf.Round -> Math.round: 2",
+        "Random.Range -> Math.random: 5"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/skyscraper1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/skyscraper1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4dcef4ab0d8b8146c720f11d88b7953a7f173d27d6bb006f5d6b0845574406bc",
+      "destination_sha256": "b0298f6fa6d24955586e95ce1682ae459230f57570429389cc5262cd5662cd19",
+      "voxel_count": 3053
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/skytree2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/skytree2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4c4dff30821b73f65a98ae2255ef5f645aa74567a616dcc93ce666a0ef2b54bb",
+      "destination_sha256": "884f97bc57761130ba9ded4d57c7021a782c3ade07dd6d73e65f30d060011b40",
+      "voxel_count": 1093
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/spider.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/spider.json",
+      "action": "converted-binary-object",
+      "source_sha256": "ac8acaece8ea427bb446c37eb87d48822f8f43b0a570a7a8719aede3852d1c4f",
+      "destination_sha256": "f678eccd0ac1d316e7f306fd0387cd0f24705e0a862087ac3d518adc959c351d",
+      "voxel_count": 138
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sport_car.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sport_car.json",
+      "action": "converted-binary-object",
+      "source_sha256": "844ffcd5baa17ccbfacf88766d4ead08063796546fbf8bcc3b3315e9e2af931a",
+      "destination_sha256": "67aa9f91a4ab6d9baaf3273b739ef841373283f3ffef94b619255f111f1fc14b",
+      "voxel_count": 278
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sport_car_tires.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sport_car_tires.json",
+      "action": "converted-binary-object",
+      "source_sha256": "00fd3eaac1024a91b3aa12e9828ab952fc36ec6e6d832fe13da68b7a3264f523",
+      "destination_sha256": "523389c39497586af1b48166af58a1c21fc1f92da824a96032fc094757a459ed",
+      "voxel_count": 76
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sst_TokyoTower4.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sst_TokyoTower4.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9e64709521e291b24cef2add73fa67a598bc45d9c65f104185b8ee25ba5cf724",
+      "destination_sha256": "aa04d0a622decf45a2112df19103490d352115464847c6b59c0ea52145178276",
+      "voxel_count": 597
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstbbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstbbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "bcb0fd08576b50d2c50f1f6c61fec4b6bb1efad7987612b43e61e1d6115c2cfd",
+      "destination_sha256": "83dba0d8a4de4bf1bda6f2883e434c2044de4005b2c492d39a8e8d21895b3936",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstbgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstbgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1586939a937abcd0cc81a773ac864fe560f0f618e427575efd97bb0aaa3d4a4f",
+      "destination_sha256": "0e78ae4b1c9b0510c8ec0aa883fc171cae3822ef5a6782cfc710dfa93a792b40",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstcrossroad1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstcrossroad1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "5e463cdd213f543378d6a7c5aed91df02c03e425228009ddced47acfbc760b73",
+      "destination_sha256": "b7ea7297c281aad6fde58cc58ec6eb12fc66485e098f22b92729590d95fe9265",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstdgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstdgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d75a392994376b8399baf67e384fcef93aebf7ba2169429abc3920bdc2564c07",
+      "destination_sha256": "ffa7b4933e457dffdff7cdfe784653113df9e5f235af3a8259a798b2f97d9363",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstmixbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstmixbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "059b01f40db3ea71e55f3d26df9367e5e6337a49986e459083e13a873fc224ac",
+      "destination_sha256": "271fb1452431178084c4201af5784917331f304bad8a4a256b0c4ced8b72c21f",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstriver1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstriver1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c4a451beeececa2dd3b0516160d6e50ab056aac24fee52e7adbd4283ef555616",
+      "destination_sha256": "ba18e236d9fd6b01444b38ffe132da7148f3c008ba9b8cc4b00ebef1e4aec438",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstroad1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/sstroad1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7592394688f8d6c3ce42403239a40bc122e0aa0b20f62ffe574eac1f24c8793b",
+      "destination_sha256": "52e41b2aede63bf782c73394814c703ae2bc39afb8d50804092e700746e8c8bb",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Station.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Station.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7e8dd9e5f995bc40ccdc01ff01754548d83f1c8cf24a84151f618426622b6e9d",
+      "destination_sha256": "3d4116c192a0940c97851797cf26062c236b6ec18b694e19263b39f98e7039ea",
+      "voxel_count": 829
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/stonebridge.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/stonebridge.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c16d5e4289cdf546019e654750f717874c0e50db84fd5ee2e78398824bf152bd",
+      "destination_sha256": "b18d2b8aae7b67a569938b7ac11e96f1981cf0891962072dcdfd02978ddaaa4f",
+      "voxel_count": 528
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/test_delete_this.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/test_delete_this.json",
+      "action": "converted-binary-object",
+      "source_sha256": "db4e6157a9882c8f0291628bc91b53173f0624b6191d8e88228a47126be75b1c",
+      "destination_sha256": "5e5799bc98687d436d3dd4492271378b9e450e78af12ec8e0e522d70ba233d56",
+      "voxel_count": 18
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/test_delete_this1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/test_delete_this1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9c0d5dca2f99d34730ad7b2fef69ee510af2b0d9170f13618f00385842eaf526",
+      "destination_sha256": "0a9748d7347bb393c056d6c040aa84db3a0dab0be603dbd2bfe95431aecd6389",
+      "voxel_count": 63
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/TokyoTower3.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/TokyoTower3.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f26cfd8e70d4e3eea71ed44501b24a2651e5bc26004dbf295341bb1d76b1c588",
+      "destination_sha256": "4bca940fc12de6cca35da3094bd7321092b40301abaa589730fb6b635a14170a",
+      "voxel_count": 605
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/TransparentTexturedCross.xml",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/TransparentTexturedCross.json",
+      "action": "converted-xml-object",
+      "source_sha256": "2cd1780c9883ffb38feaa4ba4703aa1c461df45ab1c71fae81641ec2010bed6c",
+      "destination_sha256": "e2bfb69c0647c219d2a567dd519ef024a83aa51042de17fffc272b3e9ec0e469",
+      "voxel_count": 7,
+      "omitted_axis_points": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/trap1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/trap1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "08f8e1015063d8f125dd3028f010d6713c4506bfa50a2f3cc88209de8afb1bb5",
+      "destination_sha256": "866838c4102ae32bc569f7f14476479a65aa9faa02a3d659a87f2740332eb199",
+      "voxel_count": 59
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/trap2.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/trap2.json",
+      "action": "converted-binary-object",
+      "source_sha256": "4048b23948a2b3626f844217130eba23078dd76aa1167b3468914cd3901a7878",
+      "destination_sha256": "82570c085b15ee2962999f568a4438dc7e21764d963b07f94635279d73714840",
+      "voxel_count": 60
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/tree1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/tree1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2ca665cb57a315829622ecded4e3715dada5a8bb3cbf5dd4563011860f8a3334",
+      "destination_sha256": "d9eaae0a594cf0c96542aa386d56d1420bdc40379105106a66aa9e191e9bcfd4",
+      "voxel_count": 202
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Trees.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/Objects_old/Trees.json",
+      "action": "converted-binary-object",
+      "source_sha256": "fd41054037fa1410b132be8db4f9cc902b0fed981100c33e77b5c60db8e68b2c",
+      "destination_sha256": "3b86ba4ec3dbca3b5acc5f3193f67fa7cd86e99dd6f2ebdc014e6c95eba5f5da",
+      "voxel_count": 594
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/shake.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/shake.declarations",
+      "action": "converted-program",
+      "source_sha256": "16f83d7b4632c6149fd27600adc0d8070fa7c7ba386c7c6a94b32871a778a748",
+      "destination_sha256": "8208dabd4ca7864121fc25908178e16daf6d1f258cbdd3284fb9f90f2b4a7e01",
+      "transformations": [
+        "object extension .obj -> .json: 10",
+        "remove .gameObject: 1",
+        "remove .transform: 1",
+        "childCount -> children.length: 1",
+        "ToString -> toString: 1",
+        "debugString -> window.debugString: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/shake.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/shake.update",
+      "action": "converted-program",
+      "source_sha256": "6fb8dcdef00132f9adb75e9051b96d38452ed4ace7792acfc78479e4c8a85ea8",
+      "destination_sha256": "f0e0b0e42aa0ae7e663bc0aed1b2abdcb8c307cd45ce319da6e427a3a400b1a6",
+      "transformations": [
+        "Transform.Translate -> Three.js object translation: 1",
+        "debugString -> window.debugString: 1",
+        "Mathf.Round -> Math.round: 2",
+        "Random.Range -> Math.random: 5"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/SST Explosion.docx",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/SST Explosion.docx",
+      "action": "copied",
+      "source_sha256": "49e65c29a8000086c4a7cdaabaff86c19ce7792877088d15cc855baaaee3d457",
+      "destination_sha256": "49e65c29a8000086c4a7cdaabaff86c19ce7792877088d15cc855baaaee3d457"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/SST Tokyo Map.docx",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/SST Tokyo Map.docx",
+      "action": "copied",
+      "source_sha256": "472622bcc666a3037b59293c9c77dcfd334dacbdbaf0afad114e061eff76dcac",
+      "destination_sha256": "472622bcc666a3037b59293c9c77dcfd334dacbdbaf0afad114e061eff76dcac"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion.declarations",
+      "action": "converted-program",
+      "source_sha256": "f567b58a3516ef3e7b4af174c6dce1a0b48fb686f684acad210603457ace1a21",
+      "destination_sha256": "d39349c827d443d3451d6820fd5eeba0ad3f894bd0e3dd9d46ac3d007c0d1ec6",
+      "transformations": [
+        "object extension .obj -> .json: 1",
+        "remove .gameObject: 1",
+        "remove .transform: 1",
+        "childCount -> children.length: 1",
+        "ToString -> toString: 1",
+        "debugString -> window.debugString: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion.update",
+      "action": "converted-program",
+      "source_sha256": "8e55d6d826a45b3b1256df5a8202d999e2d88522de339d811b2d69d31e5882b1",
+      "destination_sha256": "7b39cb62f5c996899f43e1faa355110956477c997082158c5e4af2eeb9bf3476",
+      "transformations": [
+        "remove float suffix: 3",
+        "Transform.Translate -> Three.js object translation: 1",
+        "remove .gameObject: 3",
+        "remove .transform: 2",
+        "childCount -> children.length: 1",
+        "GetChild -> children[]: 1",
+        "ToString -> toString: 1",
+        "Object.Destroy -> removeFromParent(): 1",
+        "debugString -> window.debugString: 2",
+        "Random.Range -> Math.random: 3"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion2.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion2.declarations",
+      "action": "converted-program",
+      "source_sha256": "f567b58a3516ef3e7b4af174c6dce1a0b48fb686f684acad210603457ace1a21",
+      "destination_sha256": "d39349c827d443d3451d6820fd5eeba0ad3f894bd0e3dd9d46ac3d007c0d1ec6",
+      "transformations": [
+        "object extension .obj -> .json: 1",
+        "remove .gameObject: 1",
+        "remove .transform: 1",
+        "childCount -> children.length: 1",
+        "ToString -> toString: 1",
+        "debugString -> window.debugString: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion2.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstexplosion2.update",
+      "action": "converted-program",
+      "source_sha256": "aee677ca78c85f77d1999b36a962cf1afaba6b17edaf32402e6a4eb6ebca0651",
+      "destination_sha256": "0f825c88d07ac203643ab17b2ec17d65191270425c980bea3856b1a9da2059cf",
+      "transformations": [
+        "remove float suffix: 3",
+        "Transform.Translate -> Three.js object translation: 1",
+        "remove .gameObject: 3",
+        "remove .transform: 2",
+        "childCount -> children.length: 1",
+        "GetChild -> children[]: 1",
+        "ToString -> toString: 1",
+        "Object.Destroy -> removeFromParent(): 1",
+        "debugString -> window.debugString: 2",
+        "Random.Range -> Math.random: 3"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit1.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit1.declarations",
+      "action": "converted-program",
+      "source_sha256": "fd8f014a10e569f5d136f85cb512478b940f544b59d0f29b767ed4ef26a1ca17",
+      "destination_sha256": "f545ea5777a8d3609aea242fe1c7b903fdff456d5302d4f1cc7e25e6e92e1bbc",
+      "transformations": [
+        "object extension .obj -> .json: 10",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit1.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit1.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit10.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit10.declarations",
+      "action": "converted-program",
+      "source_sha256": "9627d5948f18c9194f07416d05e8368c99538347fe69f2519ee958565353605e",
+      "destination_sha256": "e39b0f136fd8520aee415317e6fe60152da7e4f35f781a17820589605a926977",
+      "transformations": [
+        "object extension .obj -> .json: 53",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit10.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit10.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit11.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit11.declarations",
+      "action": "converted-program",
+      "source_sha256": "91067a177c8c9232d0ce5a07b459322f323b17425a99d83cb4071a332c537126",
+      "destination_sha256": "5b8c2e2b48319533fd9f8bbbfcdf53600819af279e1f2c5e93b97cd7f42b6826",
+      "transformations": [
+        "object extension .obj -> .json: 60",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit11.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit11.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit12.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit12.declarations",
+      "action": "converted-program",
+      "source_sha256": "12e56c2428329ff3c6bb43fe10a84c998af42b0511a241f42b9c787fd4f4df22",
+      "destination_sha256": "d6687c7d372d9794548a570735a6fb21b771a251047f84588dea48f33b37619b",
+      "transformations": [
+        "object extension .obj -> .json: 65",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit12.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit12.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit13.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit13.declarations",
+      "action": "converted-program",
+      "source_sha256": "288b9bb18cd5616bad53f5a68c38ed1eda99ef4e152b6235acf5ff6fb6b30634",
+      "destination_sha256": "e0c3a2e94fb63cad1e95cc7e8a76e7ebb75c2f13becc6ff7edb0f2db51a15b73",
+      "transformations": [
+        "object extension .obj -> .json: 66",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit13.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit13.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit14.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit14.declarations",
+      "action": "converted-program",
+      "source_sha256": "dcb0ddc63d7f4caff30dd6cc17e25e73d095fbfa45dcf018e5ac6d3224841e17",
+      "destination_sha256": "5fc0ab1623770a791f626b6faeb9e6c1af48f32f608c5674126a43558e11652d",
+      "transformations": [
+        "object extension .obj -> .json: 68",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit14.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit14.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit15.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit15.declarations",
+      "action": "converted-program",
+      "source_sha256": "2bdea5e36608077a2df16b69f7ca409e319cd7f5789ca9a6d717e42365a0ddeb",
+      "destination_sha256": "cfd5b577c9b0ff6228e56631273ca98ff6cbbe33365cf121f09487d600411d8d",
+      "transformations": [
+        "object extension .obj -> .json: 98",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit15.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit15.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit16.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit16.declarations",
+      "action": "converted-program",
+      "source_sha256": "2bdea5e36608077a2df16b69f7ca409e319cd7f5789ca9a6d717e42365a0ddeb",
+      "destination_sha256": "cfd5b577c9b0ff6228e56631273ca98ff6cbbe33365cf121f09487d600411d8d",
+      "transformations": [
+        "object extension .obj -> .json: 98",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit16.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit16.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit17.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit17.declarations",
+      "action": "converted-program",
+      "source_sha256": "53809959bf93554375c86eb0a57fa3e6b961536c894a7dd74df0be7b53b98a8f",
+      "destination_sha256": "1431dd35351e9667cadc298706110883ac7033f1bd07ea0ba6fe075934318316",
+      "transformations": [
+        "object extension .obj -> .json: 129",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit17.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit17.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit18.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit18.declarations",
+      "action": "converted-program",
+      "source_sha256": "ab7c046871e308105f22347e595fa7fbfe54dea8aadbff8298869b3107e526a7",
+      "destination_sha256": "4a14ca51973160d8bb2532ca0f985c2f7d2cb2495c771cd9d82b6dfad2165a11",
+      "transformations": [
+        "object extension .obj -> .json: 135",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit18.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit18.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit19.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit19.declarations",
+      "action": "converted-program",
+      "source_sha256": "2a67ec40c10d451dc77116f40c6d48aff50ddeaa41bdd458184ad57a454314bc",
+      "destination_sha256": "b851481561a28cb391e3866d50074b0aa23362cbebf9b6980c38c67ff0ce7aa2",
+      "transformations": [
+        "object extension .obj -> .json: 144",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit19.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit19.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit2.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit2.declarations",
+      "action": "converted-program",
+      "source_sha256": "fd8f014a10e569f5d136f85cb512478b940f544b59d0f29b767ed4ef26a1ca17",
+      "destination_sha256": "f545ea5777a8d3609aea242fe1c7b903fdff456d5302d4f1cc7e25e6e92e1bbc",
+      "transformations": [
+        "object extension .obj -> .json: 10",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit2.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit2.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit20.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit20.declarations",
+      "action": "converted-program",
+      "source_sha256": "2a67ec40c10d451dc77116f40c6d48aff50ddeaa41bdd458184ad57a454314bc",
+      "destination_sha256": "b851481561a28cb391e3866d50074b0aa23362cbebf9b6980c38c67ff0ce7aa2",
+      "transformations": [
+        "object extension .obj -> .json: 144",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit20.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit20.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit21.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit21.declarations",
+      "action": "converted-program",
+      "source_sha256": "7e846f10f879d712b17bcb95b12dcc4dc459257c93be54df9e0b2094746ed39a",
+      "destination_sha256": "e1c1c76c6a348e68674c1156276073fe571ebf8623b4aab573076330537aa474",
+      "transformations": [
+        "object extension .obj -> .json: 146",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit21.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit21.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit3.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit3.declarations",
+      "action": "converted-program",
+      "source_sha256": "bb870828af827247699d0c00035938f71dc2bd273f2e6f4b9c086243476dcc97",
+      "destination_sha256": "dc31d2816991f3f5888296bf852db4113278e5578ad26ae525da9664f37f838d",
+      "transformations": [
+        "object extension .obj -> .json: 13",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit3.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit3.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit4.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit4.declarations",
+      "action": "converted-program",
+      "source_sha256": "7deae5bcb0c365ef6e2e5bff3daf0aa05b800a0426a0d324ac52c90323016b08",
+      "destination_sha256": "5780d2c965280d2469aa24c394728470f751c533636d950f3b4a147cae4edef6",
+      "transformations": [
+        "object extension .obj -> .json: 18",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit4.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit4.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit5.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit5.declarations",
+      "action": "converted-program",
+      "source_sha256": "321b2b50aace59cea3d7c5de28a024074740070e73477619a46e83e9d5186485",
+      "destination_sha256": "7dad5473f8aa4a887d4fa2082a353f73519949a6d0c9e1c7cd1d7cc78270a3d9",
+      "transformations": [
+        "object extension .obj -> .json: 26",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit5.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit5.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit6.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit6.declarations",
+      "action": "converted-program",
+      "source_sha256": "0f36b65d4abb292837524310d6a7b765f85ee06938966b5ea512ff502c6f7961",
+      "destination_sha256": "8a61fcb3a2cb0fa1f20dbf2fd2e1694798660d24b5ab00565e85738715855bc3",
+      "transformations": [
+        "object extension .obj -> .json: 43",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit6.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit6.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit7.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit7.declarations",
+      "action": "converted-program",
+      "source_sha256": "26806a50fdf6763c003eeab9f9012a1bb38f5de4b45ad0fc30554f6c036b17b3",
+      "destination_sha256": "5df4359bd626cada250764a5adb801095a97e5e321baeaf5eabffd56cd61d0ad",
+      "transformations": [
+        "asset alias Senouziv.obj -> Senouzi.json: 1",
+        "object extension .obj -> .json: 43",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit7.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit7.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit8.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit8.declarations",
+      "action": "converted-program",
+      "source_sha256": "0f901fec59749e643257c39fef198ff2c923ab793b4d30ae9f577d1a477ec101",
+      "destination_sha256": "e5d16b83641bac1f44b915adc74ac9472bbd889ff19eed03a32f06d6ac45f283",
+      "transformations": [
+        "object extension .obj -> .json: 47",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit8.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit8.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit9.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit9.declarations",
+      "action": "converted-program",
+      "source_sha256": "630af07d1f9bb25f5af8fbff06004d4d482936e75ed6f0595f87247c0e82a217",
+      "destination_sha256": "a54eb4ed0cf7b77fe71ef9188f0affcb84e1e2aa13ca5dc1248aa71c4305a868",
+      "transformations": [
+        "object extension .obj -> .json: 47",
+        "remove UnityScript parameter types: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit9.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/Scripts/sstmapedit9.update",
+      "action": "converted-program",
+      "source_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "destination_sha256": "7a563368242ea00a175acd302cd623ec5568c989642f20ca0cd30fa5dd4d37d9",
+      "transformations": []
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/sky-tree-3D.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/sky-tree-3D.png",
+      "action": "copied",
+      "source_sha256": "f8f4fbb2bf0f5888646a0e18e463106666c6dbaf45555033ee89ea2beaabbe96",
+      "destination_sha256": "f8f4fbb2bf0f5888646a0e18e463106666c6dbaf45555033ee89ea2beaabbe96"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/drozerix_-_poppy_flower_girls.xm",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/drozerix_-_poppy_flower_girls.xm",
+      "action": "copied",
+      "source_sha256": "67d0575a8350e5ec830b31bfca34a053193cf135f48411d31638640bfd5dcfab",
+      "destination_sha256": "67d0575a8350e5ec830b31bfca34a053193cf135f48411d31638640bfd5dcfab"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_loud_internal_reverberant.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_loud_internal_reverberant.mp3",
+      "action": "copied",
+      "source_sha256": "820e2168aff25077dcb40c479694fa9507d187cc45fcf56e2af5818264f3782b",
+      "destination_sha256": "820e2168aff25077dcb40c479694fa9507d187cc45fcf56e2af5818264f3782b"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_medium.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_medium.mp3",
+      "action": "copied",
+      "source_sha256": "0f3bfc5b0ded954198ae862c7150de22d019b82a276e3456fde26c7960ec4936",
+      "destination_sha256": "0f3bfc5b0ded954198ae862c7150de22d019b82a276e3456fde26c7960ec4936"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_small.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/explosion_small.mp3",
+      "action": "copied",
+      "source_sha256": "6b7313b88b6380d6eca46d6fa831aee72b77d09c6ee172578061f7953672073a",
+      "destination_sha256": "6b7313b88b6380d6eca46d6fa831aee72b77d09c6ee172578061f7953672073a"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/felix_blume_nature_wind_howling_blowing_against_sign_001.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/felix_blume_nature_wind_howling_blowing_against_sign_001.mp3",
+      "action": "copied",
+      "source_sha256": "f3c2e142d387ea80b3391dceb771a1f730bd29a7e576030a629c56e5caa8ab87",
+      "destination_sha256": "f3c2e142d387ea80b3391dceb771a1f730bd29a7e576030a629c56e5caa8ab87"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/fire_bonfire_sizzle_crackle_pine_branch_burning_wood.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/fire_bonfire_sizzle_crackle_pine_branch_burning_wood.mp3",
+      "action": "copied",
+      "source_sha256": "cd8541967b539d9ce803c90625b8c621f867af19f0a8774459a7a14e82811d01",
+      "destination_sha256": "cd8541967b539d9ce803c90625b8c621f867af19f0a8774459a7a14e82811d01"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/firework_roman_candle_eject_4_fireworks.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/firework_roman_candle_eject_4_fireworks.mp3",
+      "action": "copied",
+      "source_sha256": "6345f88ef91dd315b680b3a390456ce4df6d44e5e41e2c2f135c97d65fb4a204",
+      "destination_sha256": "6345f88ef91dd315b680b3a390456ce4df6d44e5e41e2c2f135c97d65fb4a204"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/julien_matthey_nature_fire_fireball_passby.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/julien_matthey_nature_fire_fireball_passby.mp3",
+      "action": "copied",
+      "source_sha256": "a6e48dcbf0d94a250443caabfa1e6481410515943d80c44d7194442755a46763",
+      "destination_sha256": "a6e48dcbf0d94a250443caabfa1e6481410515943d80c44d7194442755a46763"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/little_robot_sound_factory_fantasy_Dragon_Growl_01.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/little_robot_sound_factory_fantasy_Dragon_Growl_01.mp3",
+      "action": "copied",
+      "source_sha256": "e7d53cc5c3ae575f46a4284654a979385c6ff450e0d25e5fdbba691a2c2449fd",
+      "destination_sha256": "e7d53cc5c3ae575f46a4284654a979385c6ff450e0d25e5fdbba691a2c2449fd"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/Music source.docx",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/Music source.docx",
+      "action": "copied",
+      "source_sha256": "554c69baf304faf3d4a892e0176310354a13baedcd0e9c1b22af74f03716a836",
+      "destination_sha256": "554c69baf304faf3d4a892e0176310354a13baedcd0e9c1b22af74f03716a836"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SoundLibrary/nature_wind_strong_howling_internal.mp3",
+      "destination": "GGJ17 - Super Smash Tokyo files/SoundLibrary/nature_wind_strong_howling_internal.mp3",
+      "action": "copied",
+      "source_sha256": "8f79539e12797b948e6f14cc688570bfc85f13bb230e6f3b4b051168f6e5a7b8",
+      "destination_sha256": "8f79539e12797b948e6f14cc688570bfc85f13bb230e6f3b4b051168f6e5a7b8"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/cloud.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/cloud.json",
+      "action": "converted-binary-object",
+      "source_sha256": "6020fec252ef9e0006de62f3a5a6e0946260016e79413c8b56f084950f067a8a",
+      "destination_sha256": "1c4a51a5d16f3640b1f8153fe7d6207af94ea7a93db2032d9944ff20394ef4a7",
+      "voxel_count": 93
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Game Design Doc Super Smash Tokyo.docx",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Game Design Doc Super Smash Tokyo.docx",
+      "action": "copied",
+      "source_sha256": "ff296cb7daf5492345bbf333a86e50884d12af90208355e7aefeafe67396c8c7",
+      "destination_sha256": "ff296cb7daf5492345bbf333a86e50884d12af90208355e7aefeafe67396c8c7"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/GGJrogo.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/GGJrogo.json",
+      "action": "converted-binary-object",
+      "source_sha256": "b5043bb6fd2ca905baa6451c422711839c5d1cc253e1dbf757a275660a90a670",
+      "destination_sha256": "9fe498c1aca3e89e6dae4dc5b52bb9a54cf6625d46ed34605c4648847b7a5725",
+      "voxel_count": 105
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Hightower_A.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Hightower_A.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9286ebfa419cb1c632036b10c1e62e1ef0e7e578ce99d9dd111759cb1339966e",
+      "destination_sha256": "7a23ee76d7a3bcea2280703d12ba189b3ef0bcc8049f421e84341f1203044605",
+      "voxel_count": 1738
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Hightower_B.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Hightower_B.json",
+      "action": "converted-binary-object",
+      "source_sha256": "eae46d3ef8a0e64a713162d7a70175b388b353ce1c1b88f188666784245c4d18",
+      "destination_sha256": "1f81caa46592b9b0612a9f0d7d5dfe5ad8ddc35085e41072a12b95dbe92bc283",
+      "voxel_count": 2038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/new_House_blue1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/new_House_blue1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "18fb0c3f2538ddc3b89d991799908bd92aa3748695106b6788e991bd99191570",
+      "destination_sha256": "b2ba4f0d9476d4391e815347bc3aaf75c1d102759a129e8e2e51fd8fe26239eb",
+      "voxel_count": 1029
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/new_House_red1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/new_House_red1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2309c11518307872d3531ac4f9310a526868b2cb75b16c929d737b0e04efec2a",
+      "destination_sha256": "f70a3652f5d420da658c658936ed896602eab9bf510a9f0da1e89b134e192dc5",
+      "voxel_count": 1038
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Senouzi.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/Senouzi.json",
+      "action": "converted-binary-object",
+      "source_sha256": "f0d08518d6f2c58d4946101295510bbe0de020c425550e0a132f1486dd70b52b",
+      "destination_sha256": "5097947b42796d7511fdc66f2cd31f810a2e683859e75e9157ea505ec14a68bd",
+      "voxel_count": 2899
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/shake.declarations",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/shake.declarations",
+      "action": "converted-program",
+      "source_sha256": "16f83d7b4632c6149fd27600adc0d8070fa7c7ba386c7c6a94b32871a778a748",
+      "destination_sha256": "8208dabd4ca7864121fc25908178e16daf6d1f258cbdd3284fb9f90f2b4a7e01",
+      "transformations": [
+        "object extension .obj -> .json: 10",
+        "remove .gameObject: 1",
+        "remove .transform: 1",
+        "childCount -> children.length: 1",
+        "ToString -> toString: 1",
+        "debugString -> window.debugString: 1"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/shake.update",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/shake.update",
+      "action": "converted-program",
+      "source_sha256": "6fb8dcdef00132f9adb75e9051b96d38452ed4ace7792acfc78479e4c8a85ea8",
+      "destination_sha256": "f0e0b0e42aa0ae7e663bc0aed1b2abdcb8c307cd45ce319da6e427a3a400b1a6",
+      "transformations": [
+        "Transform.Translate -> Three.js object translation: 1",
+        "debugString -> window.debugString: 1",
+        "Mathf.Round -> Math.round: 2",
+        "Random.Range -> Math.random: 5"
+      ]
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sst_TokyoTower4.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sst_TokyoTower4.json",
+      "action": "converted-binary-object",
+      "source_sha256": "9e64709521e291b24cef2add73fa67a598bc45d9c65f104185b8ee25ba5cf724",
+      "destination_sha256": "aa04d0a622decf45a2112df19103490d352115464847c6b59c0ea52145178276",
+      "voxel_count": 597
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstbbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstbbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "bcb0fd08576b50d2c50f1f6c61fec4b6bb1efad7987612b43e61e1d6115c2cfd",
+      "destination_sha256": "83dba0d8a4de4bf1bda6f2883e434c2044de4005b2c492d39a8e8d21895b3936",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstbgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstbgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "1586939a937abcd0cc81a773ac864fe560f0f618e427575efd97bb0aaa3d4a4f",
+      "destination_sha256": "0e78ae4b1c9b0510c8ec0aa883fc171cae3822ef5a6782cfc710dfa93a792b40",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstdgrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstdgrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "d75a392994376b8399baf67e384fcef93aebf7ba2169429abc3920bdc2564c07",
+      "destination_sha256": "ffa7b4933e457dffdff7cdfe784653113df9e5f235af3a8259a798b2f97d9363",
+      "voxel_count": 1
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstmixbiggrass1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstmixbiggrass1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "059b01f40db3ea71e55f3d26df9367e5e6337a49986e459083e13a873fc224ac",
+      "destination_sha256": "271fb1452431178084c4201af5784917331f304bad8a4a256b0c4ced8b72c21f",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstriver1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstriver1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c4a451beeececa2dd3b0516160d6e50ab056aac24fee52e7adbd4283ef555616",
+      "destination_sha256": "ba18e236d9fd6b01444b38ffe132da7148f3c008ba9b8cc4b00ebef1e4aec438",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstroad1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/sstroad1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "7592394688f8d6c3ce42403239a40bc122e0aa0b20f62ffe574eac1f24c8793b",
+      "destination_sha256": "52e41b2aede63bf782c73394814c703ae2bc39afb8d50804092e700746e8c8bb",
+      "voxel_count": 144
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/stonebridge.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/stonebridge.json",
+      "action": "converted-binary-object",
+      "source_sha256": "c16d5e4289cdf546019e654750f717874c0e50db84fd5ee2e78398824bf152bd",
+      "destination_sha256": "b18d2b8aae7b67a569938b7ac11e96f1981cf0891962072dcdfd02978ddaaa4f",
+      "voxel_count": 528
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/tree1.obj",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST 3D Objects Assets/tree1.json",
+      "action": "converted-binary-object",
+      "source_sha256": "2ca665cb57a315829622ecded4e3715dada5a8bb3cbf5dd4563011860f8a3334",
+      "destination_sha256": "d9eaae0a594cf0c96542aa386d56d1420bdc40379105106a66aa9e191e9bcfd4",
+      "voxel_count": 202
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST-splash.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST-splash.jpg",
+      "action": "copied",
+      "source_sha256": "386a3ed5e0e0eac43856fb3279a796a97c87f288fbad14f9b08c19ff6ebe79ab",
+      "destination_sha256": "386a3ed5e0e0eac43856fb3279a796a97c87f288fbad14f9b08c19ff6ebe79ab"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST-splash.psd",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST-splash.psd",
+      "action": "copied",
+      "source_sha256": "556ba127b9ad492fc3bdeb3af83a9e762765a57989ae90ecb601bb9fbc182ab7",
+      "destination_sha256": "556ba127b9ad492fc3bdeb3af83a9e762765a57989ae90ecb601bb9fbc182ab7"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST-splash2-sq.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST-splash2-sq.jpg",
+      "action": "copied",
+      "source_sha256": "d659bc6543febfe7a7f13bf5179c73fe056478dfe352a16e7c93e097963136fb",
+      "destination_sha256": "d659bc6543febfe7a7f13bf5179c73fe056478dfe352a16e7c93e097963136fb"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST-splash2-sq.psd",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST-splash2-sq.psd",
+      "action": "copied",
+      "source_sha256": "2bdf0b7d75e13970ac9208ef1e13ca29627ad938e66afb43b67658b52ae0508c",
+      "destination_sha256": "2bdf0b7d75e13970ac9208ef1e13ca29627ad938e66afb43b67658b52ae0508c"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/SST-splash2.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/SST-splash2.jpg",
+      "action": "copied",
+      "source_sha256": "9714b070427774f2ebe29110dc8ee5ecf8c2aa3a8153e6b8dd9e194aec4bd5c0",
+      "destination_sha256": "9714b070427774f2ebe29110dc8ee5ecf8c2aa3a8153e6b8dd9e194aec4bd5c0"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Super-Smash-Tokyo-Team-1.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/Super-Smash-Tokyo-Team-1.jpg",
+      "action": "copied",
+      "source_sha256": "2eb7f81bf8df5a688bf62ae5b078ff3dde715c64878459cc9a1eb42fccf1677e",
+      "destination_sha256": "2eb7f81bf8df5a688bf62ae5b078ff3dde715c64878459cc9a1eb42fccf1677e"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Super-Smash-Tokyo-Team-2.jpg",
+      "destination": "GGJ17 - Super Smash Tokyo files/Super-Smash-Tokyo-Team-2.jpg",
+      "action": "copied",
+      "source_sha256": "18694d5f2d4e0011b40a269f2f43b2ebfaa4d4c937eb4e6650be35be3cfbae95",
+      "destination_sha256": "18694d5f2d4e0011b40a269f2f43b2ebfaa4d4c937eb4e6650be35be3cfbae95"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/tokyo-map-concept-art.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/tokyo-map-concept-art.png",
+      "action": "copied",
+      "source_sha256": "db4ee426851675c99de2a3390227d1bf34df319e913014763208b90fa6bc5300",
+      "destination_sha256": "db4ee426851675c99de2a3390227d1bf34df319e913014763208b90fa6bc5300"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Tokyo-tower-3D-alone.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/Tokyo-tower-3D-alone.png",
+      "action": "copied",
+      "source_sha256": "825cc0a2055331eb2631e0fc3c62469e648e82eef53e24654e92b695221f6475",
+      "destination_sha256": "825cc0a2055331eb2631e0fc3c62469e648e82eef53e24654e92b695221f6475"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Tokyo-tower-3D.png",
+      "destination": "GGJ17 - Super Smash Tokyo files/Tokyo-tower-3D.png",
+      "action": "copied",
+      "source_sha256": "98a307ce63ca8e83029b071bb2d450b232339caddb447940c2a2c776c7959795",
+      "destination_sha256": "98a307ce63ca8e83029b071bb2d450b232339caddb447940c2a2c776c7959795"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Audio Previews/Untitled.PRV/Peak Files/efe43c5e-6034-466f-8607-3d7966e56094+fb27c370-8ea0-ebc7-c5c4-bbaa00000049 48000.pek",
+      "destination": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Audio Previews/Untitled.PRV/Peak Files/efe43c5e-6034-466f-8607-3d7966e56094+fb27c370-8ea0-ebc7-c5c4-bbaa00000049 48000.pek",
+      "action": "copied",
+      "source_sha256": "a32583c70aed6def5315e7a8553bcfdc4613d6151694a4c978b82f5cbcc50b2c",
+      "destination_sha256": "a32583c70aed6def5315e7a8553bcfdc4613d6151694a4c978b82f5cbcc50b2c"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Auto-Save/Untitled_1-1.prproj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Auto-Save/Untitled_1-1.prproj",
+      "action": "copied",
+      "source_sha256": "60c679a91f94e717d9f3fde2394e4475ee0731dcd8cc169eefc1f1527cf8af7d",
+      "destination_sha256": "60c679a91f94e717d9f3fde2394e4475ee0731dcd8cc169eefc1f1527cf8af7d"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Preview Files/Untitled.PRV/efe43c5e-6034-466f-8607-3d7966e56094+69ec3b939cf0b79021e28021 48000.pek",
+      "destination": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Adobe Premiere Pro Preview Files/Untitled.PRV/efe43c5e-6034-466f-8607-3d7966e56094+69ec3b939cf0b79021e28021 48000.pek",
+      "action": "copied",
+      "source_sha256": "c99ab417519c8a3fdfa706fa1cbdc8aaccd03f1ee8ee38407192b61f3dca2f25",
+      "destination_sha256": "c99ab417519c8a3fdfa706fa1cbdc8aaccd03f1ee8ee38407192b61f3dca2f25"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Untitled.prproj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Untitled.prproj",
+      "action": "copied",
+      "source_sha256": "e29bcfdd970c092b6e1b4a41172dcaf9b2f5eafeaae61648fd214cfec8eec643",
+      "destination_sha256": "e29bcfdd970c092b6e1b4a41172dcaf9b2f5eafeaae61648fd214cfec8eec643"
+    },
+    {
+      "source": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Untitled_1.prproj",
+      "destination": "GGJ17 - Super Smash Tokyo files/Video Gameplay/Untitled_1.prproj",
+      "action": "copied",
+      "source_sha256": "238b63e2fd1570e0c45ecacc1ad70a817a7b991ee88350f7f1c58fe3f67f17f9",
+      "destination_sha256": "238b63e2fd1570e0c45ecacc1ad70a817a7b991ee88350f7f1c58fe3f67f17f9"
+    }
+  ]
+}

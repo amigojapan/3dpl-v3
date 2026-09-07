@@ -1,0 +1,284 @@
+//map
+//TOKYO-TOWER-GRASS
+vars["tower1_SDC"]=200;
+vars["vartower1"]=Obj("sst_TokyoTower4.obj","tower1",0,0,0);
+Obj("sstmixground.obj","ground",0,0,0);
+Obj("sstmixground.obj","ground",12,0,0);
+Obj("sstmixground.obj","ground",12,0,12);
+Obj("sstmixground.obj","ground",12,0,-12);
+Obj("sstmixground.obj","ground",-12,0,0);
+Obj("sstmixground.obj","ground",-12,0,-12);
+Obj("sstmixground.obj","ground",0,0,12);
+Obj("sstmixground.obj","ground",0,0,-12);
+Obj("sstmixground.obj","ground",-12,0,12);
+
+//ROADS-TOKYO-TOWER
+Obj("sstground.obj","ground",-24,0,0);
+Obj("sstground.obj","ground",-24,0,12);
+Obj("sstground.obj","ground",-24,0,-12);
+
+Obj("sstcrossground.obj","ground",-24,0,24);
+
+Obj("sstground.obj","ground",23,0,0);
+Obj("sstground.obj","ground",23,0,12);
+Obj("sstground.obj","ground",23,0,-12);
+
+Obj("sstcrossground.obj","ground",23,0,-24);
+
+Obj("sstground.obj","ground",0,0,24);
+Obj("sstground.obj","ground",12,0,24);
+Obj("sstground.obj","ground",-12,0,24);
+
+Obj("sstcrossground.obj","ground",23,0,24);
+
+Obj("sstground.obj","ground",0,0,-24);
+Obj("sstground.obj","ground",12,0,-24);
+Obj("sstground.obj","ground",-12,0,-24);
+
+Obj("sstcrossground.obj","ground",-24,0,-24);
+
+Obj("sstground.obj","ground",-24,0,36);
+Obj("sstcrossground.obj","ground",-24,0,48);
+
+//HOUSE-RED-RIVER
+vars["housered1_SDC"]=50;
+vars["varhousered1"]=Obj("new_House_red1.obj","housered1",-4,0,40);
+Obj("sstmixground.obj","ground",-12,0,36);
+Obj("sstmixground.obj","ground",-12,0,48);
+Obj("sstmixground.obj","ground",0,0,36);
+Obj("sstmixground.obj","ground",0,0,48);
+Obj("sstbground.obj","ground",6,0,53);
+Obj("sstdground.obj","ground",6,0,52);
+Obj("sstdground.obj","ground",6,0,51);
+Obj("sstbground.obj","ground",6,0,50);
+Obj("sstdground.obj","ground",6,0,49);
+Obj("sstdground.obj","ground",6,0,48);
+Obj("sstbground.obj","ground",6,0,47);
+Obj("sstbground.obj","ground",6,0,46);
+Obj("sstdground.obj","ground",6,0,45);
+Obj("sstbground.obj","ground",6,0,44);
+Obj("sstdground.obj","ground",6,0,43);
+Obj("sstdground.obj","ground",6,0,42);
+Obj("sstbground.obj","ground",6,0,41);
+Obj("sstdground.obj","ground",6,0,40);
+Obj("sstdground.obj","ground",6,0,39);
+Obj("sstbground.obj","ground",6,0,38);
+Obj("sstdground.obj","ground",6,0,37);
+Obj("sstbground.obj","ground",6,0,36);
+Obj("sstbground.obj","ground",6,0,35);
+Obj("sstdground.obj","ground",6,0,34);
+Obj("sstbground.obj","ground",6,0,33);
+Obj("sstdground.obj","ground",6,0,32);
+Obj("sstdground.obj","ground",6,0,31);
+Obj("sstbground.obj","ground",6,0,30);
+
+
+
+//HIGHTOWER
+vars["hightower1_SDC"]=100;
+vars["varhightower1"]=Obj("Hightower_A.obj","hightower1",-37,0,0);
+vars["tree1_SDC"]=20;
+vars["vartree1"]=Obj("tree1.obj","tree1",-37,0,12);
+Obj("sstmixground.obj","ground",-35,0,12);
+vars["tree2_SDC"]=20;
+vars["vartree2"]=Obj("tree1.obj","tree2",-37,0,-12);
+Obj("sstmixground.obj","ground",-35,0,-12);
+vars["tree3_SDC"]=20;
+vars["vartree3"]=Obj("tree1.obj","tree3",-37,0,-24);
+Obj("sstmixground.obj","ground",-35,0,-24);
+vars["tree4_SDC"]=20;
+vars["vartree4"]=Obj("tree1.obj","tree4",-37,0,24);
+Obj("sstmixground.obj","ground",-35,0,24);
+vars["tree5_SDC"]=20;
+vars["vartree5"]=Obj("tree1.obj","tree5",-37,0,36);
+Obj("sstmixground.obj","ground",-35,0,36);
+
+//BRIDGE
+vars["bridge1_SDC"]=20;
+vars["varbridge1"]=Obj("stonebridge.obj","bridge1",-24,0,59);
+vars["bridge2_SDC"]=20;
+vars["varbridge2"]=Obj("stonebridge.obj","bridge2",25,0,35);
+
+//RIVER
+
+Obj("sstcrossground.obj","ground",-36,0,48);
+
+Obj("sstground.obj","ground",-36,0,59);
+Obj("sstground.obj","ground",-24,0,59);
+Obj("sstground.obj","ground",-12,0,59);
+Obj("sstground.obj","ground",0,0,59);
+Obj("sstground.obj","ground",12,0,59);
+Obj("sstground.obj","ground",12,0,47);
+Obj("sstground.obj","ground",12,0,35);
+Obj("sstground.obj","ground",24,0,35);
+Obj("sstground.obj","ground",36,0,35);
+Obj("sstground.obj","ground",48,0,35);
+Obj("sstground.obj","ground",60,0,35);
+
+//ALONG-THE-RIVER
+
+Obj("sstcrossground.obj","ground",-36,0,72);
+Obj("sstcrossground.obj","ground",-24,0,72);
+Obj("sstcrossground.obj","ground",-12,0,72);
+Obj("sstcrossground.obj","ground",0,0,72);
+Obj("sstcrossground.obj","ground",12,0,72);
+Obj("sstcrossground.obj","ground",24,0,72);
+Obj("sstcrossground.obj","ground",32,0,72);
+Obj("sstcrossground.obj","ground",44,0,72);
+Obj("sstcrossground.obj","ground",56,0,72);
+
+Obj("sstmixground.obj","ground",-35,0,84);
+Obj("sstmixground.obj","ground",-23,0,84);
+Obj("sstmixground.obj","ground",-11,0,84);
+Obj("sstmixground.obj","ground",1,0,84);
+Obj("sstmixground.obj","ground",13,0,84);
+Obj("sstmixground.obj","ground",25,0,84);
+Obj("sstmixground.obj","ground",37,0,84);
+Obj("sstmixground.obj","ground",49,0,84);
+Obj("sstmixground.obj","ground",61,0,84);
+
+Obj("sstmixground.obj","ground",-35,0,96);
+Obj("sstmixground.obj","ground",-23,0,96);
+Obj("sstmixground.obj","ground",-11,0,96);
+Obj("sstmixground.obj","ground",1,0,96);
+Obj("sstmixground.obj","ground",13,0,96);
+Obj("sstmixground.obj","ground",25,0,96);
+Obj("sstmixground.obj","ground",37,0,96);
+Obj("sstmixground.obj","ground",49,0,96);
+Obj("sstmixground.obj","ground",61,0,96);
+
+
+//TREES-SENSOUJI
+Obj("sstcrossground.obj","ground",24,0,48);
+Obj("sstcrossground.obj","ground",24,0,60);
+vars["tree6_SDC"]=20;
+vars["vartree6"]=Obj("tree1.obj","tree6",36,0,59);
+vars["tree7_SDC"]=20;
+vars["vartree7"]=Obj("tree1.obj","tree7",36,0,47);
+Obj("sstmixground.obj","ground",36,0,60);
+Obj("sstmixground.obj","ground",36,0,48);
+Obj("sstmixground.obj","ground",48,0,60);
+Obj("sstmixground.obj","ground",48,0,48);
+Obj("sstmixground.obj","ground",60,0,60);
+Obj("sstmixground.obj","ground",60,0,48);
+
+
+
+//NEW-HOUSE-RED-BLUE-LEFT
+vars["housered1_SDC"]=50;
+vars["varhousered1"]=Obj("new_House_red1.obj","housered1",-34,0,95);
+vars["houseblue1_SDC"]=50;
+vars["varhouseblue1"]=Obj("new_House_blue1.obj","houseblue1",-12,0,95);
+
+//SENSOUJI
+vars["sensouji1_SDC"]=100;
+vars["varsensouji1"]=Obj("Senouzi.obj","sensouji1",22,11,95);
+
+//NEW-HOUSE-RED-BLUE-RIGHT
+vars["housered2_SDC"]=50;
+vars["varhousered2"]=Obj("new_House_red1.obj","housered2",60,0,95);
+vars["houseblue2_SDC"]=50;
+vars["varhouseblue2"]=Obj("new_House_blue1.obj","houseblue2",60,0,70);
+
+//SKYTREE
+vars["skytree1_SDC"]=300;
+vars["varskytree1"]=Obj("skytree3.obj","skytree1",60,0,50);
+
+//HIGHTOWER-A-B
+vars["hightower3_SDC"]=100;
+vars["varhightower3"]=Obj("Hightower_A.obj","hightower3",60,0,20);
+vars["hightower4_SDC"]=100;
+vars["varhightower4"]=Obj("Hightower_B.obj","hightower4",60,0,0);
+vars["hightower5_SDC"]=100;
+vars["varhightower5"]=Obj("Hightower_A.obj","hightower5",60,0,-20);
+vars["hightower6_SDC"]=100;
+vars["varhightower6"]=Obj("Hightower_B.obj","hightower6",40,0,20);
+vars["hightower7_SDC"]=100;
+vars["varhightower7"]=Obj("Hightower_A.obj","hightower7",40,0,0);
+vars["hightower8_SDC"]=100;
+vars["varhightower8"]=Obj("Hightower_B.obj","hightower8",40,0,-20);
+
+Obj("sstmixground.obj","ground",60,0,24);
+Obj("sstmixground.obj","ground",48,0,24);
+Obj("sstmixground.obj","ground",36,0,24);
+
+Obj("sstmixground.obj","ground",60,0,12);
+Obj("sstmixground.obj","ground",48,0,12);
+Obj("sstmixground.obj","ground",36,0,12);
+
+Obj("sstmixground.obj","ground",60,0,0);
+Obj("sstmixground.obj","ground",48,0,0);
+Obj("sstmixground.obj","ground",36,0,0);
+
+Obj("sstmixground.obj","ground",60,0,-12);
+Obj("sstmixground.obj","ground",48,0,-12);
+Obj("sstmixground.obj","ground",36,0,-12);
+
+Obj("sstmixground.obj","ground",60,0,-24);
+Obj("sstmixground.obj","ground",48,0,-24);
+Obj("sstmixground.obj","ground",36,0,-24);
+
+an("ground",0,90,0);
+
+
+
+//phisics
+//Time Lord diversifyer
+if(parseInt(System.DateTime.Now.ToString("hh")) > 18) {
+  SetSkyStarryNight();
+}else{
+  SetSkyNone();
+}
+
+vars["dragon_head"]=Obj("DragonHead5.obj","dragon_head",0,0,0);
+vars["dragon_head"].transform.Rotate(0,180,0);
+for(var i=0;i<6;i++){ 
+  vars["dragon_body"+i]=Obj("DragonTrunk2.obj","dragon_body"+i,0,-5,-13*(i+1));
+  vars["dragon_body"+i].transform.Rotate(0,180,0);
+  //adding parent child relationship to be able to scale based on just one scale to retain same ratio
+  if(i==0){
+    vars["dragon_body0"].transform.parent=vars["dragon_head"].transform;
+  }
+else{
+    vars["dragon_body"+i].transform.parent=vars["dragon_head"].transform;
+  }
+}
+//vars["TokyoTower"]=Obj("TokyoTower3.obj","TT",0,0,20);
+vars["dragon_tail"]=Obj("DragonTail.obj","dragon_tail",0,0,-13*8);
+vars["dragon_tail"].transform.Rotate(0,180,0);
+vars["dragon_tail"].transform.parent=vars["dragon_head"].transform;
+function sc_(name : String, x : float, y : float, z : float) {//name: String, x,y,z
+    //Scale a cube
+	//example
+	//Declarations
+	//qb("myRectangle",10,10,10);sc("myRectangle",100,10,10);
+    for (cube in cubes) {//this for loop doesnt behave as the regular browser one which woudl return the index, it acutally returns the object
+    	if(cube.transform.name==name) cube.transform.localScale = Vector3(x,y,z);
+	}
+}
+vars["dragon_y_max"]=vars["dragon_head"].transform.position.y+1;
+vars["dragon_y_min"]=vars["dragon_head"].transform.position.y-1;
+vars["rad"]=0;
+
+//===========================================
+sc_("dragon_head",0.1,0.1,0.1);
+class breath{
+ var x=0;
+ var y=0;
+ var z=0;
+ function breath(){
+ }
+ function breath(name:String,x_:float,y_:float ,z_:float ){
+  var x=x_;
+  var y=y_;
+  var z=z_;   vars[name]=qb(name+"_",vars["BreathOrigine"].transform.position.x,vars["BreathOrigine"].transform.position.y,vars["BreathOrigine"].transform.position.z);
+ }
+}
+vars["breath_"]=new breath();
+vars["breathCount"]=0;
+vars["time"]=0;
+vars["BreathOrigine"]=qb("BreathOrigine",vars["dragon_head"].transform.position.x,vars["dragon_head"].transform.position.y,vars["dragon_head"].transform.position.z+10);
+vars["BreathOrigine"].transform.parent=vars["dragon_head"].transform;
+cl("BreathOrigine",new Color(0,0,0,0));
+vars["TTHP"]=10;
+vars["TTBreak"]=false;

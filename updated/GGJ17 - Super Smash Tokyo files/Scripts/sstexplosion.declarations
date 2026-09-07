@@ -1,0 +1,3 @@
+vars["ttobj"]=Obj("sst_TokyoTower4.json","tt",0,0,100);
+//window.debugString =vars["ttobj"].children.length.toString();
+vars["counter"]=0;

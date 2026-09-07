@@ -14,6 +14,7 @@ if (!api_valid_nick($nick) || $password === '' || strlen($password) > 4096) {
 }
 
 $db = null;
+$loginStage = 'database';
 try {
     $db = api_database();
     $statement = $db->prepare(
@@ -37,7 +38,12 @@ try {
     }
 
     $canonicalNick = (string)$row['nick'];
-    api_objects_directory($canonicalNick, true);
+    // Repair layouts created by older versions before establishing the
+    // session, using the canonical nickname stored in the database.
+    $loginStage = 'user_storage';
+    api_ensure_user_layout($canonicalNick);
+
+    $loginStage = 'session';
     api_start_session();
     if (!@session_regenerate_id(true)) {
         throw new RuntimeException('The login session could not be secured.');
@@ -52,6 +58,13 @@ try {
     ]);
 } catch (Throwable $error) {
     error_log('3DPL login error: ' . $error->getMessage());
+    if ($loginStage === 'user_storage') {
+        api_fail(
+            'personal_storage_unavailable',
+            api_user_layout_error_message($canonicalNick),
+            503
+        );
+    }
     api_fail('login_failed', 'Login could not be completed.', 500);
 } finally {
     if ($db instanceof SQLite3) {

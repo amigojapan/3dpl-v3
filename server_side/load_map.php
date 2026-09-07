@@ -6,11 +6,16 @@ require_once __DIR__ . '/api_common.php';
 api_require_method('GET');
 $nick = api_require_user();
 session_write_close();
+api_require_matching_scope($_GET, $nick);
 
 $lock = null;
 try {
     $mapsDirectory = api_maps_directory($nick, true);
-    $lock = fopen($mapsDirectory . DIRECTORY_SEPARATOR . '.maps.lock', 'c');
+    $lockPath = $mapsDirectory . DIRECTORY_SEPARATOR . '.maps.lock';
+    if (is_link($lockPath)) {
+        throw new RuntimeException('The map storage lock path is unsafe.');
+    }
+    $lock = fopen($lockPath, 'c');
     if ($lock === false || !flock($lock, LOCK_SH)) {
         throw new RuntimeException('The map storage lock could not be acquired.');
     }
@@ -71,6 +76,7 @@ try {
     header('Content-Length: ' . (string)$size);
     header('Cache-Control: private, no-store');
     header('X-Content-Type-Options: nosniff');
+    header('X-3DPL-Source: personal');
     $streamed = readfile($path);
 
     flock($lock, LOCK_UN);
