@@ -109,6 +109,81 @@
         .file-ops-row button { flex: 1; font-size: 12px; background: #28a745; }
         .file-ops-row button:hover { background: #218838; }
         .file-ops-row button.alt { background: #17a2b8; }
+        .cloud-object-row, .cloud-map-row, .cloud-media-row { display: flex; gap: 5px; }
+        .cloud-object-row button, .cloud-map-row button, .cloud-media-row button {
+            flex: 1;
+            min-height: 42px;
+            font-size: 21px;
+            background: #6650a4;
+        }
+
+        #account-controls {
+            pointer-events: auto;
+            position: fixed;
+            z-index: 2400;
+            top: max(10px, env(safe-area-inset-top));
+            left: 50%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transform: translateX(-50%);
+        }
+        #account-controls button {
+            width: 46px;
+            height: 42px;
+            padding: 0;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 10px;
+            background: rgba(35,35,40,.68);
+            font-size: 20px;
+            backdrop-filter: blur(4px);
+        }
+        #account-status {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: white;
+            font-size: 11px;
+            text-shadow: 0 1px 3px #000;
+        }
+        .app-modal {
+            display: none;
+            pointer-events: auto;
+            position: fixed;
+            z-index: 4000;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 16px;
+            background: rgba(0,0,0,.65);
+        }
+        .app-modal.open { display: flex; }
+        .app-dialog {
+            box-sizing: border-box;
+            width: min(390px, 100%);
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+            padding: 18px;
+            border: 1px solid #777;
+            border-radius: 10px;
+            background: rgba(28,28,32,.98);
+            color: white;
+            box-shadow: 0 14px 50px rgba(0,0,0,.7);
+        }
+        .app-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+        .app-dialog-header h2 { margin: 0; font-size: 20px; }
+        .app-dialog-header button { padding: 5px 10px; }
+        .auth-form { display: flex; flex-direction: column; gap: 10px; }
+        .auth-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+        .auth-form input { box-sizing: border-box; width: 100%; }
+        .auth-form button[type="submit"] { margin-top: 4px; background: #2878c8; }
+        #auth-message { min-height: 16px; margin: 10px 0 0; color: #ffb0b0; font-size: 12px; }
+        #cloud-object-list, #cloud-file-list { box-sizing: border-box; width: 100%; min-height: 190px; background: #222; color: white; }
+        #cloud-file-message { min-height: 16px; margin: 0 0 8px; color: #cccccc; font-size: 12px; }
+        .cloud-dialog-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .cloud-dialog-actions button { flex: 1; }
 
         .texture-picker-controls { display: flex; gap: 5px; }
         .texture-picker-controls button:first-child { flex: 1; }
@@ -348,6 +423,75 @@
     <div id="ui-layer">
         <div id="crosshair"></div>
 
+        <div id="account-controls" aria-label="Account controls">
+            <button id="btn-open-signup" type="button" aria-label="Sign up" title="Sign up">👤＋</button>
+            <button id="btn-open-login" type="button" aria-label="Log in" title="Log in">🔐</button>
+            <span id="account-status">Not logged in</span>
+        </div>
+
+        <div id="auth-modal" class="app-modal" aria-hidden="true">
+            <div class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
+                <div class="app-dialog-header">
+                    <h2 id="auth-dialog-title">Account</h2>
+                    <button id="btn-close-auth" type="button" aria-label="Close account window">✕</button>
+                </div>
+                <form id="signup-form" class="auth-form" autocomplete="on">
+                    <label>Nickname
+                        <input name="nick" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_-]+" autocomplete="username">
+                    </label>
+                    <label>Email
+                        <input name="email" type="email" required maxlength="254" autocomplete="email">
+                    </label>
+                    <label>Password
+                        <input name="password" type="password" required minlength="8" maxlength="200" autocomplete="new-password">
+                    </label>
+                    <label>Confirm password
+                        <input name="confirm_password" type="password" required minlength="8" maxlength="200" autocomplete="new-password">
+                    </label>
+                    <button type="submit">Create account</button>
+                </form>
+                <form id="login-form" class="auth-form" autocomplete="on" style="display:none;">
+                    <label>Nickname
+                        <input name="nick" required maxlength="32" autocomplete="username">
+                    </label>
+                    <label>Password
+                        <input name="password" type="password" required maxlength="200" autocomplete="current-password">
+                    </label>
+                    <button type="submit">Log in</button>
+                </form>
+                <p id="auth-message" role="alert"></p>
+            </div>
+        </div>
+
+        <div id="cloud-object-modal" class="app-modal" aria-hidden="true">
+            <div class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="cloud-object-title">
+                <div class="app-dialog-header">
+                    <h2 id="cloud-object-title">My Objects</h2>
+                    <button id="btn-close-cloud-objects" type="button" aria-label="Close object list">✕</button>
+                </div>
+                <select id="cloud-object-list" size="9" aria-label="Saved objects"></select>
+                <div class="cloud-dialog-actions">
+                    <button id="btn-refresh-cloud-objects" type="button">Refresh</button>
+                    <button id="btn-load-cloud-object" type="button">Load object</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cloud-file-modal" class="app-modal" aria-hidden="true">
+            <div class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="cloud-file-title">
+                <div class="app-dialog-header">
+                    <h2 id="cloud-file-title">My files</h2>
+                    <button id="btn-close-cloud-files" type="button" aria-label="Close online file list">✕</button>
+                </div>
+                <p id="cloud-file-message" role="status" aria-live="polite"></p>
+                <select id="cloud-file-list" size="9" aria-label="Saved files"></select>
+                <div class="cloud-dialog-actions">
+                    <button id="btn-refresh-cloud-files" type="button">Refresh</button>
+                    <button id="btn-load-cloud-file" type="button">Load</button>
+                </div>
+            </div>
+        </div>
+
         <button id="mobile-controller-toggle" type="button" aria-label="Open onscreen controller" aria-controls="mobile-controller" aria-expanded="false">🎮</button>
         <div id="mobile-controller" aria-hidden="true">
             <button id="mobile-controller-start" type="button" aria-label="Start or stop the 3DPL program">START</button>
@@ -381,7 +525,20 @@
             <h2>Creative Mode</h2>
             <button id="btn-obj-editor">Object Editor</button>
             <button id="btn-map-editor">Map Editor</button>
+            <button id="btn-audio">Audio</button>
             <button id="btn-back-main">Back to Main Menu</button>
+        </div>
+
+        <!-- Audio Library UI -->
+        <div id="audio-ui" class="menu-panel center-menu" style="display: none;">
+            <h3>My Audio</h3>
+            <p>Upload audio to your private account library or download one of your files. Programs check your private files before the shared Audio/ folder.</p>
+            <div class="cloud-media-row" aria-label="My private audio storage">
+                <button id="btn-upload-cloud-audio" type="button" aria-label="Upload audio to my account" title="Upload audio to my account">☁️↑</button>
+                <button id="btn-load-cloud-audio" type="button" aria-label="Download audio from my account" title="Download audio from my account">☁️↓</button>
+            </div>
+            <input type="file" id="file-input-audio" style="display: none;" accept="audio/*,.mp3,.wav,.ogg,.oga,.opus,.m4a,.aac,.flac,.webm">
+            <button id="btn-exit-audio">Exit to Menu</button>
         </div>
 
         <!-- Object Editor UI -->
@@ -393,6 +550,10 @@
                 <button id="btn-save-json">Save JSON</button>
                 <button id="btn-load-json">Load JSON</button>
                 <button id="btn-import-xml" class="alt">Import XML</button>
+            </div>
+            <div class="cloud-object-row" aria-label="Online object storage">
+                <button id="btn-upload-cloud-object" type="button" aria-label="Upload object to my account" title="Upload object to my account">☁️↑</button>
+                <button id="btn-download-cloud-object" type="button" aria-label="Download object from my account" title="Download object from my account">☁️↓</button>
             </div>
             
             <!-- Hidden inputs for file loading -->
@@ -420,6 +581,11 @@
                 <button id="btn-select-texture">Select Texture</button>
                 <button id="btn-clear-texture" title="Place color-only blocks">Clear</button>
             </div>
+            <div class="cloud-media-row" aria-label="Online texture storage">
+                <button id="btn-upload-cloud-texture" type="button" aria-label="Upload texture to my account" title="Upload texture to my account">☁️↑</button>
+                <button id="btn-load-cloud-texture" type="button" aria-label="Download texture from my account" title="Download texture from my account">☁️↓</button>
+            </div>
+            <input type="file" id="file-input-texture" style="display: none;" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif">
             <div id="selected-texture-name">Selected: None (color only)</div>
             <div id="texture-picker">
                 <input type="search" id="texture-search" placeholder="Search textures...">
@@ -437,6 +603,10 @@
             <div class="file-ops-row">
                 <button id="btn-export-map">Export Map JSON</button>
                 <button id="btn-load-map" class="alt">Load Map JSON</button>
+            </div>
+            <div class="cloud-map-row" aria-label="Online map storage">
+                <button id="btn-upload-cloud-map" type="button" aria-label="Upload map to my account" title="Upload map to my account">☁️↑</button>
+                <button id="btn-load-cloud-map" type="button" aria-label="Load map from my account" title="Load map from my account">☁️↓</button>
             </div>
             <input type="file" id="file-input-map" style="display: none;" accept=".json">
 
@@ -476,6 +646,8 @@
                 <span class="ide-window-title">3DPL Code</span>
                 <span id="ide-program-name" title="Current program">untitled</span>
                 <div class="ide-window-actions">
+                    <button id="btn-upload-cloud-program" type="button" aria-label="Upload program to my account" title="Upload program to my account">☁↑</button>
+                    <button id="btn-load-cloud-program" type="button" aria-label="Load program from my account" title="Load program from my account">☁↓</button>
                     <button id="btn-load-program" type="button" aria-label="Load program files" title="Load .declarations and .update files">📂</button>
                     <button id="btn-save-program" type="button" aria-label="Save program files" title="Save .declarations and .update files">💾</button>
                     <button id="btn-minimize-ide" type="button" aria-label="Minimize code window" title="Minimize">−</button>
@@ -501,6 +673,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260824-program-files-1"></script>
+    <script type="module" src="main.js?v=20260828-spatial-audio-5"></script>
 </body>
 </html>
