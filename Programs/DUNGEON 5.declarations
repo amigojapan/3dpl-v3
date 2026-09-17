@@ -1,60 +1,245 @@
-vars["dungeon"] = Obj("Dungeon2.json", "dungeon0", 0, 0, 0);
-vars["Camera_Colliders"]=Obj("Camera_Coliders.json","Camera_Coliders0",17.38,2.32,32.48);
+// DUNGEON 5 — 3DPL v3. Load together with DUNGEON 5.update.
+// W/S: forward/back; A/D: turn; Space: shoot.
+// Shoot a button once to move its door, the pillar, or the helicopter bridge.
+// Collect the key to lift door2, then shoot the exit lock to reach the bridge.
+// Large yellow targets are shootable switches; green means activated.
+vars["required_objects"] = [];
+vars["load_object"] = function(file, name, x, y, z) {
+    var object = Obj(file, name, x, y, z);
+    vars["required_objects"].push(object);
+    return object;
+};
+
+// Unlit targets stay bright in dark corridors and are readable from any side.
+vars["locks"] = {};
+vars["make_lock"] = function(name, x, y, z) {
+    var lock = qb(name, x, y, z);
+    lock.material.dispose();
+    lock.material = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+    sc(name, 1.15, 1.15, 1.15);
+    var ringGeometry = new THREE.RingGeometry(0.22, 0.34, 24);
+    var ringMaterial = new THREE.MeshBasicMaterial({ color: 0x151515, side: THREE.DoubleSide });
+    [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(function(axis) {
+        var normal = new THREE.Vector3(axis[0], axis[1], axis[2]);
+        var ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.position.copy(normal).multiplyScalar(0.502);
+        ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), normal);
+        lock.add(ring);
+    });
+    vars["locks"][name] = lock;
+    return lock;
+};
+
+vars["dungeon"] = LoadMap("Dungeon2.json", "dungeon0");
+vars["Camera_Colliders"]=vars["load_object"]("Camera_Coliders.json","Camera_Coliders0",0,1,-10);
 //
-Obj("Futuristic_Helycopter.json","helly",-51,-6,12);
-Obj("doorsbuton1.json","btn5",-27,1,10);
-sc("btn5",-0.3,-0.3,-0.3);
+vars["load_object"]("Futuristic_Helycopter.json","helly",-51,-6,12);
+vars["make_lock"]("btn5",-27,1,10.2);
 //
-Obj("ladder_to_helly.json","ladder",-30,-1,14);
+vars["bridge"]=vars["load_object"]("ladder_to_helly.json","ladder",-30,-1,14);
 //
-vars["key"]=Obj("dungeonkeys.json","keys",29,1,17);
+vars["key"]=vars["load_object"]("dungeonkeys.json","keys",29,1,17);
 //
-vars["pillar"]=Obj("pillars.json","pillar",27,-1,16);
-Obj("doorsbuton1.json","btn3",32,1,12);
-sc("btn3",-0.7,-0.7,-0.7);
+vars["pillar"]=vars["load_object"]("pillars.json","pillar",27,-1,16);
+// Keep both pillar controls inside the room, in front of the X=32 wall.
+vars["make_lock"]("btn3",31,1,12);
 //
-Obj("doorsbuton1.json","btn4",32,1,22);
-sc("btn4",-0.7,-0.7,-0.7);
+vars["make_lock"]("btn4",31,1,22);
 //
-Obj("key_stone.json","stone",29,0,17);
+vars["load_object"]("key_stone.json","stone",29,0,17);
 //
-vars["trap1"]=Obj("trap2.json","traps",-4,8,25);
+// Center the rotating blade between the corridor walls (X=-3 and X=4).
+// At this pivot height the downward blade sweeps through a standing player.
+vars["trap1"]=vars["load_object"]("trap2.json","traps",0.5,6.4,25);
 sc("traps",-0.4,-0.4,-0.4);
 //
-vars["spider1"]=Obj("spider.json","spider1",0,0,7);
-sc("spider1",-0.9,-0.9,-0.9);
+// Positive scale keeps the backs above the feet. Place the feet on floor Y=-0.5.
+vars["spider1"]=vars["load_object"]("spider.json","spider1",0,0.85,7);
+sc("spider1",0.3,0.3,0.3);
 //
-Obj("spider.json","spider2",0,0,32);
-sc("spider2",-0.9,-0.9,-0.9);
+vars["load_object"]("spider.json","spider2",0,0.85,32);
+sc("spider2",0.3,0.3,0.3);
 //
-Obj("spider.json","spider3",-1,0,36);
-sc("spider3",-0.9,-0.9,-0.9);
+vars["load_object"]("spider.json","spider3",-1,0.85,36);
+sc("spider3",0.3,0.3,0.3);
 //
-Obj("spider.json","spider4",2,0,36);
-sc("spider4",-0.9,-0.9,-0.9);
+vars["load_object"]("spider.json","spider4",2,0.85,36);
+sc("spider4",0.3,0.3,0.3);
 //
-Obj("spider.json","spider5",10,1,16);
-sc("spider5",-0.7,-0.7,-0.7);
+vars["load_object"]("spider.json","spider5",10,0.55,16);
+sc("spider5",0.7 / 3,0.7 / 3,0.7 / 3);
 //
-Obj("spider.json","spider6",24,1,17);
-sc("spider6",-0.7,-0.7,-0.7);
+vars["load_object"]("spider.json","spider6",24,0.55,17);
+sc("spider6",0.7 / 3,0.7 / 3,0.7 / 3);
 //
-Obj("spider.json","spider7",2,0,7);
-sc("spider7",-0.9,-0.9,-0.9);
+vars["load_object"]("spider.json","spider7",2,0.85,7);
+sc("spider7",0.3,0.3,0.3);
 //
-Obj("spider.json","spider8",-2,0,7);
-sc("spider8",-0.9,-0.9,-0.9);
+vars["load_object"]("spider.json","spider8",-2,0.85,7);
+sc("spider8",0.3,0.3,0.3);
 //
-vars["door0"]=(Obj("door1.json","door0",0,2,11));
-Obj("doorsbuton1.json","btn0",-1,1,10);
-sc("btn0",-0.5,-0.5,-0.5);
+vars["door0"]=(vars["load_object"]("door1.json","door0",0,2,11));
+// Facing +Z in v3, +X is the player's left.
+vars["make_lock"]("btn0",2,1,10);
 //
-vars["door1"]=Obj("door2.json","door1",3,0,20);
-Obj("doorsbuton1.json","btn1",4,1,22);
-sc("btn1",-0.5,-0.5,-0.5);
+vars["door1"]=vars["load_object"]("door2.json","door1",3,0,20);
+vars["make_lock"]("btn1",3,1,21.5);
 //
-vars["door2"]=Obj("door3.json","door2",15,-1,15);
-Obj("doorsbuton1.json","btn2",14,1,14);
-sc("btn2",-0.5,-0.5,-0.5);
+vars["door2"]=vars["load_object"]("door3.json","door2",15,-1,15);
+vars["make_lock"]("btn2",13.8,1,15.2);
 //
-vars["door4"] = Obj("door3.json","door4",-13,1,14);
+vars["door4"] = vars["load_object"]("door3.json","door4",-13,1,14);
+// Exit to the helicopter bridge: put its lock on the accessible hallway side
+// of the X=-13 wall, beside the doorway rather than behind the closed gate.
+vars["make_lock"]("btn6",-12,1,20);
+
+// The Unity map contained one Dungeon2 object at the origin. LoadMap supplies
+// voxel collisions; these moving obstacles also belong to the collision map.
+vars["hardObjectsArray"] = [
+    vars["door0"], vars["door1"], vars["door2"], vars["pillar"], vars["door4"]
+];
+vars["hardObjectsArray"].forEach(function(object) {
+    vars["dungeon"].attach(object);
+});
+
+// The legacy front probe points +Z, while v3 forward is -Z. Mirror the probes,
+// reduce their size to clear the floor, and hide them from the first-person view.
+sc("Camera_Coliders0", 0.5, 0.5, -0.5);
+vars["Camera_Colliders"].visible = false;
+sr("Camera_Coliders0", 0, 180, 0);
+// A program-owned reticle also works in the shared player and is cleared by cs().
+vars["aim"] = qb("dungeon_aim", 0, 0, 0);
+vars["aim"].geometry = new THREE.RingGeometry(0.003, 0.005, 24);
+vars["aim"].material.dispose();
+vars["aim"].material = new THREE.MeshBasicMaterial({
+    color: 0xffffff, depthTest: false, depthWrite: false
+});
+vars["aim"].renderOrder = 10000;
+vars["aim_direction"] = new THREE.Vector3();
+vars["sync_camera"] = function() {
+    var player = vars["Camera_Colliders"];
+    sp("camera", player.position.x, player.position.y, player.position.z);
+    sr("camera", 0, -player.rotation.y * 180 / Math.PI, 0);
+    camera.getWorldDirection(vars["aim_direction"]);
+    vars["aim"].position.copy(player.position).addScaledVector(vars["aim_direction"], 0.3);
+    vars["aim"].quaternion.copy(camera.quaternion);
+};
+vars["respawn"] = function() {
+    sp("Camera_Coliders0", 0, 1, -10);
+    sr("Camera_Coliders0", 0, 180, 0);
+    vars["sync_camera"]();
+};
+vars["walk"] = function(distance) {
+    return move_object_with_map_collision(
+        vars["dungeon"], vars["Camera_Colliders"],
+        distance >= 0 ? "collider_front" : "collider_back",
+        0, 0, distance, 0.1);
+};
+
+// Every mechanism takes two seconds to reach its endpoint after one hit.
+// Door travel equals its model height, so the complete opening is cleared.
+vars["motions"] = {};
+vars["add_motion"] = function(name, object, axis, travel) {
+    var start = object.position[axis];
+    vars["motions"][name] = {
+        object: object, axis: axis, start: start, end: start + travel,
+        target: start, speed: Math.abs(travel) / 2
+    };
+};
+vars["add_motion"]("door0", vars["door0"], "y", 3);
+vars["add_motion"]("door1", vars["door1"], "y", 4);
+vars["add_motion"]("door2", vars["door2"], "y", 9);
+vars["add_motion"]("door4", vars["door4"], "y", -9);
+vars["add_motion"]("pillar", vars["pillar"], "y", 9);
+// The 15-voxel bridge extends left to meet the helicopter, then stays there.
+vars["add_motion"]("bridge", vars["bridge"], "x", -12);
+vars["trigger_motion"] = function(name, reverse) {
+    // Every route to the helicopter-room door requires actual key pickup.
+    if (name === "door4" && !vars["keyCollected"]) return;
+    var motion = vars["motions"][name];
+    motion.target = reverse ? motion.start : motion.end;
+};
+vars["advance_motions"] = function(dt) {
+    Object.keys(vars["motions"]).forEach(function(name) {
+        var motion = vars["motions"][name];
+        var current = motion.object.position[motion.axis];
+        var remaining = motion.target - current;
+        var distance = motion.speed * dt;
+        motion.object.position[motion.axis] = Math.abs(remaining) <= distance
+            ? motion.target : current + Math.sign(remaining) * distance;
+    });
+};
+
+// Use the visible blade instead of the misplaced legacy marker or a large box
+// around its entire rotation. Cache meshes only after the JSON has loaded.
+vars["trap_blade"] = null;
+vars["trap_player_box"] = new THREE.Box3();
+vars["trap_voxel_box"] = new THREE.Box3();
+vars["trap_body_size"] = new THREE.Vector3(0.6, 1.4, 0.6);
+vars["trap_body_center"] = new THREE.Vector3();
+vars["trap_hits_player"] = function() {
+    if (!vars["trap_blade"]) {
+        vars["trap_blade"] = [];
+        vars["trap1"].traverse(function(part) {
+            if (part.name === "collider_trap") {
+                part.visible = false;
+            } else if (part.isMesh && part.position.y >= 8) {
+                vars["trap_blade"].push(part);
+            }
+        });
+    }
+    vars["trap_body_center"].copy(vars["Camera_Colliders"].position);
+    vars["trap_body_center"].y -= 0.35;
+    vars["trap_player_box"].setFromCenterAndSize(
+        vars["trap_body_center"], vars["trap_body_size"]);
+    vars["trap1"].updateWorldMatrix(true, true);
+    return vars["trap_blade"].some(function(part) {
+        if (!part.geometry.boundingBox) part.geometry.computeBoundingBox();
+        vars["trap_voxel_box"].copy(part.geometry.boundingBox).applyMatrix4(part.matrixWorld);
+        return vars["trap_player_box"].intersectsBox(vars["trap_voxel_box"]);
+    });
+};
+vars["advance_trap"] = function(dt) {
+    // Small angular steps catch blade contacts even on a slow frame.
+    var steps = Math.max(1, Math.ceil(dt * 120));
+    for (var trapStep = 0; trapStep < steps; trapStep++) {
+        rt("traps", 0, 0, 100 * dt / steps);
+        if (vars["trap_hits_player"]()) {
+            vars["respawn"]();
+        }
+    }
+};
+
+vars["moveSpeed"] = 10;
+vars["turnSpeed"] = 100;
+vars["bullets"] = [];
+vars["bulletSerial"] = 0;
+vars["shotCooldown"] = 0;
+vars["shotInterval"] = 0.1;
+vars["bulletSpeed"] = 10;
+vars["keyCollected"] = false;
+vars["buttons"] = [
+    { button: "btn0", motion: "door0" },
+    { button: "btn1", motion: "door1" },
+    { button: "btn2", motion: "door2" },
+    { button: "btn3", motion: "pillar" },
+    { button: "btn4", motion: "pillar", reverse: true },
+    { button: "btn5", motion: "bridge" },
+    { button: "btn6", motion: "door4" }
+];
+vars["spiders"] = [
+    "spider1", "spider2", "spider3", "spider4",
+    "spider5", "spider6", "spider7", "spider8"
+];
+vars["shoot"] = function() {
+    var player = vars["Camera_Colliders"];
+    var name = "dungeon_bullet_" + vars["bulletSerial"]++;
+    var bullet = qb(name, player.position.x, player.position.y, player.position.z);
+    bullet.quaternion.copy(player.quaternion);
+    vars["bullets"].push({
+        object: bullet,
+        direction: bullet.position.clone().set(0, 0, -1).applyQuaternion(player.quaternion),
+        life: 8
+    });
+};
+vars["respawn"]();

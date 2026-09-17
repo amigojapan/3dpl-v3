@@ -1,83 +1,81 @@
-eq("Camera_Coliders0","camera");//make the camera colliders follow the camera
-if(cd(vars["Camera_Colliders"], vars["trap1"]))
-  sp("camera",0,1,-10);//set player to beginning of level(he died)
-if(cd(vars["Camera_Colliders"], vars["spider1"]))//if the spider still exists and the camera collides with the spider then:
-  sp("camera",0,1,-10);//set player to beginning of level(he died)
-if(cd(vars["Camera_Colliders"], vars["key"])) {//if the key still exists and the camera collides with the key then:
-  dl("keys");
-  mv("door2",0,100,0);
-}
+// Wait for the map and all interactive objects before movement or shooting.
+var dungeonDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var dungeonReady = vars["dungeon"].userData.loaded &&
+    vars["required_objects"].every(function(object) { return object.userData.loaded; });
 
-rt("traps",0,0,100);
-//
-rt("keys",0,150,0);
-rt("spider1",0,50,0);
-rt("spider5",0,20,0);
-rt("spider6",0,190,0);
-//Use arrow keys and [W] and [S]  to Move
-if (Input.GetKey (KeyCode.D))
-    rt("camera",0,100,0);
-if (Input.GetKey (KeyCode.A))
-    rt("camera",0,-100,0);
-if (Input.GetKey (KeyCode.W)&&!cdcm(vars["Camera_Colliders"],"collider_front"))
-    if(
-      !is_touching_voxel(vars["door0"],vars["Camera_Colliders"],"collider_front") &&
-      !is_touching_voxel(vars["door1"],vars["Camera_Colliders"],"collider_front") &&
-      !is_touching_voxel(vars["door2"],vars["Camera_Colliders"],"collider_front") &&
-      !is_touching_voxel(vars["pillar"],vars["Camera_Colliders"],"collider_front")
-     ) //if not coliding with hard objects then move
-      mv("camera",0,0,10);
-if (Input.GetKey (KeyCode.S)&&!cdcm(vars["Camera_Colliders"],"collider_back"))
-    mv("camera",0,0,-10);
-if (Input.GetKey (KeyCode.Space)) {
-    qb("bullet",0,0,0);
-    eq("bullet","camera");//sets the bullet rotation and location to the same as the camera
+if (dungeonReady) {
+    if (Input.GetKey(KeyCode.D)) {
+        rt("Camera_Coliders0", 0, vars["turnSpeed"] * dungeonDt, 0);
+    }
+    if (Input.GetKey(KeyCode.A)) {
+        rt("Camera_Coliders0", 0, -vars["turnSpeed"] * dungeonDt, 0);
+    }
+    if (Input.GetKey(KeyCode.W)) {
+        vars["walk"](vars["moveSpeed"] * dungeonDt);
+    }
+    if (Input.GetKey(KeyCode.S)) {
+        vars["walk"](-vars["moveSpeed"] * dungeonDt);
+    }
+    vars["sync_camera"]();
+
+    vars["advance_trap"](dungeonDt);
+    rt("keys", 0, 150 * dungeonDt, 0);
+    rt("spider1", 0, 50 * dungeonDt, 0);
+    rt("spider5", 0, 20 * dungeonDt, 0);
+    rt("spider6", 0, 190 * dungeonDt, 0);
+
+    if (ex("spider1") && cd("camera", "spider1")) {
+        vars["respawn"]();
+    }
+    if (!vars["keyCollected"] && ex("keys") && cd("camera", "keys")) {
+        dl("keys");
+        vars["keyCollected"] = true;
+        vars["trigger_motion"]("door2");
+    }
+
+    vars["shotCooldown"] = Math.max(0, vars["shotCooldown"] - dungeonDt);
+    if (Input.GetKey(KeyCode.Space) && vars["shotCooldown"] <= 0.000001) {
+        vars["shoot"]();
+        vars["shotCooldown"] = vars["shotInterval"];
+    }
+
+    // Each projectile keeps its launch direction even while its cube spins.
+    // Expire old bullets so holding Space cannot grow the scene indefinitely.
+    var buttonHits = {};
+    for (var bulletIndex = vars["bullets"].length - 1; bulletIndex >= 0; bulletIndex--) {
+        var shot = vars["bullets"][bulletIndex];
+        shot.object.position.addScaledVector(shot.direction, vars["bulletSpeed"] * dungeonDt);
+        rt(shot.object.name, 72 * dungeonDt, -2 * dungeonDt, 500 * dungeonDt);
+        shot.life -= dungeonDt;
+        for (var buttonIndex = 0; buttonIndex < vars["buttons"].length; buttonIndex++) {
+            var button = vars["buttons"][buttonIndex];
+            if (cd(shot.object.name, button.button)) {
+                buttonHits[button.button] = true;
+            }
+        }
+        for (var spiderIndex = 0; spiderIndex < vars["spiders"].length; spiderIndex++) {
+            var spider = vars["spiders"][spiderIndex];
+            if (ex(spider) && cd(shot.object.name, spider)) {
+                dl(spider);
+            }
+        }
+        if (shot.life <= 0) {
+            dl(shot.object.name);
+            vars["bullets"].splice(bulletIndex, 1);
+        }
+    }
+    // One hit starts the complete movement; repeated hits never shift endpoints.
+    for (var actionIndex = 0; actionIndex < vars["buttons"].length; actionIndex++) {
+        var action = vars["buttons"][actionIndex];
+        if (buttonHits[action.button]) {
+            vars["trigger_motion"](action.motion, action.reverse);
+        }
+    }
+    vars["advance_motions"](dungeonDt);
+    vars["buttons"].forEach(function(action) {
+        var motion = vars["motions"][action.motion];
+        var activeTarget = action.reverse ? motion.start : motion.end;
+        vars["locks"][action.button].material.color.setHex(
+            motion.target === activeTarget ? 0x55ff88 : 0xffcc00);
+    });
 }
-if (ex("bullet")) {
-   mv("bullet",0,0,10);
-   rt("bullet",72,-2,500);
-}
-if(cd("bullet","btn0")) 
-    mv("door0",0,4,0);
-//
-if(cd("bullet","btn1")) 
-    mv("door1",0,4,0);
-//
-if(cd("bullet","btn2")) 
-    mv("door2",0,4,0);
-//
-if(cd("bullet","btn3")) 
-    mv("pillar",0,4,0);
-//
-if(cd("bullet","btn4")) 
-    mv("pillar",0,-4,0);
-//
-if(cd("bullet","btn5")) 
-    mv("ladder",-6,0,0);
-//
-if(cd("bullet","keys")) 
-    mv("door4",0,-100,0);
-//
-if(cd("bullet","spider1")) 
-    dl("spider1");
-//
-if(cd("bullet","spider2")) 
-    dl("spider2");
-//
-if(cd("bullet","spider3")) 
-    dl("spider3");
-//
-if(cd("bullet","spider4")) 
-    dl("spider4");
-//
-if(cd("bullet","spider5")) 
-    dl("spider5");
-//
-if(cd("bullet","spider6")) 
-    dl("spider6");
-//
-if(cd("bullet","spider7")) 
-    dl("spider7");
-//
-if(cd("bullet","spider8")) 
-    dl("spider8");

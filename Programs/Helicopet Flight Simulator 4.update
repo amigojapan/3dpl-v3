@@ -1,0 +1,67 @@
+// Tutorial 32 controls and collision probes, with Simulator 4's audio and boost.
+var flightDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var frameScale = flightDt * 60;
+var speed = vars["flightSpeed"] * frameScale;
+var goingUp = Input.GetKey(KeyCode.W);
+var goingDown = Input.GetKey(KeyCode.S);
+var goingForward = Input.GetKey(KeyCode.UpArrow);
+var goingBack = Input.GetKey(KeyCode.DownArrow);
+var boosting = Input.GetKey(KeyCode.Space);
+
+// Do not move through placeholders while the map or collision probes load.
+var collisionReady = vars["flight_map"].userData.loaded &&
+    vars["helicopter"].userData.loaded && vars["propeller"].userData.loaded &&
+    vars["helicopter_colliders"].userData.loaded;
+var enginePitch = 1;
+if (collisionReady) {
+    if (goingUp) {
+        vars["fly"]("collider_top", 0, speed, 0);
+        enginePitch = 1.7;
+    }
+    if (goingDown) {
+        vars["fly"]("collider_bottom", 0, -speed, 0);
+        enginePitch = 0.5;
+    }
+    if (goingForward) {
+        vars["fly"]("collider_front", 0, 0, speed);
+        enginePitch = 1.2;
+    }
+    if (goingBack) {
+        vars["fly"]("collider_back", 0, 0, -speed);
+        enginePitch = 1.2;
+    }
+    if (Input.GetKey(KeyCode.LeftArrow)) {
+        vars["fly"]("collider_left", -speed, 0, 0);
+    }
+    if (Input.GetKey(KeyCode.RightArrow)) {
+        vars["fly"]("collider_right", speed, 0, 0);
+    }
+    if (Input.GetKey(KeyCode.A)) {
+        rt("helicopter", 0, -vars["turnSpeed"] * frameScale, 0);
+    }
+    if (Input.GetKey(KeyCode.D)) {
+        rt("helicopter", 0, vars["turnSpeed"] * frameScale, 0);
+    }
+    if (boosting) {
+        vars["fly"]("collider_top", 0, vars["liftBoost"] * flightDt, 0);
+        enginePitch = 1.7;
+    }
+}
+
+// Releasing the flight controls restores idle pitch without Unity GetKeyUp.
+if (enginePitch !== vars["enginePitch"]) {
+    SetPitch("helicopter", enginePitch);
+    vars["enginePitch"] = enginePitch;
+}
+
+// The onscreen S button also emits legacy Z; descent must not roll the camera.
+if (Input.GetKey(KeyCode.Z) && !goingDown) {
+    vars["cameraRoll"] += 120 * flightDt;
+}
+if (Input.GetKey(KeyCode.X)) {
+    vars["cameraRoll"] -= 120 * flightDt;
+}
+var rotorSpeed = (goingUp || goingDown || boosting)
+    ? vars["fastRotorSpeed"] : vars["idleRotorSpeed"];
+vars["rotate_propeller"](rotorSpeed * frameScale);
+vars["move_camera"]();

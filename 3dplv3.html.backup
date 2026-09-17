@@ -545,6 +545,9 @@
         <div id="obj-editor-ui" class="menu-panel side-menu" style="display: none;">
             <h3>Object Editor</h3>
             <p><strong>Click screen to look. Q to free mouse.</strong><br>WASD/Arrows to move/rotate.<br>Left Control to place, E to erase.</p>
+            <label for="obj-mouse-sensitivity">Mouse sensitivity (left = slower)</label>
+            <input id="obj-mouse-sensitivity" type="range" min="1" max="20" step="1" value="4">
+            <button id="btn-level-obj-view" type="button">Level view (C)</button>
             
             <div class="file-ops-row">
                 <button id="btn-save-json">Save JSON</button>
@@ -673,6 +676,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260828-spatial-audio-5"></script>
+    <script type="module" src="main.js?v=20260911-final3-fix"></script>
 </body>
 </html>

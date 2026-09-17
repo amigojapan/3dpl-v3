@@ -1,0 +1,55 @@
+// HELICOPET FLIGHT SIMULATOR 4 — based on tutorial 32.
+// W/S: climb/descend; A/D: turn; arrows: forward/back/sideways.
+// Space: fast lift; Z/X: roll the follow camera.
+// Load this together with the matching .update file.
+vars["flight_map"] = LoadMap("THEMAP.json", "flight_map");
+
+// Use tutorial 32's helicopter, rotor, scale, and six invisible probes.
+// Start four units above the old spawn so the smaller model clears the map.
+vars["helicopter"] = Obj(
+    "heli_no_proeller.json", "helicopter", -39.62049, 45.35633, 107.3032);
+vars["propeller"] = Obj(
+    "propeller.json", "propeller", -39.62049, 45.35633, 107.3032);
+vars["helicopter_colliders"] = Obj(
+    "helicpter_colliders.json", "helicopter_colliders", -39.62049, 45.35633, 107.3032);
+sc("helicopter", 0.25, 0.25, 0.25);
+sc("propeller", 0.25, 0.25, 0.25);
+sc("helicopter_colliders", 0.25, 0.25, 0.25);
+vars["propeller"].transform.parent = vars["helicopter"].transform;
+vars["helicopter_colliders"].transform.parent = vars["helicopter"].transform;
+
+// Tutorial 32's rates at 60 FPS; update scales them for elapsed time.
+vars["flightSpeed"] = 1;
+vars["turnSpeed"] = 5;
+vars["idleRotorSpeed"] = 15;
+vars["fastRotorSpeed"] = 30;
+vars["liftBoost"] = 100; // World units per second.
+vars["cameraRoll"] = 0;
+vars["enginePitch"] = 1;
+
+vars["move_camera"] = function() {
+    // Tutorial 32's camera follows the helicopter's heading.
+    var heading = -vars["helicopter"].rotation.y * 180 / Math.PI;
+    sp("camera", vars["helicopter"].position.x,
+        vars["helicopter"].position.y + 8, vars["helicopter"].position.z);
+    sr("camera", 18, heading, 0);
+    mv("camera", 3, 3, -30);
+    sr("camera", 18, heading, vars["cameraRoll"]);
+};
+
+vars["fly"] = function(probe, x, y, z) {
+    return move_object_with_map_collision(
+        vars["flight_map"], vars["helicopter"], probe, x, y, z, 0.2);
+};
+
+vars["rotate_propeller"] = function(amount) {
+    rt("propeller", 0, amount, 0);
+};
+
+// Preserve Simulator 4's engine and background music, attached once.
+AttachSound("helicopter", "helicopter.wav");
+PlaySoundLoop("helicopter");
+AttachSound("camera", "NOW1.wav");
+PlaySoundLoop("camera");
+SetVolume("camera", 0.05);
+vars["move_camera"]();

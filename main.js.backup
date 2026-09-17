@@ -28,6 +28,43 @@ let selectedObjectColliderName = "";
 let mouseLookEnabled = false;
 let camPitch = 0;
 let camYaw = 0;
+let objectMouseSensitivity = 0.0002;
+const objectPitchLimit = 85 * Math.PI / 180;
+let pendingMouseYaw = 0;
+let pendingMousePitch = 0;
+let skipNextMouseMove = false;
+
+function clearObjectMouseMovement() {
+    pendingMouseYaw = 0;
+    pendingMousePitch = 0;
+}
+
+function updateObjectMouseLook(dt) {
+    // Limit bursts per frame and discard excess input instead of queuing it.
+    // A long frame or pointer-lock jump must not snap the view to a pole.
+    const maxTurn = 1.2 * Math.min(dt, 0.05);
+    if (mouseLookEnabled && (pendingMouseYaw || pendingMousePitch)) {
+        rotateObjectEditorCamera(
+            Math.max(-maxTurn, Math.min(maxTurn, pendingMouseYaw)),
+            Math.max(-maxTurn, Math.min(maxTurn, pendingMousePitch))
+        );
+    }
+    clearObjectMouseMovement();
+}
+
+function levelObjectEditorView() {
+    clearObjectMouseMovement();
+    window.Input._keys.ArrowUp = false;
+    window.Input._keys.ArrowDown = false;
+    rotateObjectEditorCamera(0, -camPitch);
+}
+
+function rotateObjectEditorCamera(yawDelta, pitchDelta) {
+    camYaw += yawDelta;
+    // Clamp the stored pitch too, so reversing direction responds immediately.
+    camPitch = Math.max(-objectPitchLimit, Math.min(objectPitchLimit, camPitch + pitchDelta));
+    camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+}
 
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
@@ -42,6 +79,7 @@ const resetCamera = () => {
     camera.updateProjectionMatrix();
     camPitch = 0;
     camYaw = 0;
+    clearObjectMouseMovement();
 };
 resetCamera();
 
@@ -74,6 +112,8 @@ const textureLoader = new THREE.TextureLoader();
 const sharedTextureCache = new Map();
 let wrappedBaseGeometry = null;
 let skyBackgroundTexture = null;
+let legacySkyMode = 'default';
+const starryNightBackground = new THREE.Color(0x020611);
 
 function imageHasTransparentPixels(image) {
     const width = image.naturalWidth || image.videoWidth || image.width;
@@ -252,10 +292,28 @@ function clearPersonalTextureCache() {
 }
 
 function setSkyboxVisible(visible) {
-    scene.background = (visible && skyBackgroundTexture)
-        ? skyBackgroundTexture
-        : mapBuilderBackground;
+    if (!visible) {
+        scene.background = mapBuilderBackground;
+    } else if (legacySkyMode === 'starry-night') {
+        scene.background = starryNightBackground;
+    } else if (legacySkyMode === 'none') {
+        scene.background = mapBuilderBackground;
+    } else {
+        scene.background = skyBackgroundTexture || mapBuilderBackground;
+    }
 }
+
+// Compatibility for older Unity-era programs such as finalx3. The original
+// commands selected a named skybox or removed it before creating the scene.
+window.SetSkyStarryNight = function() {
+    legacySkyMode = 'starry-night';
+    setSkyboxVisible(!mapEditorMode);
+};
+
+window.SetSkyNone = function() {
+    legacySkyMode = 'none';
+    setSkyboxVisible(!mapEditorMode);
+};
 
 textureLoader.load(
     'Skyboxes/sunflowers_puresky_2k.jpg',
@@ -1810,6 +1868,10 @@ window.addEventListener('keydown', e => {
     }
     if (e.code === 'KeyQ' && document.pointerLockElement) document.exitPointerLock();
     if (isTyping) return;
+    if (objectEditorMode && e.code === 'KeyC') {
+        levelObjectEditorView();
+        return;
+    }
     
     window.Input._keys[e.code] = true;
 }, true);
@@ -1864,28 +1926,46 @@ mobileControlButtons.forEach(button => {
     button.addEventListener('contextmenu', event => event.preventDefault());
 });
 
-window.addEventListener('blur', releaseMobileControls);
+function releaseEditorInput() {
+    releaseMobileControls();
+    if (objectEditorMode) window.Input._keys = {};
+    clearObjectMouseMovement();
+}
+
+window.addEventListener('blur', releaseEditorInput);
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) releaseMobileControls();
+    if (document.hidden) releaseEditorInput();
 });
 
-renderer.domElement.addEventListener('mousedown', () => {
+document.getElementById('obj-mouse-sensitivity').addEventListener('input', event => {
+    objectMouseSensitivity = Number(event.target.value) * 0.00005;
+    clearObjectMouseMovement();
+});
+document.getElementById('btn-level-obj-view').addEventListener('click', levelObjectEditorView);
+
+renderer.domElement.addEventListener('mousedown', (event) => {
     if (document.activeElement) document.activeElement.blur();
-    if (objectEditorMode) document.body.requestPointerLock();
+    if (objectEditorMode && event.button === 0 && !mouseLookEnabled) document.body.requestPointerLock();
 });
 
 document.addEventListener('pointerlockchange', () => {
     mouseLookEnabled = document.pointerLockElement === document.body;
+    clearObjectMouseMovement();
+    skipNextMouseMove = mouseLookEnabled;
+    if (!mouseLookEnabled && objectEditorMode) releaseEditorInput();
     document.getElementById('crosshair').style.display = (mouseLookEnabled && objectEditorMode) ? 'block' : 'none';
 });
 
 document.addEventListener('mousemove', (e) => {
     if (mouseLookEnabled && objectEditorMode) {
-        const sensitivity = 0.002;
-        camYaw -= e.movementX * sensitivity;
-        camPitch -= e.movementY * sensitivity;
-        camPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, camPitch));
-        camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+        // Some browsers report the cursor recentering as the first movement.
+        if (skipNextMouseMove) {
+            skipNextMouseMove = false;
+            return;
+        }
+        if (!Number.isFinite(e.movementX) || !Number.isFinite(e.movementY)) return;
+        pendingMouseYaw -= e.movementX * objectMouseSensitivity;
+        pendingMousePitch -= e.movementY * objectMouseSensitivity;
     }
 });
 
@@ -4299,6 +4379,7 @@ function PreProcessor(code) {
 // Direct eval is retained so update programs keep the exact same scope and
 // behavior they had before this optimization.
 let cachedUpdateCode = PreProcessor(editorUpdate.getValue());
+let declarationsValid = true;
 
 function refreshCachedUpdateCode() {
     cachedUpdateCode = PreProcessor(editorUpdate.getValue());
@@ -4309,18 +4390,24 @@ function evalDeclarations() {
     window._evalStartTime = performance.now();
     clearDebug();
     resetCamera();
+    legacySkyMode = 'default';
+    setSkyboxVisible(!mapEditorMode);
     
-    try { 
+    try {
         const rawDecl = editorDeclarations.getValue();
         const safeCode = PreProcessor(rawDecl);
-        eval(safeCode); 
-    } catch (e) { 
+        eval(safeCode);
+        declarationsValid = true;
+        return true;
+    } catch (e) {
+        declarationsValid = false;
         if (e instanceof SyntaxError) {
             setDebugError("Syntax Error: " + e.message);
         } else {
             setDebugError("Declaration Error: " + e.message); 
             console.error(e);
         }
+        return false;
     }
 }
 
@@ -4673,6 +4760,7 @@ function animate() {
 
     if (objectEditorMode) {
         editorPointer.visible = true;
+        updateObjectMouseLook(dt);
         const moveSpeed = 10 * dt;
         const rotSpeed = 2 * dt;
         
@@ -4683,10 +4771,11 @@ function animate() {
         if (window.Input.GetKey(window.KeyCode.R)) camera.translateY(moveSpeed);
         if (window.Input.GetKey(window.KeyCode.F)) camera.translateY(-moveSpeed);
         
-        if (window.Input.GetKey(window.KeyCode.LeftArrow)) camera.rotateY(rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.RightArrow)) camera.rotateY(-rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.UpArrow)) camera.rotateX(rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.DownArrow)) camera.rotateX(-rotSpeed);
+        const yawDelta = (Number(window.Input.GetKey(window.KeyCode.LeftArrow)) -
+            Number(window.Input.GetKey(window.KeyCode.RightArrow))) * rotSpeed;
+        const pitchDelta = (Number(window.Input.GetKey(window.KeyCode.UpArrow)) -
+            Number(window.Input.GetKey(window.KeyCode.DownArrow))) * rotSpeed;
+        if (yawDelta || pitchDelta) rotateObjectEditorCamera(yawDelta, pitchDelta);
 
         editorForwardPosition.set(0, 0, -4).applyMatrix4(camera.matrixWorld);
         editorPointer.position.set(
@@ -4986,28 +5075,31 @@ document.getElementById('btn-exit-audio').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
 
 document.getElementById('btn-run').onclick = (e) => {
-    if (e.target) e.target.blur(); 
-    isExecuting = !isExecuting;
+    if (e.target) e.target.blur();
 
     if (isExecuting) {
-        renderer.domElement.focus({ preventScroll: true });
-    }
-    
-    if (!isExecuting) {
+        isExecuting = false;
         document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
-        evalDeclarations(); 
+        evalDeclarations();
+        return;
+    }
+
+    // A failed declaration leaves only part of the scene and vars initialized.
+    // Keep its useful error visible instead of producing a secondary update error.
+    if (!declarationsValid && !evalDeclarations()) return;
+
+    isExecuting = true;
+    renderer.domElement.focus({ preventScroll: true });
+    clearDebug();
+    if (listener.context.state !== 'running') {
+        Promise.resolve(listener.context.resume())
+            .then(playQueuedSounds)
+            .catch(error => {
+                setDebugError(`Audio could not start: ${error.message}`);
+                console.error('Audio resume error:', error);
+            });
     } else {
-        clearDebug();
-        if (listener.context.state !== 'running') {
-            Promise.resolve(listener.context.resume())
-                .then(playQueuedSounds)
-                .catch(error => {
-                    setDebugError(`Audio could not start: ${error.message}`);
-                    console.error('Audio resume error:', error);
-                });
-        } else {
-            playQueuedSounds();
-        }
+        playQueuedSounds();
     }
 };
 

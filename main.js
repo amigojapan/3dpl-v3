@@ -1,12 +1,30 @@
 import * as THREE from 'three';
 
+const sharedGameId = /^[a-f0-9]{32}$/.test(window.THREEDPL_SHARED_GAME || '')
+    ? window.THREEDPL_SHARED_GAME : '';
+const programAssets = new Map();
+let sharedPlayerReady = false;
+let sharedPlayerError = '';
+
+function programAssetUrl(library, reference) {
+    if (!sharedGameId) return `${library}/${reference}`;
+    return 'server_side/shared_asset.php?' + new URLSearchParams({
+        share: sharedGameId, library, name: reference
+    });
+}
+
+function recordProgramAsset(library, reference) {
+    if (sharedGameId || !reference || /^(?:https?:|data:|blob:)/i.test(reference)) return;
+    programAssets.set(`${library}/${reference}`, { library, reference });
+}
+
 // --- State Variables ---
 let cubes = [];
 let vars = {}; // Global variables object for the user
 let sounds = {}; // Dictionary to store loaded audio objects
 let isExecuting = false;
 let clock = new THREE.Clock();
-let loggedInNick = sessionStorage.getItem('3dplLoggedInNick') || '';
+let loggedInNick = sharedGameId ? '' : sessionStorage.getItem('3dplLoggedInNick') || '';
 
 // Object Cache
 const loadedObjectCache = {};
@@ -28,6 +46,43 @@ let selectedObjectColliderName = "";
 let mouseLookEnabled = false;
 let camPitch = 0;
 let camYaw = 0;
+let objectMouseSensitivity = 0.0002;
+const objectPitchLimit = 85 * Math.PI / 180;
+let pendingMouseYaw = 0;
+let pendingMousePitch = 0;
+let skipNextMouseMove = false;
+
+function clearObjectMouseMovement() {
+    pendingMouseYaw = 0;
+    pendingMousePitch = 0;
+}
+
+function updateObjectMouseLook(dt) {
+    // Limit bursts per frame and discard excess input instead of queuing it.
+    // A long frame or pointer-lock jump must not snap the view to a pole.
+    const maxTurn = 1.2 * Math.min(dt, 0.05);
+    if (mouseLookEnabled && (pendingMouseYaw || pendingMousePitch)) {
+        rotateObjectEditorCamera(
+            Math.max(-maxTurn, Math.min(maxTurn, pendingMouseYaw)),
+            Math.max(-maxTurn, Math.min(maxTurn, pendingMousePitch))
+        );
+    }
+    clearObjectMouseMovement();
+}
+
+function levelObjectEditorView() {
+    clearObjectMouseMovement();
+    window.Input._keys.ArrowUp = false;
+    window.Input._keys.ArrowDown = false;
+    rotateObjectEditorCamera(0, -camPitch);
+}
+
+function rotateObjectEditorCamera(yawDelta, pitchDelta) {
+    camYaw += yawDelta;
+    // Clamp the stored pitch too, so reversing direction responds immediately.
+    camPitch = Math.max(-objectPitchLimit, Math.min(objectPitchLimit, camPitch + pitchDelta));
+    camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+}
 
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
@@ -42,6 +97,7 @@ const resetCamera = () => {
     camera.updateProjectionMatrix();
     camPitch = 0;
     camYaw = 0;
+    clearObjectMouseMovement();
 };
 resetCamera();
 
@@ -74,6 +130,8 @@ const textureLoader = new THREE.TextureLoader();
 const sharedTextureCache = new Map();
 let wrappedBaseGeometry = null;
 let skyBackgroundTexture = null;
+let legacySkyMode = 'default';
+const starryNightBackground = new THREE.Color(0x020611);
 
 function imageHasTransparentPixels(image) {
     const width = image.naturalWidth || image.videoWidth || image.width;
@@ -123,7 +181,17 @@ function assignSharedTexture(material, textureName) {
         previousTexture.userData.threeDPLMaterials.delete(material);
     }
 
-    const texture = loadSharedTexture(textureName);
+    const filename = usableTextureFilename(textureName);
+    if (!filename) {
+        // Some legacy objects contain placeholders such as "w" in their
+        // TextureName field. Render those voxels with their saved color.
+        material.map = null;
+        material.transparent = material.opacity < 1;
+        material.needsUpdate = true;
+        return null;
+    }
+
+    const texture = loadSharedTexture(filename);
     material.map = texture;
     if (texture.userData.threeDPLHasTransparentPixels === undefined) {
         if (!texture.userData.threeDPLMaterials) {
@@ -147,6 +215,17 @@ function flatTextureFilename(reference) {
         : '';
 }
 
+function usableTextureFilename(reference) {
+    const value = String(reference || '').trim();
+    const directFilename = flatTextureFilename(value);
+    if (directFilename) return directFilename;
+
+    // Converted Unity objects may retain a Textures/ or Windows-style path.
+    // Resolve its safe final component inside this app's flat texture library.
+    const pathParts = value.replace(/\\/g, '/').split('/');
+    return flatTextureFilename(pathParts[pathParts.length - 1]);
+}
+
 function personalTextureResourceUrl(textureName, nick = loggedInNick) {
     const filename = flatTextureFilename(textureName);
     if (!nick || !filename) return '';
@@ -159,7 +238,7 @@ function personalTextureResourceUrl(textureName, nick = loggedInNick) {
 function staticTextureResourceUrl(textureName) {
     const filename = flatTextureFilename(textureName);
     return filename
-        ? `Textures/${encodeURIComponent(filename)}`
+        ? programAssetUrl('Textures', sharedGameId ? filename : encodeURIComponent(filename))
         : 'Textures/__invalid_texture_name__';
 }
 
@@ -179,6 +258,7 @@ function registerTextureMaterial(texture, material) {
 }
 
 function loadSharedTexture(textureName, allowPersonal = true) {
+    recordProgramAsset('Textures', textureName);
     const personalUrl = allowPersonal
         ? personalTextureResourceUrl(textureName)
         : '';
@@ -252,13 +332,31 @@ function clearPersonalTextureCache() {
 }
 
 function setSkyboxVisible(visible) {
-    scene.background = (visible && skyBackgroundTexture)
-        ? skyBackgroundTexture
-        : mapBuilderBackground;
+    if (!visible) {
+        scene.background = mapBuilderBackground;
+    } else if (legacySkyMode === 'starry-night') {
+        scene.background = starryNightBackground;
+    } else if (legacySkyMode === 'none') {
+        scene.background = mapBuilderBackground;
+    } else {
+        scene.background = skyBackgroundTexture || mapBuilderBackground;
+    }
 }
 
+// Compatibility for older Unity-era programs such as finalx3. The original
+// commands selected a named skybox or removed it before creating the scene.
+window.SetSkyStarryNight = function() {
+    legacySkyMode = 'starry-night';
+    setSkyboxVisible(!mapEditorMode);
+};
+
+window.SetSkyNone = function() {
+    legacySkyMode = 'none';
+    setSkyboxVisible(!mapEditorMode);
+};
+
 textureLoader.load(
-    'Skyboxes/sunflowers_puresky_2k.jpg',
+    programAssetUrl('Skyboxes', 'sunflowers_puresky_2k.jpg'),
     texture => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -706,7 +804,7 @@ selectTextureButton.onclick = () => {
 clearTextureButton.onclick = () => selectObjectEditorTexture('');
 textureSearch.oninput = () => renderTextureChoices(textureSearch.value);
 
-renderTextureChoices();
+if (!sharedGameId) renderTextureChoices();
 
 // --- Bird's-eye Map Editor ---
 const fallbackMapObjectNames = [
@@ -1252,7 +1350,7 @@ function normalizeObjectJSONReference(value) {
 
 function objectJSONUrl(value) {
     const reference = normalizeObjectJSONReference(value);
-    return isDirectAssetUrl(reference) ? reference : `Objects/${reference}`;
+    return isDirectAssetUrl(reference) ? reference : programAssetUrl('Objects', reference);
 }
 
 function isJSONObjectReference(value) {
@@ -1578,6 +1676,10 @@ document.getElementById('file-input-map').onchange = event => {
 
 // --- Debug UI Helpers ---
 const setDebugError = (msg) => {
+    if (sharedGameId) {
+        sharedPlayerError = String(msg).replace(/<[^>]*>/g, '');
+        showSharedPlayerStatus(sharedPlayerError, true);
+    }
     const consoleEl = document.getElementById('debug-console');
     if(consoleEl) consoleEl.innerHTML = `<span style="color: #ff5555;">${msg}</span>`;
 };
@@ -1596,6 +1698,7 @@ const authMessage = document.getElementById('auth-message');
 const accountStatus = document.getElementById('account-status');
 
 function setLoggedInNick(nick) {
+    if (sharedGameId) return;
     const normalizedNick = nick || '';
     const accountChanged = normalizedNick !== loggedInNick;
     if (accountChanged) {
@@ -1779,6 +1882,13 @@ window.addEventListener('keydown', e => {
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
     const isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || document.activeElement?.isContentEditable;
 
+    if (sharedGameId) {
+        if (gameplayKeyCodes.has(e.code)) e.preventDefault();
+        if (sharedPlayerReady) window.Input._keys[e.code] = true;
+        unlockSharedPlayerAudio();
+        return;
+    }
+
     if (e.code === 'Escape' && authModal.classList.contains('open')) {
         e.preventDefault();
         closeAuthModal();
@@ -1810,6 +1920,10 @@ window.addEventListener('keydown', e => {
     }
     if (e.code === 'KeyQ' && document.pointerLockElement) document.exitPointerLock();
     if (isTyping) return;
+    if (objectEditorMode && e.code === 'KeyC') {
+        levelObjectEditorView();
+        return;
+    }
     
     window.Input._keys[e.code] = true;
 }, true);
@@ -1842,6 +1956,13 @@ mobileControllerToggle.addEventListener('click', () => {
 
 document.getElementById('mobile-controller-start').addEventListener('click', event => {
     event.preventDefault();
+    if (sharedGameId) {
+        if (!sharedPlayerReady) return;
+        isExecuting = !isExecuting;
+        event.currentTarget.textContent = isExecuting ? 'PAUSE' : 'RESUME';
+        unlockSharedPlayerAudio();
+        return;
+    }
     document.getElementById('btn-run').click();
 });
 
@@ -1864,28 +1985,46 @@ mobileControlButtons.forEach(button => {
     button.addEventListener('contextmenu', event => event.preventDefault());
 });
 
-window.addEventListener('blur', releaseMobileControls);
+function releaseEditorInput() {
+    releaseMobileControls();
+    if (objectEditorMode || sharedGameId) window.Input._keys = {};
+    clearObjectMouseMovement();
+}
+
+window.addEventListener('blur', releaseEditorInput);
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) releaseMobileControls();
+    if (document.hidden) releaseEditorInput();
 });
 
-renderer.domElement.addEventListener('mousedown', () => {
+document.getElementById('obj-mouse-sensitivity').addEventListener('input', event => {
+    objectMouseSensitivity = Number(event.target.value) * 0.00005;
+    clearObjectMouseMovement();
+});
+document.getElementById('btn-level-obj-view').addEventListener('click', levelObjectEditorView);
+
+renderer.domElement.addEventListener('mousedown', (event) => {
     if (document.activeElement) document.activeElement.blur();
-    if (objectEditorMode) document.body.requestPointerLock();
+    if (objectEditorMode && event.button === 0 && !mouseLookEnabled) document.body.requestPointerLock();
 });
 
 document.addEventListener('pointerlockchange', () => {
     mouseLookEnabled = document.pointerLockElement === document.body;
+    clearObjectMouseMovement();
+    skipNextMouseMove = mouseLookEnabled;
+    if (!mouseLookEnabled && objectEditorMode) releaseEditorInput();
     document.getElementById('crosshair').style.display = (mouseLookEnabled && objectEditorMode) ? 'block' : 'none';
 });
 
 document.addEventListener('mousemove', (e) => {
     if (mouseLookEnabled && objectEditorMode) {
-        const sensitivity = 0.002;
-        camYaw -= e.movementX * sensitivity;
-        camPitch -= e.movementY * sensitivity;
-        camPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, camPitch));
-        camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+        // Some browsers report the cursor recentering as the first movement.
+        if (skipNextMouseMove) {
+            skipNextMouseMove = false;
+            return;
+        }
+        if (!Number.isFinite(e.movementX) || !Number.isFinite(e.movementY)) return;
+        pendingMouseYaw -= e.movementX * objectMouseSensitivity;
+        pendingMousePitch -= e.movementY * objectMouseSensitivity;
     }
 });
 
@@ -2009,14 +2148,16 @@ window.alpha = function(name, alphaVal) {
 
 window.tx = function(name, textureName, source, wrap) {
     wrap = wrap || 6;
-    loadSharedTexture(textureName);
+    const filename = usableTextureFilename(textureName);
+    if (!filename) return;
+    loadSharedTexture(filename);
     
     cubes.forEach(c => { 
         if (c.name === name) {
             forEachObjectMaterial(c, (material, mesh) => {
-                assignSharedTexture(material, textureName);
+                assignSharedTexture(material, filename);
                 material.needsUpdate = true;
-                mesh.userData.textureName = textureName;
+                mesh.userData.textureName = filename;
                 mesh.userData.wrap = wrap;
 
                 if (wrap === 1 || wrap === "1") {
@@ -2602,6 +2743,12 @@ async function decodeAudioResponse(response, requestedNick = '') {
 async function loadSoundBufferPersonalFirst(fileName) {
     const personalName = audioLibraryFilename(fileName);
     if (!personalName) throw new Error('The audio filename is not valid.');
+    recordProgramAsset('Audio', personalName);
+    if (sharedGameId) {
+        const response = await fetch(programAssetUrl('Audio', personalName), { credentials: 'omit' });
+        if (!response.ok) throw new Error(`Shared audio could not load: ${personalName}`);
+        return decodeAudioResponse(response);
+    }
 
     const requestedNick = loggedInNick;
     // Always ask the authenticated PHP session for a private file. This also
@@ -2912,6 +3059,7 @@ async function fetchObjectDataPersonalFirst(
 window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
     const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
+    recordProgramAsset('Objects', normalizedReference);
     const sharedUrl = objectJSONUrl(normalizedReference);
     const personalNick = loggedInNick;
     const personalUrl = personalObjectResourceUrl(normalizedReference);
@@ -2939,18 +3087,19 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
             const opacity = cords.alpha !== undefined
                 ? finiteMapNumber(cords.alpha, 1)
                 : finiteMapNumber(cords.a, 1);
+            const textureName = usableTextureFilename(cords.TextureName);
             const material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(red / 255, green / 255, blue / 255),
                 // Unknown textures remain transparent so their PNG alpha is
                 // preserved. Untextured alpha-1 voxels can use the faster
                 // opaque render path with identical output.
-                transparent: opacity < 1 || Boolean(cords.TextureName),
+                transparent: opacity < 1 || Boolean(textureName),
                 opacity
             });
 
             let geometry = baseGeometry;
-            if (cords.TextureName) {
-                assignSharedTexture(material, cords.TextureName);
+            if (textureName) {
+                assignSharedTexture(material, textureName);
 
                 if (cords.WrapOnSides == 1) {
                     geometry = getWrappedBaseGeometry();
@@ -2964,7 +3113,7 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
                 finiteMapNumber(cords.z, 0)
             );
             mesh.name = voxelName;
-            mesh.userData.textureName = cords.TextureName || "";
+            mesh.userData.textureName = textureName;
             mesh.userData.wrap = cords.WrapOnSides || 6;
             axisGroup.add(mesh);
             if (/collider/i.test(voxelName)) indexCollisionObject(mesh);
@@ -3039,7 +3188,8 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
     scene.add(axisGroup);
     cubes.push(axisGroup);
 
-    const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
+    recordProgramAsset('Objects', filenameOrUrl);
+    const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : programAssetUrl('Objects', filenameOrUrl);
     axisGroup.userData.ready = fetch(url)
         .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
         .then(str => {
@@ -3068,7 +3218,9 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
                 const g = parseFloat(n.getAttribute("g") || 255);
                 const b = parseFloat(n.getAttribute("b") || 255);
                 const alpha = parseFloat(n.getAttribute("alpha") || 1.0);
-                const texName = n.getAttribute("TextureName") || "";
+                const texName = usableTextureFilename(
+                    n.getAttribute("TextureName")
+                );
                 
                 const wrapStr = n.getAttribute("WrapOnSides");
                 const wrap = wrapStr ? parseInt(wrapStr) : 6;
@@ -3432,7 +3584,8 @@ window.LoadMap = function(mapJsonFile, objectName) {
         return null;
     }
 
-    const mapUrl = `Maps/${relativeMapFile}`;
+    recordProgramAsset('Maps', relativeMapFile);
+    const mapUrl = programAssetUrl('Maps', relativeMapFile);
     const personalMapName = flatPersonalJSONName(relativeMapFile);
     const personalMapNick = loggedInNick;
     const personalMapUrl = personalMapNick && personalMapName
@@ -4299,28 +4452,36 @@ function PreProcessor(code) {
 // Direct eval is retained so update programs keep the exact same scope and
 // behavior they had before this optimization.
 let cachedUpdateCode = PreProcessor(editorUpdate.getValue());
+let declarationsValid = true;
 
 function refreshCachedUpdateCode() {
     cachedUpdateCode = PreProcessor(editorUpdate.getValue());
 }
 
 function evalDeclarations() {
+    programAssets.clear();
     window.cs();
     window._evalStartTime = performance.now();
     clearDebug();
     resetCamera();
+    legacySkyMode = 'default';
+    setSkyboxVisible(!mapEditorMode);
     
-    try { 
+    try {
         const rawDecl = editorDeclarations.getValue();
         const safeCode = PreProcessor(rawDecl);
-        eval(safeCode); 
-    } catch (e) { 
+        eval(safeCode);
+        declarationsValid = true;
+        return true;
+    } catch (e) {
+        declarationsValid = false;
         if (e instanceof SyntaxError) {
             setDebugError("Syntax Error: " + e.message);
         } else {
             setDebugError("Declaration Error: " + e.message); 
             console.error(e);
         }
+        return false;
     }
 }
 
@@ -4673,6 +4834,7 @@ function animate() {
 
     if (objectEditorMode) {
         editorPointer.visible = true;
+        updateObjectMouseLook(dt);
         const moveSpeed = 10 * dt;
         const rotSpeed = 2 * dt;
         
@@ -4683,10 +4845,11 @@ function animate() {
         if (window.Input.GetKey(window.KeyCode.R)) camera.translateY(moveSpeed);
         if (window.Input.GetKey(window.KeyCode.F)) camera.translateY(-moveSpeed);
         
-        if (window.Input.GetKey(window.KeyCode.LeftArrow)) camera.rotateY(rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.RightArrow)) camera.rotateY(-rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.UpArrow)) camera.rotateX(rotSpeed);
-        if (window.Input.GetKey(window.KeyCode.DownArrow)) camera.rotateX(-rotSpeed);
+        const yawDelta = (Number(window.Input.GetKey(window.KeyCode.LeftArrow)) -
+            Number(window.Input.GetKey(window.KeyCode.RightArrow))) * rotSpeed;
+        const pitchDelta = (Number(window.Input.GetKey(window.KeyCode.UpArrow)) -
+            Number(window.Input.GetKey(window.KeyCode.DownArrow))) * rotSpeed;
+        if (yawDelta || pitchDelta) rotateObjectEditorCamera(yawDelta, pitchDelta);
 
         editorForwardPosition.set(0, 0, -4).applyMatrix4(camera.matrixWorld);
         editorPointer.position.set(
@@ -4986,28 +5149,32 @@ document.getElementById('btn-exit-audio').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
 
 document.getElementById('btn-run').onclick = (e) => {
-    if (e.target) e.target.blur(); 
-    isExecuting = !isExecuting;
+    if (sharedGameId) return;
+    if (e.target) e.target.blur();
 
     if (isExecuting) {
-        renderer.domElement.focus({ preventScroll: true });
-    }
-    
-    if (!isExecuting) {
+        isExecuting = false;
         document.getElementById('debug-console').innerHTML = `<span style="color: #aaaaaa;">Stopped.</span>`;
-        evalDeclarations(); 
+        evalDeclarations();
+        return;
+    }
+
+    // A failed declaration leaves only part of the scene and vars initialized.
+    // Keep its useful error visible instead of producing a secondary update error.
+    if (!declarationsValid && !evalDeclarations()) return;
+
+    isExecuting = true;
+    renderer.domElement.focus({ preventScroll: true });
+    clearDebug();
+    if (listener.context.state !== 'running') {
+        Promise.resolve(listener.context.resume())
+            .then(playQueuedSounds)
+            .catch(error => {
+                setDebugError(`Audio could not start: ${error.message}`);
+                console.error('Audio resume error:', error);
+            });
     } else {
-        clearDebug();
-        if (listener.context.state !== 'running') {
-            Promise.resolve(listener.context.resume())
-                .then(playQueuedSounds)
-                .catch(error => {
-                    setDebugError(`Audio could not start: ${error.message}`);
-                    console.error('Audio resume error:', error);
-                });
-        } else {
-            playQueuedSounds();
-        }
+        playQueuedSounds();
     }
 };
 
@@ -5016,6 +5183,142 @@ editorDeclarations.on('change', () => {
 });
 editorUpdate.on('change', refreshCachedUpdateCode);
 
+// --- Share a playable snapshot ---
+const shareDialog = document.getElementById('share-dialog');
+const shareLinkInput = document.getElementById('share-link');
+const shareStatus = document.getElementById('share-status');
+const shareButton = document.getElementById('btn-share-program');
+const copyShareButton = document.getElementById('btn-copy-share');
+
+function closeShareDialog() {
+    shareDialog.classList.remove('open');
+    shareDialog.setAttribute('aria-hidden', 'true');
+    shareButton.focus();
+}
+document.getElementById('btn-close-share').onclick = closeShareDialog;
+shareDialog.addEventListener('keydown', event => {
+    if (event.code === 'Escape') closeShareDialog();
+});
+
+async function copySharedGameLink() {
+    if (!shareLinkInput.value) return;
+    try {
+        await navigator.clipboard.writeText(shareLinkInput.value);
+        shareStatus.textContent = 'Link copied. Send it to anyone to play.';
+    } catch (error) {
+        // HTTP sites and browsers requiring another gesture can still copy.
+        shareLinkInput.focus();
+        shareLinkInput.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (copyError) { /* Keep the link available for manual copying. */ }
+        shareStatus.textContent = copied
+            ? 'Link copied. Send it to anyone to play.'
+            : 'Select and copy the link above, or press Copy link.';
+    }
+}
+copyShareButton.onclick = copySharedGameLink;
+
+shareButton.onclick = async () => {
+    if (sharedGameId || !requireLoggedInUser('sharing a game')) return;
+    if (!declarationsValid) {
+        setDebugError('Fix the declaration error before sharing this game.');
+        return;
+    }
+    const name = currentProgramName || 'untitled';
+    if (!validCloudProgramName(name)) {
+        setDebugError('Save this program with a name containing letters, numbers, spaces, dots, underscores, or hyphens before sharing.');
+        return;
+    }
+    const payload = {
+        name, declarations: editorDeclarations.getValue(), update: editorUpdate.getValue(),
+        assets: [...programAssets.values()], scope: loggedInNick
+    };
+    shareDialog.classList.add('open');
+    shareDialog.setAttribute('aria-hidden', 'false');
+    shareLinkInput.value = '';
+    shareStatus.textContent = 'Creating a playable copy with the game assets…';
+    copyShareButton.disabled = true;
+    shareButton.disabled = true;
+    document.getElementById('btn-close-share').focus();
+    try {
+        const response = await fetch('server_side/share_program.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-3DPL-Share': '1' },
+            body: JSON.stringify(payload)
+        });
+        const result = await readApiResponse(response);
+        const url = new URL('play.php', document.baseURI);
+        url.searchParams.set('share', result.id);
+        shareLinkInput.value = url.href;
+        copyShareButton.disabled = false;
+        await copySharedGameLink();
+    } catch (error) {
+        shareStatus.textContent = `Could not share: ${error.message}`;
+    } finally {
+        shareButton.disabled = false;
+    }
+};
+
+// --- Isolated shared-game player ---
+function showSharedPlayerStatus(message, isError = false) {
+    const status = document.getElementById('shared-player-status');
+    status.textContent = message;
+    status.style.display = message ? 'block' : 'none';
+    status.setAttribute('role', isError ? 'alert' : 'status');
+}
+
+function unlockSharedPlayerAudio() {
+    if (!sharedGameId || !sharedPlayerReady) return;
+    if (listener.context.state === 'suspended') {
+        listener.context.resume().then(playQueuedSounds).catch(() => {});
+    } else if (listener.context.state === 'running') {
+        playQueuedSounds();
+    }
+}
+document.addEventListener('pointerdown', unlockSharedPlayerAudio, true);
+
+async function startSharedGame() {
+    editorDeclarations.setOption('readOnly', 'nocursor');
+    editorUpdate.setOption('readOnly', 'nocursor');
+    document.querySelectorAll('.menu-panel, .app-modal, #account-controls, #btn-restore-ide')
+        .forEach(element => {
+            element.setAttribute('inert', '');
+            element.setAttribute('aria-hidden', 'true');
+        });
+    document.querySelectorAll('.menu-panel button, .menu-panel input, .menu-panel select, .app-modal button, .app-modal input')
+        .forEach(element => element.disabled = true);
+    const pauseButton = document.getElementById('mobile-controller-start');
+    pauseButton.textContent = 'PAUSE';
+    pauseButton.setAttribute('aria-label', 'Pause or resume game');
+    pauseButton.disabled = true;
+    showSharedPlayerStatus('Loading game…');
+    try {
+        const response = await fetch('server_side/load_shared_program.php?' +
+            new URLSearchParams({ share: sharedGameId }), { credentials: 'omit' });
+        const game = await readApiResponse(response);
+        document.title = game.name + ' — 3DPL';
+        applyProgramCode(game.declarations, game.update, game.name);
+        if (!declarationsValid) throw new Error(sharedPlayerError || 'The game could not start.');
+        const pending = [];
+        cubes.forEach(object => object.traverse(child => {
+            if (child.userData.ready) pending.push(child.userData.ready);
+        }));
+        await Promise.all(pending);
+        await Promise.all([...sharedTextureCache.values()].map(texture => texture.userData.threeDPLReady));
+        if (sharedPlayerError) throw new Error(sharedPlayerError);
+        // Start simulation automatically; browsers unlock audio on the first input.
+        sharedPlayerReady = true;
+        isExecuting = true;
+        pauseButton.disabled = false;
+        clock.getDelta();
+        showSharedPlayerStatus('');
+        renderer.domElement.focus({ preventScroll: true });
+    } catch (error) {
+        isExecuting = false;
+        showSharedPlayerStatus(`Unable to start game: ${error.message}`, true);
+    }
+}
+
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -5023,3 +5326,4 @@ window.addEventListener('resize', () => {
 });
 
 animate();
+if (sharedGameId) startSharedGame();

@@ -1,0 +1,14 @@
+{
+  "format": "3dpl-map-v1",
+  "objects": [
+    {
+      "name": "dungeon_walls",
+      "file": "Dungeon2.json",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "rotationY": 0,
+      "scale": 1
+    }
+  ]
+}
