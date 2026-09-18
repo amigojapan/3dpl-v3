@@ -48,8 +48,9 @@ vars["rotate_propeller"] = function(amount) {
 
 // Preserve Simulator 4's engine and background music, attached once.
 AttachSound("helicopter", "helicopter.wav");
+SetVolume("helicopter", 0.25);
 PlaySoundLoop("helicopter");
 AttachSound("camera", "NOW1.wav");
+SetVolume("camera", 0.4);
 PlaySoundLoop("camera");
-SetVolume("camera", 0.05);
 vars["move_camera"]();

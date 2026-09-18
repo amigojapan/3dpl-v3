@@ -1,0 +1,74 @@
+// TUTORIAL 33: CAR SIMULATOR 6 WITH A JSON MAP
+// Arrow keys drive and steer. Space launches the car upward.
+// THEMAP.json and every JSON object it references must be on the server.
+vars["land"] = LoadMap("THEMAP.json", "land");
+vars["car"] = Obj("sports-car.json", "car0", 2, 1, -10);
+vars["car_colliders"] = Obj(
+    "car_colliders.json", "car_colliders", 2, 1, -10);
+vars["car_colliders"].transform.parent = vars["car"].transform;
+
+sr("land", 0, 180, 0);
+mv("land", 0, 0, -20);
+sc("car0", 0.19, 0.19, 0.19);
+
+vars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);
+vars["tire2"] = Obj("sports-car-tires.json", "tire2", 0, 0, 0);
+vars["tire3"] = Obj("sports-car-tires.json", "tire3", 0, 0, 0);
+vars["tire4"] = Obj("sports-car-tires.json", "tire4", 0, 0, 0);
+sc("tire1", 0.10, 0.10, 0.10);
+sc("tire2", 0.10, 0.10, 0.10);
+sc("tire3", 0.10, 0.10, 0.10);
+sc("tire4", 0.10, 0.10, 0.10);
+
+sp("tire1", vars["car"].transform.position.x - 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z - 1);
+sp("tire2", vars["car"].transform.position.x + 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z - 1);
+sp("tire3", vars["car"].transform.position.x - 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z + 1);
+sp("tire4", vars["car"].transform.position.x + 0.7,
+    vars["car"].transform.position.y,
+    vars["car"].transform.position.z + 1);
+
+vars["tire1"].transform.parent = vars["car"].transform;
+vars["tire2"].transform.parent = vars["car"].transform;
+vars["tire3"].transform.parent = vars["car"].transform;
+vars["tire4"].transform.parent = vars["car"].transform;
+
+// Six degrees per frame is twice the old steering speed of three.
+vars["turnSpeed"] = 6;
+
+vars["move_camera"] = function() {
+    sp("camera",
+        vars["car"].transform.position.x,
+        vars["car"].transform.position.y,
+        vars["car"].transform.position.z);
+    mv("camera", 1, 1, -5);
+};
+
+vars["rotate_tires"] = function() {
+    sr("tire1", vars["tire1"].transform.eulerAngles.x + 45,
+        vars["tire1"].transform.eulerAngles.y,
+        vars["tire1"].transform.eulerAngles.z);
+    sr("tire2", vars["tire2"].transform.eulerAngles.x + 45,
+        vars["tire2"].transform.eulerAngles.y,
+        vars["tire2"].transform.eulerAngles.z);
+    sr("tire3", vars["tire3"].transform.eulerAngles.x + 45,
+        vars["tire3"].transform.eulerAngles.y,
+        vars["tire3"].transform.eulerAngles.z);
+    sr("tire4", vars["tire4"].transform.eulerAngles.x + 45,
+        vars["tire4"].transform.eulerAngles.y,
+        vars["tire4"].transform.eulerAngles.z);
+};
+
+// This safely advances in small steps and rolls back on a map collision.
+vars["drive"] = function(distance, colliderName) {
+    return move_object_with_map_collision(
+        vars["land"], vars["car"], colliderName,
+        0, 0, distance, 0.2);
+};
+
+vars["move_camera"]();

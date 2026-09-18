@@ -250,7 +250,7 @@ if(new Date().getHours() > 18) {
 vars["TT_SDC"]=30;
 vars["dragon_head"]=Obj("DragonHead5.json","dragon_head",0,0,0);
 ((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_head"], 0,180,0);
-for(var i=0;i<6;i++){ 
+for(var i=0;i<6;i++){
   vars["dragon_body"+i]=Obj("DragonTrunk2.json","dragon_body"+i,0,-5,-13*(i+1));
   ((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_body"+i], 0,180,0);
   //adding parent child relationship to be able to scale based on just one scale to retain same ratio
@@ -304,6 +304,6 @@ vars["TTHP"]=10;
 vars["TTBreak"]=false;
 
 // Attach and request music once during setup, never on every update frame.
-// Upload music.mp3 to your Audio library before running the game.
+// music.mp3 is included in the shared Audio library for this tutorial.
 AttachSound("camera", "music.mp3");
 PlaySound("camera");

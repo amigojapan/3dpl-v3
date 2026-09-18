@@ -1,0 +1,109 @@
+// Requires the matching finalx3.declarations (dragon waves, fire, and buildings).
+// Music is attached once in declarations so updates never restart its loading.
+// Controls: arrows drive/turn, W/S climb/descend, Space or Right Ctrl fires.
+var dragonDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var drive = Number(Input.GetKey(KeyCode.UpArrow)) - Number(Input.GetKey(KeyCode.DownArrow));
+var turn = Number(Input.GetKey(KeyCode.RightArrow)) - Number(Input.GetKey(KeyCode.LeftArrow));
+var climb = Number(Input.GetKey(KeyCode.W)) - Number(Input.GetKey(KeyCode.S));
+rt("dragon_head", 0, turn * 40 * dragonDt, 0);
+mv("dragon_head", 0, climb * 3 * dragonDt, drive * 10 * dragonDt);
+
+// Set each segment relative to its resting height, avoiding cumulative drift.
+vars["rad"] = (vars["rad"] + vars["dragon_wave_speed"] * dragonDt) % (Math.PI * 2);
+for (var i = 0; i < vars["dragon_wave_parts"].length; i++) {
+    vars["dragon_wave_parts"][i].position.y = vars["dragon_wave_rest_y"][i] +
+        Math.sin(vars["rad"] - i * Math.PI / 7) * vars["dragon_wave_amplitude"];
+}
+
+// Unity's original camera offset, facing the dragon in Three.js.
+sp("camera", vars["dragon_head"].position.x - 1,
+    vars["dragon_head"].position.y + 12, vars["dragon_head"].position.z - 30);
+an("camera", 22, 180, 0);
+
+// Keep existing flames moving along their launch direction, even after a turn
+// or releasing the fire key. Expire them so the scene cannot grow indefinitely.
+for (var flameIndex = vars["fire_particles"].length - 1; flameIndex >= 0; flameIndex--) {
+    var flame = vars["fire_particles"][flameIndex];
+    flame.object.position.addScaledVector(flame.direction, 25 * dragonDt);
+    flame.life -= dragonDt;
+    for (var targetIndex = 0; targetIndex < vars["fire_targets"].length; targetIndex++) {
+        var target = vars["fire_targets"][targetIndex];
+        if (!target.destroyed && vars[target.health] > 0 && cd(flame.object.name, target.name)) {
+            vars[target.health] -= 1;
+            target.shakeTime = 0.3;
+            flame.life = 0;
+            break;
+        }
+    }
+    if (flame.life <= 0) {
+        dl(flame.object.name);
+        vars["fire_particles"].splice(flameIndex, 1);
+    }
+}
+
+var breathingFire = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.RightControl);
+vars["fire_cooldown"] = Math.max(0, vars["fire_cooldown"] - dragonDt);
+if (breathingFire && vars["fire_cooldown"] <= 0.000001) {
+    // Refresh parent transforms before converting the mouth to world space.
+    var mouthPosition = vars["BreathOrigine"].getWorldPosition(
+        vars["dragon_head"].position.clone());
+    var fireDirection = vars["dragon_head"].localToWorld(
+        vars["dragon_head"].position.clone().set(0, 0, -26));
+    fireDirection.sub(mouthPosition).normalize();
+    var fireName = "fire" + vars["fire_serial"]++;
+    var fireObject = qb(fireName, mouthPosition.x, mouthPosition.y, mouthPosition.z);
+    sc(fireName, 0.35, 0.35, 0.35);
+    cl(fireName, Math.random() < 0.5 ? 0xf6f337 : 0xad4e1a);
+    vars["fire_particles"].push({ object: fireObject, direction: fireDirection, life: 2 });
+    vars["fire_cooldown"] = 0.1;
+} else if (!breathingFire) {
+    vars["fire_cooldown"] = 0;
+}
+
+
+// Apply the same hit shake and explosion to every registered building.
+for (var buildingIndex = 0; buildingIndex < vars["fire_targets"].length; buildingIndex++) {
+    var building = vars["fire_targets"][buildingIndex];
+    if (building.destroyed) continue;
+
+    // Restore the original transform so repeated hits never make buildings drift.
+    building.object.position.copy(building.restPosition);
+    building.object.rotation.copy(building.restRotation);
+
+    if (vars[building.health] <= 0) {
+        if (building.explosionTime === null) {
+            building.explosionTime = 0;
+            // Snapshot voxels once; their velocities remain stable during flight.
+            building.object.children.forEach(function(voxel) {
+                if (!voxel.isMesh) return;
+                building.debris.push({
+                    object: voxel,
+                    velocity: voxel.position.clone().set(
+                        (Math.random() - 0.5) * 24,
+                        5 + Math.random() * 15,
+                        (Math.random() - 0.5) * 24)
+                });
+            });
+        }
+        building.explosionTime += dragonDt;
+        for (var debrisIndex = 0; debrisIndex < building.debris.length; debrisIndex++) {
+            var fragment = building.debris[debrisIndex];
+            fragment.velocity.y -= 20 * dragonDt;
+            fragment.object.position.addScaledVector(fragment.velocity, dragonDt);
+            fragment.object.rotateX(dragonDt * 2);
+            fragment.object.rotateZ(dragonDt);
+        }
+        if (building.explosionTime >= 1.25) {
+            // Delete once, after the explosion, including empty loaded groups.
+            dl(building.name);
+            building.debris.length = 0;
+            building.destroyed = true;
+        }
+    } else if (building.shakeTime > 0) {
+        building.shakeTime = Math.max(0, building.shakeTime - dragonDt);
+        var shakeStrength = building.shakeTime / 0.3;
+        building.object.position.x += Math.sin(building.shakeTime * 80) * 0.3 * shakeStrength;
+        building.object.rotation.z += Math.sin(building.shakeTime * 65) * 0.05 * shakeStrength;
+        building.object.rotation.x += Math.cos(building.shakeTime * 75) * 0.03 * shakeStrength;
+    }
+}

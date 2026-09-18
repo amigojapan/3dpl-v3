@@ -16,6 +16,8 @@ function element(id) {
         setAttribute(k,v) { this.attributes[k]=v; },
         addEventListener(type,fn) { this.listeners[type]=fn; },
         focus() { this.focused=true; }, select() { this.selected=true; }, blur() {},
+        showModal() { this.open=true; },
+        close() { this.open=false; this.listeners.close?.(); },
         click() { return this.onclick?.({target:this,currentTarget:this}); }
     };
 }
@@ -43,6 +45,7 @@ function setup(player = false) {
         fetch: async (...args) => {calls.push(['fetch',...args]);return fetchImpl(...args);},
         setDebugError(message) { calls.push(['debug',message]); },
         clearDebug() {}, resetCamera() {}, setSkyboxVisible() {},
+        releaseMobileControls() { calls.push(['release-controls']); },
         setCurrentProgramName(name) { calls.push(['name',name]); }, refreshCodeEditors() {},
         requireLoggedInUser() {return true;},
         renderer: {domElement:element('canvas')},
@@ -116,6 +119,38 @@ function setup(player = false) {
     player.texture.resolve(); await startup;
     assert.equal(player.run('isExecuting'),true,'Autostart without button or credentials');
     assert.equal(player.run('sharedPlayerReady'),true);
+    const dialog = player.elements['shared-game-alert'];
+    const alertMessage = player.elements['shared-game-alert-message'];
+    const alertOK = player.elements['shared-game-alert-ok'];
+    player.run('Input._keys.KeyW=true; alert("game over")');
+    assert.equal(dialog.open,true,'Existing snapshot alert calls open a player dialog');
+    assert.equal(alertMessage.textContent,'game over');
+    assert.equal(player.run('sharedPlayerAlertOpen'),true);
+    assert.equal(player.run('Input._keys.KeyW'),false,'Release held movement when opening');
+    assert.ok(alertOK.focused,'Focus OK for keyboard access');
+    // Execute the real animation update gate without rendering a browser.
+    const frame = section('    if (isExecuting && !sharedPlayerAlertOpen)', '    if (objectEditorMode)');
+    player.run(frame);
+    assert.equal(player.context.probe.frames,0,'Updates pause while the dialog is open');
+    player.run('alert("<b>next</b>")');
+    assert.equal(alertMessage.textContent,'game over','Multiple alerts are queued');
+    alertOK.listeners.click();
+    assert.equal(dialog.open,true);
+    assert.equal(alertMessage.textContent,'<b>next</b>','Message is plain text, never HTML');
+    assert.equal(alertMessage.innerHTML,'');
+    player.run(frame);
+    assert.equal(player.context.probe.frames,0);
+    dialog.close(); // Escape dismisses a native dialog through the same close handler.
+    assert.equal(player.run('sharedPlayerAlertOpen'),false);
+    assert.ok(player.context.renderer.domElement.focused);
+    player.run(frame);
+    assert.equal(player.context.probe.frames,1,'Updates resume after the last message');
+    player.context.probe.frames=0;
+    player.run('isExecuting=false; alert("paused")');
+    alertOK.listeners.click();
+    assert.equal(player.run('isExecuting'),false,'Dismissing must not restart a paused game');
+    player.run('isExecuting=true');
+    assert.equal(author.context.alert,undefined,'Programming environment keeps native alerts');
     assert.equal(player.elements['shared-player-status'].style.display,'none');
     assert.equal(player.context.editorDeclarations.options.readOnly,'nocursor');
     assert.equal(player.context.editorUpdate.options.readOnly,'nocursor');
@@ -152,5 +187,5 @@ function setup(player = false) {
     assert.match(html,/\.shared-player #account-controls/);
     assert.match(fs.readFileSync('play.php','utf8'),/sandbox="allow-scripts allow-pointer-lock"/);
     assert.ok(!fs.readFileSync('play.php','utf8').includes('allow-same-origin'));
-    console.log('PASS: Share payload and clipboard, copy fallback, share errors, anonymous auto-start after asset readiness, read-only/inert editor, controller availability, audio gesture, isolated frame configuration, and missing/broken games.');
+    console.log('PASS: Share payload and clipboard, copy fallback, share errors, anonymous auto-start after asset readiness, read-only/inert editor, controller availability, audio gesture, sandbox-compatible alerts and pause/resume, isolated frame configuration, and missing/broken games.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

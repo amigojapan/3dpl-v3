@@ -1,0 +1,29 @@
+// Mobile: tap the controller icon. Use the arrow pad, WASD, R CTRL, and SPACE.
+// Steering remains responsive while the large map is loading.
+if (Input.GetKey(KeyCode.RightArrow))
+    rt("car0", 0, vars["turnSpeed"], 0);
+if (Input.GetKey(KeyCode.LeftArrow))
+    rt("car0", 0, -vars["turnSpeed"], 0);
+
+// car_colliders is parented to the car, so it follows automatically.
+// There is no camcol object in this program.
+if (Input.GetKey(KeyCode.Space))
+    mv("car0", 0, 1, 0);
+
+// Wait until both asynchronous JSON loads have collision meshes.
+var collisionReady =
+    vars["land"].userData.loaded &&
+    vars["car_colliders"].userData.loaded;
+
+if (collisionReady) {
+    if (Input.GetKey(KeyCode.DownArrow) &&
+        vars["drive"](1, "collider_back"))
+        vars["rotate_tires"]();
+
+    if (Input.GetKey(KeyCode.UpArrow) &&
+        vars["drive"](-1, "collider_front"))
+        vars["rotate_tires"]();
+}
+
+// Follow the car every frame.
+vars["move_camera"]();

@@ -126,7 +126,8 @@ for (const [key,pitch] of [['W',1.7],['S',0.5],['UpArrow',1.2],['DownArrow',1.2]
 }
 assert.equal(run.audio.filter(call=>call[0]==='attach').length,2,'Sounds attach once');
 assert.deepEqual(run.audio.filter(call=>call[0]==='loop'),[['loop','helicopter'],['loop','camera']]);
-assert.ok(run.audio.some(call=>call[0]==='volume'&&call[2]===0.05));
+assert.ok(run.audio.some(call=>call[0]==='volume'&&call[1]==='camera'&&call[2]===0.4));
+assert.ok(run.audio.some(call=>call[0]==='volume'&&call[1]==='helicopter'&&call[2]===0.25));
 
 // Put a thin map voxel in the path of each tutorial 32 probe. Exercise
 // the actual collision helper at two headings, including a deliberately large move.
