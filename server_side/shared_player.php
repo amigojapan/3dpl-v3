@@ -15,7 +15,7 @@ if (isset($_GET['runtime'])) {
 $id = api_string($_GET, ['share']);
 if (!share_valid_id($id)) api_fail('invalid_share', 'Invalid shared game link.', 404);
 // Also isolate the frame when someone opens its URL directly.
-header('Content-Security-Policy: sandbox allow-scripts allow-pointer-lock');
+header('Content-Security-Policy: sandbox allow-scripts allow-pointer-lock allow-downloads');
 header('Content-Type: text/html; charset=utf-8');
 $html = (string)file_get_contents(dirname(__DIR__) . '/3dplv3.html');
 $html = str_replace('<html lang="en">', '<html lang="en" class="shared-player">', $html);

@@ -1,0 +1,500 @@
+// craftmine — a small creative block sandbox. Load craftmine.update too.
+// WASD: walk; mouse: look; Space: jump; left/right click: break/place.
+// E: all textures; 1–9 or mouse wheel: hotbar; Escape: release mouse.
+// F/G: mark two selection corners; Save JSON: export the world or selection.
+// Click the world after START. On touch screens, drag to look and use
+// the 3DPL onscreen movement controls plus the Break/Place/Jump buttons.
+vars["craftmine"] = (function() {
+    var game = { alive: true, blocks: Object.create(null), batches: Object.create(null),
+        count: 0, limit: 16000, yaw: 0, pitch: -0.12, velocity: 0, grounded: false,
+        player: new THREE.Vector3(0, 0.51, 10), selected: "grass.png", slot: 0,
+        hotbar: ["grass.png", "ground2.png", "stone1.png", "tree_wood.png",
+            "tree_leaves.png", "water.png", "16x16_newbrick.png", "wood1.png", "window1.png"] };
+    var anchor = qb("craftmine_world", 0, 0, 0);
+    anchor.material.visible = false;
+    var geometry = new THREE.BoxGeometry(1, 1, 1);
+    var matrix = new THREE.Matrix4();
+    var ray = new THREE.Raycaster();
+    ray.far = 6;
+    var abort = new AbortController();
+    var oldFog = scene.fog, oldBackground = scene.background, oldFov = camera.fov;
+    scene.background = new THREE.Color(0x87c9ef);
+    scene.fog = new THREE.Fog(0x87c9ef, 24, 65);
+    camera.fov = 75;
+    camera.updateProjectionMatrix();
+    function key(x, y, z) { return x + "," + y + "," + z; }
+    function material(texture, color) {
+        var result = new THREE.MeshLambertMaterial({ color: color || 0xffffff });
+        // Clone sampler settings so other 3DPL programs keep their own filtering.
+        var original = loadSharedTexture(texture);
+        var pixel = original.clone();
+        pixel.magFilter = THREE.NearestFilter;
+        pixel.minFilter = THREE.NearestFilter;
+        pixel.generateMipmaps = false;
+        pixel.needsUpdate = true;
+        result.map = pixel;
+        result.alphaTest = 0.1;
+        Promise.resolve(original.userData.threeDPLReady).then(function() {
+            if (!original.image) {
+                original = loadSharedTexture(texture, false);
+                return original.userData.threeDPLReady;
+            }
+        }).then(function() {
+            if (!game.alive) return;
+            pixel.image = original.image;
+            pixel.needsUpdate = true;
+        });
+        return result;
+    }
+    function batch(texture) {
+        if (game.batches[texture]) return game.batches[texture];
+        var materials;
+        if (texture === "grass.png") {
+            var dirt = material("ground2.png", 0x967353), grass = material("grass.png");
+            materials = [dirt, dirt, grass, dirt, dirt, dirt];
+        } else {
+            materials = material(texture);
+        }
+        var mesh = new THREE.InstancedMesh(geometry, materials, game.limit);
+        mesh.count = 0;
+        mesh.frustumCulled = false;
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        mesh.userData.blockTexture = texture;
+        anchor.add(mesh);
+        var result = { mesh: mesh, keys: [] };
+        game.batches[texture] = result;
+        return result;
+    }
+    game.add = function(x, y, z, texture) {
+        var id = key(x, y, z);
+        if (game.blocks[id] || game.count >= game.limit || y < -3 || y > 24 || Math.abs(x) > 24 || Math.abs(z) > 24) return false;
+        var group = batch(texture), index = group.keys.length;
+        matrix.makeTranslation(x, y, z);
+        group.mesh.setMatrixAt(index, matrix);
+        group.keys.push(id);
+        group.mesh.count = group.keys.length;
+        group.mesh.instanceMatrix.needsUpdate = true;
+        game.blocks[id] = { x: x, y: y, z: z, texture: texture, index: index };
+        game.count++;
+        return true;
+    };
+    game.remove = function(id) {
+        var block = game.blocks[id];
+        if (!block || block.y === -3) return false;
+        var group = game.batches[block.texture], last = group.keys.pop();
+        if (last !== id) {
+            var moved = game.blocks[last];
+            group.keys[block.index] = last;
+            moved.index = block.index;
+            matrix.makeTranslation(moved.x, moved.y, moved.z);
+            group.mesh.setMatrixAt(block.index, matrix);
+        }
+        group.mesh.count = group.keys.length;
+        group.mesh.instanceMatrix.needsUpdate = true;
+        delete game.blocks[id];
+        game.count--;
+        return true;
+    };
+    // A bounded world: soil under grass, a pond, hills, and blocky trees.
+    for (var x = -18; x < 18; x++) {
+        for (var z = -18; z < 18; z++) {
+            var height = z < -6 ? Math.max(0, Math.round(1.5 + Math.sin(x * 0.3) + Math.cos(z * 0.4))) : 0;
+            var pond = x >= 5 && x <= 10 && z >= -1 && z <= 5;
+            if (pond) height = -1;
+            for (var y = -3; y <= height; y++) {
+                game.add(x, y, z, y === height ? (pond ? "ground2.png" : "grass.png") : (y < -1 ? "stone1.png" : "ground2.png"));
+            }
+            if (pond) game.add(x, 0, z, "water.png");
+        }
+    }
+    [[-5, -3], [3, -5], [-10, 5], [12, 9], [-12, -3]].forEach(function(position) {
+        var tx = position[0], tz = position[1];
+        for (var trunk = 1; trunk <= 4; trunk++) { game.add(tx, trunk, tz, "tree_wood.png"); }
+        for (var lx = -2; lx <= 2; lx++) {
+            for (var lz = -2; lz <= 2; lz++) {
+                for (var ly = 3; ly <= 5; ly++) {
+                    if (Math.abs(lx) + Math.abs(lz) < (ly === 5 ? 3 : 4)) game.add(tx + lx, ly, tz + lz, "tree_leaves.png");
+                }
+            }
+        }
+    });
+    var outline = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ color: 0x17252a }));
+    outline.scale.setScalar(1.006);
+    outline.visible = false;
+    anchor.add(outline);
+    var selectionOutline = new THREE.LineSegments(new THREE.EdgesGeometry(geometry),
+        new THREE.LineBasicMaterial({ color: 0xffdd55, depthTest: false }));
+    selectionOutline.visible = false;
+    selectionOutline.renderOrder = 10;
+    anchor.add(selectionOutline);
+    game.corners = [null, null];
+    game.selectionBounds = function() {
+        if (!game.corners[0] || !game.corners[1]) throw new Error("Mark both corners with F/G, or enter their coordinates below.");
+        var a = game.corners[0], b = game.corners[1];
+        [a.x, a.y, a.z, b.x, b.y, b.z].forEach(function(value) {
+            if (!Number.isSafeInteger(value)) throw new Error("Corner coordinates must be whole numbers.");
+        });
+        return { min: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
+            max: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)) };
+    };
+    game.exportObject = function(scope, localOrigin) {
+        if (scope !== "world" && scope !== "selection") throw new Error("Choose the whole world or a selection.");
+        var bounds = scope === "selection" ? game.selectionBounds() : null;
+        var blocks = Object.values(game.blocks).filter(function(block) {
+            return !bounds || (block.x >= bounds.min.x && block.x <= bounds.max.x &&
+                block.y >= bounds.min.y && block.y <= bounds.max.y && block.z >= bounds.min.z && block.z <= bounds.max.z);
+        });
+        if (!blocks.length) throw new Error("There are no blocks inside this selection.");
+        var origin = new THREE.Vector3();
+        if (localOrigin) {
+            if (bounds) origin.copy(bounds.min);
+            else {
+                origin.set(Infinity, Infinity, Infinity);
+                blocks.forEach(function(block) { origin.min(new THREE.Vector3(block.x, block.y, block.z)); });
+            }
+        }
+        // Match the array-of-voxels format consumed by Obj() and the Object Editor.
+        return blocks.map(function(block, index) {
+            return { cubename: "craftmine_" + index,
+                x: block.x - origin.x, y: block.y - origin.y, z: block.z - origin.z,
+                r: 255, g: 255, b: 255, alpha: 1, TextureName: block.texture, WrapOnSides: 6 };
+        });
+    };
+    game.intersectsPlayer = function(x, y, z) {
+        var p = game.player;
+        return p.x + 0.29 > x - 0.5 && p.x - 0.29 < x + 0.5 &&
+            p.y + 1.8 > y - 0.5 + 0.00001 && p.y < y + 0.5 - 0.00001 &&
+            p.z + 0.29 > z - 0.5 && p.z - 0.29 < z + 0.5;
+    };
+    game.collides = function() {
+        var p = game.player;
+        var minX = Math.floor(p.x + 0.21), maxX = Math.floor(p.x + 0.79);
+        var minY = Math.floor(p.y + 0.5), maxY = Math.floor(p.y + 2.3);
+        var minZ = Math.floor(p.z + 0.21), maxZ = Math.floor(p.z + 0.79);
+        for (var bx = minX; bx <= maxX; bx++) {
+            for (var by = minY; by <= maxY; by++) {
+                for (var bz = minZ; bz <= maxZ; bz++) {
+                    var block = game.blocks[key(bx, by, bz)];
+                    if (block && block.texture !== "water.png" && game.intersectsPlayer(bx, by, bz)) return true;
+                }
+            }
+        }
+        return false;
+    };
+    game.move = function(axis, distance) {
+        var steps = Math.max(1, Math.ceil(Math.abs(distance) / 0.12)), delta = distance / steps;
+        for (var step = 0; step < steps; step++) {
+            game.player[axis] += delta;
+            if (game.collides()) {
+                game.player[axis] -= delta;
+                return false;
+            }
+        }
+        return true;
+    };
+    game.syncCamera = function() {
+        camera.position.copy(game.player).add(new THREE.Vector3(0, 1.62, 0));
+        camera.rotation.set(game.pitch, game.yaw, 0, "YXZ");
+        camera.updateMatrixWorld(true);
+    };
+    game.aim = function() {
+        ray.setFromCamera(new THREE.Vector2(0, 0), camera);
+        // Walk the voxel grid along the ray: cost depends on reach, not world size.
+        var origin = ray.ray.origin, direction = ray.ray.direction;
+        var cell = [Math.floor(origin.x + 0.5), Math.floor(origin.y + 0.5), Math.floor(origin.z + 0.5)];
+        var starts = origin.toArray(), directions = direction.toArray();
+        var signs = directions.map(function(value) { return value < 0 ? -1 : 1; });
+        var delta = directions.map(function(value) { return value === 0 ? Infinity : Math.abs(1 / value); });
+        var next = directions.map(function(value, axis) {
+            return value === 0 ? Infinity : (cell[axis] + signs[axis] * 0.5 - starts[axis]) / value;
+        });
+        var distance = 0, normal = new THREE.Vector3(0, 1, 0);
+        game.target = null;
+        outline.visible = false;
+        for (var step = 0; step < 32 && distance <= 6; step++) {
+            var block = game.blocks[key(cell[0], cell[1], cell[2])];
+            if (block) {
+                var group = game.batches[block.texture];
+                game.target = { object: group.mesh, instanceId: block.index, face: { normal: normal } };
+                outline.position.set(block.x, block.y, block.z);
+                outline.visible = true;
+                return;
+            }
+            var axis = next[0] < next[1] ? (next[0] < next[2] ? 0 : 2) : (next[1] < next[2] ? 1 : 2);
+            distance = next[axis];
+            cell[axis] += signs[axis];
+            next[axis] += delta[axis];
+            normal.set(0, 0, 0).setComponent(axis, -signs[axis]);
+        }
+    };
+    game.edit = function(place) {
+        if (!isExecuting || dialogOpen()) return false;
+        game.aim();
+        var hit = game.target;
+        if (!hit) return false;
+        var group = game.batches[hit.object.userData.blockTexture];
+        var block = game.blocks[group.keys[hit.instanceId]];
+        if (!place) return game.remove(key(block.x, block.y, block.z));
+        var normal = hit.face.normal;
+        var x = block.x + Math.round(normal.x), y = block.y + Math.round(normal.y), z = block.z + Math.round(normal.z);
+        if (game.intersectsPlayer(x, y, z)) return false;
+        return game.add(x, y, z, game.selected);
+    };
+    // Program-owned controls are removed automatically when 3DPL clears the scene.
+    var ui = document.createElement("div");
+    ui.id = "craftmine-ui";
+    ui.innerHTML = '<style>#craftmine-ui{position:fixed;inset:0;pointer-events:none;z-index:2100;color:white;font:14px sans-serif;text-shadow:1px 1px 2px #000}#craftmine-ui button{pointer-events:auto;min-height:44px;border:2px solid #8c999e;background:#26343de8;color:white;cursor:pointer}#craftmine-title{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center}#craftmine-title strong{font-size:28px;letter-spacing:3px}#craftmine-cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}#craftmine-bottom{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:min(96vw,640px);text-align:center}#craftmine-bar{display:flex;gap:4px;justify-content:center;margin:6px 0}#craftmine-bar button{padding:3px;width:10%;max-width:55px;height:54px;position:relative}#craftmine-bar img{width:100%;height:36px;object-fit:cover;image-rendering:pixelated}#craftmine-bar span{position:absolute;top:1px;left:3px}#craftmine-bar button.active{border-color:#fff;background:#558b47}#craftmine-picker{width:min(88vw,700px);max-height:75vh;border:2px solid #91b676;background:#203329;color:white;padding:16px}#craftmine-picker::backdrop{background:#0009}#craftmine-picker input{width:65%;min-height:36px}#craftmine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;max-height:50vh;overflow:auto;margin-top:12px;padding-right:12px}#craftmine-grid button{background:#34483c;color:white;overflow-wrap:anywhere;padding:6px;min-height:85px}#craftmine-grid img{display:block;width:42px;height:42px;margin:auto;image-rendering:pixelated}#craftmine-help{font-size:12px;margin:6px}#craftmine-actions{display:flex;gap:6px;justify-content:center}</style><div id="craftmine-title"><strong>craftmine</strong><div>CREATIVE BLOCK SANDBOX</div></div><div id="craftmine-cross">+</div><div id="craftmine-bottom"><div id="craftmine-label"></div><div id="craftmine-bar"></div><div id="craftmine-actions"><button data-action="textures">Textures · E</button><button data-action="break">Break</button><button data-action="place">Place</button><button data-action="jump">Jump</button></div><div id="craftmine-help">Click world to look · WASD walk · Space jump · Left/right click break/place · Esc releases mouse</div></div>';
+    document.body.appendChild(ui);
+    var picker = document.createElement("dialog");
+    picker.id = "craftmine-picker";
+    picker.setAttribute("aria-label", "Choose a block texture");
+    picker.innerHTML = '<strong>All block textures</strong><p>Choose a texture for the selected hotbar slot.</p><input type="search" placeholder="Search textures" aria-label="Search textures"><button type="button">Done</button><div id="craftmine-grid"></div>';
+    document.body.appendChild(picker);
+    var saveStyle = document.createElement("style");
+    saveStyle.textContent = '#craftmine-save-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}#craftmine-selection-status{font-size:12px;margin:4px}#craftmine-export{box-sizing:border-box;width:min(94vw,540px);max-height:85vh;overflow:auto;background:#203329;color:white;border:2px solid #91b676;padding:20px}#craftmine-export::backdrop{background:#0009}#craftmine-export input,#craftmine-export select{box-sizing:border-box;max-width:100%;min-height:38px}#craftmine-export input[type=number]{width:100%}#craftmine-export table{width:100%;table-layout:fixed}#craftmine-export td,#craftmine-export th{padding:4px}#craftmine-export button{min-height:44px;margin:4px}#craftmine-export p{line-height:1.4}#craftmine-export-status{min-height:24px}';
+    ui.appendChild(saveStyle);
+    var saveActions = document.createElement("div");
+    saveActions.id = "craftmine-save-actions";
+    saveActions.innerHTML = '<button data-corner="0">Corner 1 · F</button><button data-corner="1">Corner 2 · G</button><button data-save>Save JSON</button>';
+    ui.querySelector("#craftmine-bottom").appendChild(saveActions);
+    var selectionStatus = document.createElement("div");
+    selectionStatus.id = "craftmine-selection-status";
+    selectionStatus.textContent = "Aim at blocks and mark two corners to save part of the world.";
+    ui.querySelector("#craftmine-bottom").appendChild(selectionStatus);
+    var exportDialog = document.createElement("dialog");
+    exportDialog.id = "craftmine-export";
+    exportDialog.setAttribute("aria-label", "Save craftmine as a 3DPL object");
+    exportDialog.innerHTML = '<h2>Save a 3DPL object</h2><label>Filename <input id="craftmine-filename" value="craftmine.json" maxlength="80"></label><p><label>Save <select id="craftmine-scope"><option value="world">Whole world</option><option value="selection">Selected region</option></select></label></p><fieldset id="craftmine-bounds"><legend>Two corners (both included)</legend><table><thead><tr><th>Corner</th><th>X</th><th>Y</th><th>Z</th></tr></thead><tbody><tr><th>1</th><td><input id="craftmine-c0x" type="number" step="1" aria-label="Corner 1 X"></td><td><input id="craftmine-c0y" type="number" step="1" aria-label="Corner 1 Y"></td><td><input id="craftmine-c0z" type="number" step="1" aria-label="Corner 1 Z"></td></tr><tr><th>2</th><td><input id="craftmine-c1x" type="number" step="1" aria-label="Corner 2 X"></td><td><input id="craftmine-c1y" type="number" step="1" aria-label="Corner 2 Y"></td><td><input id="craftmine-c1z" type="number" step="1" aria-label="Corner 2 Z"></td></tr></tbody></table></fieldset><p><label><input id="craftmine-local" type="checkbox"> Move the lower corner to (0, 0, 0) for a reusable object</label></p><p>Textures are saved by filename. Import this JSON into the 3DPL Object Editor or load it with Obj().</p><div id="craftmine-export-status" role="status" aria-live="polite"></div><button id="craftmine-download">Download JSON</button><button id="craftmine-export-close">Close</button>';
+    document.body.appendChild(exportDialog);
+    var scopeInput = exportDialog.querySelector("#craftmine-scope");
+    var localInput = exportDialog.querySelector("#craftmine-local");
+    var exportStatus = exportDialog.querySelector("#craftmine-export-status");
+    function dialogOpen() { return picker.open || exportDialog.open; }
+    function showSelection() {
+        selectionOutline.visible = Boolean(game.corners[0] && game.corners[1]);
+        if (selectionOutline.visible) {
+            var bounds = game.selectionBounds();
+            selectionOutline.position.copy(bounds.min).add(bounds.max).multiplyScalar(0.5);
+            selectionOutline.scale.copy(bounds.max).sub(bounds.min).addScalar(1.01);
+        }
+        selectionStatus.textContent = game.corners.map(function(corner, index) {
+            return "Corner " + (index + 1) + ": " + (corner ? corner.toArray().join(", ") : "not set");
+        }).join(" · ");
+    }
+    game.markCorner = function(index) {
+        if (!isExecuting || dialogOpen()) return;
+        game.aim();
+        if (!game.target) { selectionStatus.textContent = "Aim at a block within six blocks, then mark the corner."; return; }
+        var group = game.batches[game.target.object.userData.blockTexture];
+        var block = game.blocks[group.keys[game.target.instanceId]];
+        game.corners[index] = new THREE.Vector3(block.x, block.y, block.z);
+        showSelection();
+    };
+    function readCorners() {
+        var corners = [0, 1].map(function(index) {
+            var values = ["x", "y", "z"].map(function(axis) {
+                var text = exportDialog.querySelector("#craftmine-c" + index + axis).value.trim();
+                if (!text || !Number.isSafeInteger(Number(text))) throw new Error("Enter a whole number for each corner coordinate.");
+                return Number(text);
+            });
+            return new THREE.Vector3(values[0], values[1], values[2]);
+        });
+        game.corners = corners;
+        showSelection();
+    }
+    function previewExport() {
+        exportDialog.querySelector("#craftmine-bounds").disabled = scopeInput.value !== "selection";
+        try {
+            if (scopeInput.value === "selection") readCorners();
+            var data = game.exportObject(scopeInput.value, localInput.checked);
+            exportStatus.textContent = data.length + " blocks will be saved.";
+            exportDialog.querySelector("#craftmine-download").disabled = false;
+        } catch (error) {
+            exportStatus.textContent = error.message;
+            exportDialog.querySelector("#craftmine-download").disabled = true;
+        }
+    }
+    function openExport() {
+        if (dialogOpen()) return;
+        clearKeys();
+        if (document.pointerLockElement) document.exitPointerLock();
+        scopeInput.value = game.corners[0] && game.corners[1] ? "selection" : "world";
+        localInput.checked = scopeInput.value === "selection";
+        game.corners.forEach(function(corner, index) {
+            ["x", "y", "z"].forEach(function(axis) {
+                exportDialog.querySelector("#craftmine-c" + index + axis).value = corner ? String(corner[axis]) : "";
+            });
+        });
+        previewExport();
+        exportDialog.showModal();
+    }
+    saveActions.querySelector('[data-corner="0"]').onclick = function() { game.markCorner(0); };
+    saveActions.querySelector('[data-corner="1"]').onclick = function() { game.markCorner(1); };
+    saveActions.querySelector("[data-save]").onclick = openExport;
+    scopeInput.onchange = function() { localInput.checked = scopeInput.value === "selection"; previewExport(); };
+    exportDialog.addEventListener("input", previewExport);
+    exportDialog.querySelector("#craftmine-export-close").onclick = function() { exportDialog.close(); };
+    exportDialog.addEventListener("close", function() { clearKeys(); renderer.domElement.focus(); });
+    exportDialog.querySelector("#craftmine-download").onclick = function() {
+        try {
+            if (scopeInput.value === "selection") readCorners();
+            var data = game.exportObject(scopeInput.value, localInput.checked);
+            var filename = exportDialog.querySelector("#craftmine-filename").value.trim().replace(/\.json$/i, "");
+            filename = filename.replace(/[^a-zA-Z0-9 _-]/g, "_").slice(0, 70).trim() || "craftmine";
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            var url = URL.createObjectURL(blob), link = document.createElement("a");
+            link.href = url; link.download = filename + ".json";
+            document.body.appendChild(link); link.click(); link.remove();
+            setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
+            exportStatus.textContent = "Download requested: " + filename + ".json (" + data.length + " blocks).";
+        } catch (error) { exportStatus.textContent = error.message; }
+    };
+    var bar = ui.querySelector("#craftmine-bar"), label = ui.querySelector("#craftmine-label");
+    var grid = picker.querySelector("#craftmine-grid"), search = picker.querySelector("input");
+    var textures = availableTextureNames.slice();
+    function textureUrl(name) { return personalTextureResourceUrl(name) || staticTextureResourceUrl(name); }
+    function thumbnail(name) {
+        var img = document.createElement("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.src = textureUrl(name);
+        img.onerror = function() { img.onerror = null; img.src = staticTextureResourceUrl(name); };
+        return img;
+    }
+    function clearKeys() { Object.keys(Input._keys).forEach(function(code) { Input._keys[code] = false; }); }
+    game.select = function(slot) {
+        game.slot = (slot + 9) % 9;
+        game.selected = game.hotbar[game.slot];
+        label.textContent = game.selected.replace(/\.[^.]+$/, "");
+        bar.replaceChildren();
+        game.hotbar.forEach(function(name, index) {
+            var button = document.createElement("button");
+            button.className = index === game.slot ? "active" : "";
+            button.title = name;
+            button.setAttribute("aria-label", "Slot " + (index + 1) + ": " + name);
+            button.appendChild(thumbnail(name));
+            var number = document.createElement("span"); number.textContent = index + 1; button.appendChild(number);
+            button.onclick = function() { game.select(index); };
+            bar.appendChild(button);
+        });
+    };
+    function renderTextures() {
+        grid.replaceChildren();
+        textures.filter(function(name) { return name.toLowerCase().includes(search.value.toLowerCase()); }).forEach(function(name) {
+            var button = document.createElement("button");
+            button.appendChild(thumbnail(name));
+            button.appendChild(document.createTextNode(name.replace(/\.[^.]+$/, "")));
+            button.onclick = function() { game.hotbar[game.slot] = name; game.select(game.slot); picker.close(); };
+            grid.appendChild(button);
+        });
+    }
+    function openPicker() {
+        if (dialogOpen()) return;
+        clearKeys();
+        if (document.pointerLockElement) document.exitPointerLock();
+        renderTextures(); picker.showModal(); search.focus();
+    }
+    textures.forEach(function(name) { recordProgramAsset("Textures", name); });
+    if (!sharedGameId) {
+        refreshPersonalTextureLibrary().then(function() {
+            if (!game.alive) return;
+            textures = mergedTextureEntries().map(function(entry) { return entry.name; });
+            textures.forEach(function(name) { recordProgramAsset("Textures", name); });
+            if (picker.open) renderTextures();
+        }).catch(function() { /* Public textures remain available offline. */ });
+    }
+    search.oninput = renderTextures;
+    picker.querySelector("button").onclick = function() { picker.close(); };
+    picker.addEventListener("close", function() { clearKeys(); renderer.domElement.focus(); });
+    ui.querySelector('[data-action="textures"]').onclick = openPicker;
+    ui.querySelector('[data-action="break"]').onclick = function() { game.edit(false); };
+    ui.querySelector('[data-action="place"]').onclick = function() { game.edit(true); };
+    game.jump = function() { if (isExecuting && game.grounded && !dialogOpen()) { game.velocity = 7; game.grounded = false; } };
+    ui.querySelector('[data-action="jump"]').onclick = game.jump;
+    function listen(target, type, handler, options) {
+        target.addEventListener(type, handler, Object.assign({ signal: abort.signal }, options || {}));
+    }
+    listen(document, "keydown", function(event) {
+        if (dialogOpen() || !isExecuting || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+        if (event.code === "KeyE" && !event.repeat) { event.preventDefault(); openPicker(); }
+        if (event.code === "KeyF" && !event.repeat) { event.preventDefault(); game.markCorner(0); }
+        if (event.code === "KeyG" && !event.repeat) { event.preventDefault(); game.markCorner(1); }
+        if (/^Digit[1-9]$/.test(event.code)) game.select(Number(event.code.slice(-1)) - 1);
+        if (event.code === "Space" && !event.repeat) game.jump();
+    });
+    listen(renderer.domElement, "contextmenu", function(event) { event.preventDefault(); });
+    listen(renderer.domElement, "mousedown", function(event) {
+        if (!isExecuting || dialogOpen()) return;
+        if (document.pointerLockElement !== renderer.domElement) {
+            var request = renderer.domElement.requestPointerLock();
+            if (request && request.catch) request.catch(function() {});
+            return;
+        }
+        if (event.button === 0 || event.button === 2) game.edit(event.button === 2);
+    });
+    function look(dx, dy) {
+        game.yaw -= Math.max(-100, Math.min(100, dx)) * 0.002;
+        game.pitch = Math.max(-1.48, Math.min(1.48, game.pitch - Math.max(-100, Math.min(100, dy)) * 0.002));
+    }
+    listen(document, "mousemove", function(event) {
+        if (isExecuting && !dialogOpen() && document.pointerLockElement === renderer.domElement) look(event.movementX, event.movementY);
+    });
+    var touch = null;
+    var oldTouchAction = renderer.domElement.style.touchAction;
+    renderer.domElement.style.touchAction = "none";
+    listen(renderer.domElement, "pointerdown", function(event) {
+        if (event.pointerType !== "touch") return;
+        touch = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        renderer.domElement.setPointerCapture(event.pointerId);
+    });
+    listen(renderer.domElement, "pointermove", function(event) {
+        if (!touch || touch.id !== event.pointerId) return;
+        if (isExecuting && !dialogOpen()) look(event.clientX - touch.x, event.clientY - touch.y);
+        touch.x = event.clientX; touch.y = event.clientY;
+    });
+    listen(renderer.domElement, "pointerup", function() { touch = null; });
+    listen(renderer.domElement, "pointercancel", function() { touch = null; });
+    listen(renderer.domElement, "wheel", function(event) {
+        if (isExecuting && !dialogOpen()) { event.preventDefault(); game.select(game.slot + (event.deltaY > 0 ? 1 : -1)); }
+    }, { passive: false });
+    listen(window, "blur", clearKeys);
+    game.update = function(dt) {
+        if (!game.alive || dialogOpen()) return;
+        dt = Math.min(Math.max(dt, 0), 0.05);
+        var forward = Number(Input.GetKey("KeyW")) - Number(Input.GetKey("KeyS"));
+        var side = Number(Input.GetKey("KeyD")) - Number(Input.GetKey("KeyA"));
+        var speed = 4.5 * dt / Math.max(1, Math.hypot(forward, side));
+        game.move("x", (-Math.sin(game.yaw) * forward + Math.cos(game.yaw) * side) * speed);
+        game.move("z", (-Math.cos(game.yaw) * forward - Math.sin(game.yaw) * side) * speed);
+        if (Input.GetKey("Space")) game.jump();
+        game.velocity = Math.max(-20, game.velocity - 20 * dt);
+        game.grounded = false;
+        if (!game.move("y", game.velocity * dt)) {
+            game.grounded = game.velocity < 0;
+            game.velocity = 0;
+        }
+        if (game.player.y < -12) { game.player.set(0, 8, 10); game.velocity = 0; }
+        if (!scene.background || !scene.background.isColor) scene.background = new THREE.Color(0x87c9ef);
+        scene.background.setHex(0x87c9ef);
+        game.syncCamera();
+        game.aim();
+    };
+    anchor.addEventListener("removed", function() {
+        game.alive = false;
+        abort.abort();
+        if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
+        ui.remove(); picker.remove(); exportDialog.remove(); clearKeys();
+        renderer.domElement.style.touchAction = oldTouchAction;
+        Object.values(game.batches).forEach(function(group) {
+            group.mesh.dispose();
+            var materials = Array.isArray(group.mesh.material) ? group.mesh.material : [group.mesh.material];
+            materials.forEach(function(mat) { if (mat.map) mat.map.dispose(); });
+        });
+        geometry.dispose(); outline.geometry.dispose(); selectionOutline.geometry.dispose();
+        scene.fog = oldFog; scene.background = oldBackground;
+        camera.fov = oldFov; camera.updateProjectionMatrix();
+    });
+    game.select(0);
+    game.syncCamera();
+    return game;
+})();

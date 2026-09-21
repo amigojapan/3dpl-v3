@@ -5915,7 +5915,9 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+let craftmineLaunchToken = 0;
 const hideAllMenus = () => {
+    craftmineLaunchToken++;
     if (document.activeElement) document.activeElement.blur();
     closeMapObjectPicker();
     mapEditorLoadToken++;
@@ -6064,6 +6066,54 @@ document.getElementById('btn-obj-editor').onclick = () => {
     axis.material.opacity = 0.5;
     objectEditorMode = true;
 };
+
+// --- Craftmine launcher ---
+const craftmineButton = document.getElementById('btn-craftmine');
+craftmineButton.onclick = async () => {
+    if (sharedGameId || craftmineButton.disabled) return;
+    const token = ++craftmineLaunchToken;
+    const status = document.getElementById('craftmine-launch-status');
+    status.style.display = 'block';
+    status.textContent = 'Loading craftmine…';
+    craftmineButton.disabled = true;
+    let source;
+    try {
+        source = await Promise.all(['declarations', 'update'].map(async part => {
+            const response = await fetch(`Programs/craftmine.${part}`, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`craftmine.${part} could not load (HTTP ${response.status}).`);
+            return response.text();
+        }));
+    } catch (error) {
+        if (token === craftmineLaunchToken) status.textContent = `Unable to open craftmine: ${error.message}`;
+        return;
+    } finally {
+        craftmineButton.disabled = false;
+    }
+    // Navigating away while the files load must not unexpectedly open the game.
+    if (token !== craftmineLaunchToken) return;
+    status.style.display = 'none';
+    hideAllMenus();
+    applyProgramCode(source[0], source[1], 'craftmine');
+    if (!declarationsValid) {
+        window.cs();
+        idePanel.style.display = 'flex';
+        return;
+    }
+    document.getElementById('craftmine-menu-controls').style.display = 'flex';
+    isExecuting = true;
+    clock.getDelta();
+    renderer.domElement.focus({ preventScroll: true });
+};
+document.getElementById('btn-exit-craftmine').onclick = () => {
+    hideAllMenus();
+    window.cs();
+    document.getElementById('creative-menu').style.display = 'block';
+};
+document.getElementById('btn-craftmine-code').onclick = () => {
+    document.getElementById('craftmine-menu-controls').style.display = 'none';
+    restoreIdeButton.onclick();
+};
+// --- End craftmine launcher ---
 
 document.getElementById('btn-audio').onclick = () => {
     hideAllMenus();

@@ -1,0 +1,4 @@
+// craftmine — the world, controls, and texture picker live in declarations.
+if (vars["craftmine"]) {
+    vars["craftmine"].update(Time.deltaTime);
+}

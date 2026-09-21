@@ -566,9 +566,16 @@
         <div id="creative-menu" class="menu-panel center-menu" style="display: none;">
             <h2>Creative Mode</h2>
             <button id="btn-obj-editor">Object Editor</button>
+            <button id="btn-craftmine" type="button">craftmine</button>
             <button id="btn-map-editor">Map Editor</button>
             <button id="btn-audio">Audio</button>
             <button id="btn-back-main">Back to Main Menu</button>
+            <p id="craftmine-launch-status" role="status" aria-live="polite" style="display:none;"></p>
+        </div>
+
+        <div id="craftmine-menu-controls" class="menu-panel" style="display:none;top:12px;left:12px;z-index:2200;flex-direction:row;">
+            <button id="btn-exit-craftmine" type="button">Creative menu</button>
+            <button id="btn-craftmine-code" type="button">Code</button>
         </div>
 
         <!-- Audio Library UI -->
@@ -719,6 +726,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260918-tutorial-audio-balance"></script>
+    <script type="module" src="main.js?v=20260921-craftmine-menu"></script>
 </body>
 </html>

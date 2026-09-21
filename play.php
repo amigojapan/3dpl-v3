@@ -16,7 +16,7 @@ header('Referrer-Policy: no-referrer');
     <style>html,body,iframe{margin:0;width:100%;height:100%;border:0;display:block;background:#111;overflow:hidden}</style>
 </head>
 <body>
-    <iframe title="3DPL game" sandbox="allow-scripts allow-pointer-lock" allow="autoplay; fullscreen"
+    <iframe title="3DPL game" sandbox="allow-scripts allow-pointer-lock allow-downloads" allow="autoplay; fullscreen"
         src="server_side/shared_player.php?share=<?= htmlspecialchars($id, ENT_QUOTES) ?>"></iframe>
 </body>
 </html>

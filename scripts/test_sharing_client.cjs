@@ -185,7 +185,8 @@ function setup(player = false) {
     await broken.context.startSharedGame();
     assert.equal(broken.run('isExecuting'),false,'Declaration failures must not autostart');
     assert.match(html,/\.shared-player #account-controls/);
-    assert.match(fs.readFileSync('play.php','utf8'),/sandbox="allow-scripts allow-pointer-lock"/);
+    assert.match(fs.readFileSync('play.php','utf8'),/sandbox="allow-scripts allow-pointer-lock allow-downloads"/);
+    assert.match(fs.readFileSync('server_side/shared_player.php','utf8'),/sandbox allow-scripts allow-pointer-lock allow-downloads/);
     assert.ok(!fs.readFileSync('play.php','utf8').includes('allow-same-origin'));
     console.log('PASS: Share payload and clipboard, copy fallback, share errors, anonymous auto-start after asset readiness, read-only/inert editor, controller availability, audio gesture, sandbox-compatible alerts and pause/resume, isolated frame configuration, and missing/broken games.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
