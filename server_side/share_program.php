@@ -11,8 +11,10 @@ api_require_matching_scope($data, $nick);
 try {
     $assets = $data['assets'] ?? [];
     if (!is_array($assets)) throw new InvalidArgumentException('Invalid asset list.');
-    $id = share_create($nick, api_string($data, ['name']), api_string($data, ['declarations'], false), api_string($data, ['update'], false), $assets);
+    $id = share_create($nick, api_string($data, ['name']), api_string($data, ['declarations'], false), api_string($data, ['update'], false), $assets, ($data['overwrite'] ?? false) === true);
     api_json(['ok' => true, 'id' => $id], 201);
+} catch (ShareOverwriteRequired $error) {
+    api_fail('overwrite_required', $error->getMessage(), 409);
 } catch (Throwable $error) {
     error_log('3DPL share error: ' . $error->getMessage());
     api_fail('share_failed', $error->getMessage(), 422);

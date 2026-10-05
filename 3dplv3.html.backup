@@ -10,6 +10,20 @@
 
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        .shared-player .menu-panel, .shared-player .app-modal,
+        .shared-player #account-controls, .shared-player #btn-restore-ide,
+        .shared-player #crosshair { display: none !important; }
+        #shared-player-status { display: none; position: fixed; left: 50%; top: 16px;
+            transform: translateX(-50%); max-width: min(90vw, 600px); padding: 12px 18px;
+            background: #222e; color: white; border-radius: 8px; z-index: 2200; }
+        #share-link { box-sizing: border-box; width: 100%; }
+        #shared-game-alert { box-sizing: border-box; width: min(90vw, 420px);
+            max-height: 80vh; overflow: auto; padding: 24px; border: 1px solid #777;
+            border-radius: 12px; background: #222; color: white; pointer-events: auto; }
+        #shared-game-alert::backdrop { background: rgba(0,0,0,.65); }
+        #shared-game-alert-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+        #shared-game-alert-ok { display: block; margin-left: auto; min-width: 88px;
+            min-height: 44px; background: #2864c7; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
@@ -87,23 +101,32 @@
         
         .tutorial-row {
             display: flex;
-            gap: 5px;
+            flex-wrap: nowrap;
+            gap: 8px;
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            min-width: 0;
             margin-bottom: 5px;
+            overflow-y: hidden;
             overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 5px;
+            padding: 4px 4px 14px;
+            overscroll-behavior: contain;
         }
-        .tutorial-row::-webkit-scrollbar { height: 6px; }
+        .tutorial-row::-webkit-scrollbar { height: 12px; }
         .tutorial-row::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .tutorial-row::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
         
         .tutorial-row button {
             flex: 0 0 auto;
-            padding: 5px 10px;
-            font-size: 11px;
+            min-width: 52px;
+            min-height: 48px;
+            padding: 12px 8px;
+            font-size: 16px;
+            border-radius: 6px;
             background: #4488ff;
         }
         .tutorial-row button:hover { background: #66aaff; }
+        .tutorial-row button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
 
         .file-ops-row { display: flex; gap: 5px; }
         .file-ops-row button { flex: 1; font-size: 12px; background: #28a745; }
@@ -492,6 +515,25 @@
             </div>
         </div>
 
+        <div id="share-dialog" class="app-modal" aria-hidden="true">
+            <div class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="share-title">
+                <div class="app-dialog-header">
+                    <h2 id="share-title">Share game</h2>
+                    <button id="btn-close-share" type="button" aria-label="Close sharing">✕</button>
+                </div>
+                <p>Anyone with this link can play without logging in. The shared copy includes this program and its game assets.</p>
+                <label for="share-link">Play link</label>
+                <input id="share-link" type="text" readonly>
+                <button id="btn-copy-share" type="button">Copy link</button>
+                <p id="share-status" role="status" aria-live="polite"></p>
+            </div>
+        </div>
+        <dialog id="shared-game-alert" role="alertdialog" aria-labelledby="shared-game-alert-title" aria-describedby="shared-game-alert-message">
+            <h2 id="shared-game-alert-title">Game message</h2>
+            <p id="shared-game-alert-message"></p>
+            <button id="shared-game-alert-ok" type="button" autofocus>OK</button>
+        </dialog>
+        <div id="shared-player-status" role="status" aria-live="polite">Loading game…</div>
         <button id="mobile-controller-toggle" type="button" aria-label="Open onscreen controller" aria-controls="mobile-controller" aria-expanded="false">🎮</button>
         <div id="mobile-controller" aria-hidden="true">
             <button id="mobile-controller-start" type="button" aria-label="Start or stop the 3DPL program">START</button>
@@ -524,9 +566,16 @@
         <div id="creative-menu" class="menu-panel center-menu" style="display: none;">
             <h2>Creative Mode</h2>
             <button id="btn-obj-editor">Object Editor</button>
+            <button id="btn-craftmine" type="button">craftmine</button>
             <button id="btn-map-editor">Map Editor</button>
             <button id="btn-audio">Audio</button>
             <button id="btn-back-main">Back to Main Menu</button>
+            <p id="craftmine-launch-status" role="status" aria-live="polite" style="display:none;"></p>
+        </div>
+
+        <div id="craftmine-menu-controls" class="menu-panel" style="display:none;top:12px;left:12px;z-index:2200;flex-direction:row;">
+            <button id="btn-exit-craftmine" type="button">Creative menu</button>
+            <button id="btn-craftmine-code" type="button">Code</button>
         </div>
 
         <!-- Audio Library UI -->
@@ -653,6 +702,7 @@
                     <button id="btn-load-cloud-program" type="button" aria-label="Load program from my account" title="Load program from my account">☁↓</button>
                     <button id="btn-load-program" type="button" aria-label="Load program files" title="Load .declarations and .update files">📂</button>
                     <button id="btn-save-program" type="button" aria-label="Save program files" title="Save .declarations and .update files">💾</button>
+                    <button id="btn-share-program" type="button" title="Copy a playable game link">Share</button>
                     <button id="btn-minimize-ide" type="button" aria-label="Minimize code window" title="Minimize">−</button>
                     <button id="btn-maximize-ide" type="button" aria-label="Maximize code window" title="Maximize" aria-pressed="false">□</button>
                 </div>
@@ -676,6 +726,6 @@
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="main.js?v=20260911-final3-fix"></script>
+    <script type="module" src="main.js?v=20260921-craftmine-menu"></script>
 </body>
 </html>

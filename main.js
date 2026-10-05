@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const sharedGameId = /^[a-f0-9]{32}$/.test(window.THREEDPL_SHARED_GAME || '')
+const sharedGameId = /^(?:[a-f0-9]{32}|[A-Za-z0-9][A-Za-z0-9_-]{0,31}\/[A-Za-z0-9](?:[A-Za-z0-9 ._-]{0,126}[A-Za-z0-9_-])?)$/.test(window.THREEDPL_SHARED_GAME || '')
     ? window.THREEDPL_SHARED_GAME : '';
 const programAssets = new Map();
 let sharedPlayerReady = false;
@@ -6144,6 +6144,51 @@ document.getElementById('btn-exit-obj').onclick = backToMain;
 document.getElementById('btn-exit-map').onclick = backToMain;
 document.getElementById('btn-exit-audio').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
+document.getElementById('btn-exit-games').onclick = backToMain;
+
+// --- Browse published games ---
+async function loadSharedGames() {
+    const status = document.getElementById('play-games-status');
+    const list = document.getElementById('play-games-list');
+    const table = document.getElementById('play-games-table');
+    const refresh = document.getElementById('btn-refresh-games');
+    if (sharedGameId || refresh.disabled) return;
+    refresh.disabled = true;
+    list.replaceChildren();
+    table.hidden = true;
+    status.textContent = 'Loading games…';
+    try {
+        const response = await fetch('server_side/list_shared_games.php', { credentials: 'omit', cache: 'no-store' });
+        const result = await readApiResponse(response);
+        for (const game of result.games) {
+            const row = document.createElement('tr');
+            const nick = document.createElement('td');
+            nick.textContent = game.nick;
+            const name = document.createElement('td');
+            const link = document.createElement('a');
+            const url = new URL('play.php', document.baseURI);
+            url.searchParams.set('share', game.id);
+            link.href = url.href;
+            link.textContent = game.name;
+            name.append(link);
+            row.append(nick, name);
+            list.append(row);
+        }
+        table.hidden = result.games.length === 0;
+        status.textContent = result.games.length ? `${result.games.length} shared games` : 'No games have been shared yet.';
+    } catch (error) {
+        status.textContent = `Could not load games: ${error.message}`;
+    } finally {
+        refresh.disabled = false;
+    }
+}
+document.getElementById('btn-play-games').onclick = () => {
+    hideAllMenus();
+    document.getElementById('play-games-menu').style.display = 'block';
+    return loadSharedGames();
+};
+document.getElementById('btn-refresh-games').onclick = loadSharedGames;
+// --- End published games browser ---
 
 document.getElementById('btn-run').onclick = (e) => {
     if (sharedGameId) return;
@@ -6216,7 +6261,7 @@ async function copySharedGameLink() {
 copyShareButton.onclick = copySharedGameLink;
 
 shareButton.onclick = async () => {
-    if (sharedGameId || !requireLoggedInUser('sharing a game')) return;
+    if (sharedGameId || shareButton.disabled || !requireLoggedInUser('sharing a game')) return;
     if (!declarationsValid) {
         setDebugError('Fix the declaration error before sharing this game.');
         return;
@@ -6238,12 +6283,27 @@ shareButton.onclick = async () => {
     shareButton.disabled = true;
     document.getElementById('btn-close-share').focus();
     try {
-        const response = await fetch('server_side/share_program.php', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-3DPL-Share': '1' },
-            body: JSON.stringify(payload)
-        });
-        const result = await readApiResponse(response);
+        const publish = async () => {
+            if (loggedInNick !== payload.scope) throw activeAccountChangedError();
+            const response = await fetch('server_side/share_program.php', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-3DPL-Share': '1' },
+                body: JSON.stringify(payload)
+            });
+            return readApiResponse(response);
+        };
+        let result;
+        try {
+            result = await publish();
+        } catch (error) {
+            if (error.code !== 'overwrite_required') throw error;
+            if (!window.confirm(`“${name}” by ${payload.scope} has already been shared. Sharing again will overwrite the published game and its assets. The existing play link will open the new version. Continue?`)) {
+                shareStatus.textContent = 'Sharing cancelled. The published game was not changed.';
+                return;
+            }
+            payload.overwrite = true;
+            result = await publish();
+        }
         const url = new URL('play.php', document.baseURI);
         url.searchParams.set('share', result.id);
         shareLinkInput.value = url.href;

@@ -8,7 +8,46 @@ const SHARE_LIBRARIES = ['Objects', 'Maps', 'Textures', 'Audio', 'Sounds', 'Skyb
 
 function share_valid_id(string $id): bool
 {
-    return preg_match('/^[a-f0-9]{32}$/D', $id) === 1;
+    if (preg_match('/^[a-f0-9]{32}$/D', $id) === 1) return true; // Older links.
+    $parts = explode('/', $id);
+    return count($parts) === 2 && api_valid_nick($parts[0]) && api_valid_program_name($parts[1]);
+}
+
+class ShareOverwriteRequired extends RuntimeException {}
+
+function share_locked(int $mode, callable $action): mixed
+{
+    $path = share_root() . '/.publish.lock';
+    if (is_link($path)) throw new RuntimeException('Unsafe share lock.');
+    $lock = fopen($path, 'c');
+    if ($lock === false) throw new RuntimeException('SharedGames must be writable by PHP.');
+    try {
+        if (!flock($lock, $mode)) throw new RuntimeException('Could not lock shared games.');
+        return $action();
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+function share_directory(string $id): string
+{
+    if (!share_valid_id($id)) throw new InvalidArgumentException('Invalid shared game link.');
+    $directory = share_root();
+    foreach (explode('/', $id) as $part) {
+        $directory .= '/' . $part;
+        if (is_link($directory)) throw new RuntimeException('Unsafe shared game directory.');
+    }
+    return $directory;
+}
+
+// Snapshot directories contain only flat, generated files.
+function share_remove_snapshot(string $directory): void
+{
+    foreach (scandir($directory) ?: [] as $entry) {
+        if ($entry !== '.' && $entry !== '..') unlink($directory . '/' . $entry);
+    }
+    rmdir($directory);
 }
 
 function share_root(): string
@@ -87,9 +126,19 @@ function share_mime(string $reference): string
 }
 
 /** A snapshot contains only explicitly requested assets and their dependencies. */
-function share_create(string $nick, string $name, string $declarations, string $update, array $requested): string
+function share_create(string $nick, string $name, string $declarations, string $update, array $requested, bool $overwrite = false): string
+{
+    return share_locked(LOCK_EX, fn() => share_build($nick, $name, $declarations, $update, $requested, $overwrite));
+}
+
+function share_build(string $nick, string $name, string $declarations, string $update, array $requested, bool $overwrite): string
 {
     if (!api_valid_nick($nick) || !api_valid_program_name($name)) throw new InvalidArgumentException('Invalid creator or program name.');
+    $id = $nick . '/' . $name;
+    $destination = share_directory($id);
+    if (file_exists($destination) && !$overwrite) {
+        throw new ShareOverwriteRequired('This game has already been shared. Sharing again will overwrite the published game and its assets.');
+    }
     foreach ([$declarations, $update] as $code) {
         if (strlen($code) > THREEDPL_MAX_PROGRAM_PART_BYTES || str_contains($code, "\0") || preg_match('//u', $code) !== 1) {
             throw new InvalidArgumentException('Each program part must be valid UTF-8 text up to 2 MB.');
@@ -139,8 +188,7 @@ REGEX;
         $enqueue($library, $reference);
     }
 
-    $id = bin2hex(random_bytes(16));
-    $stage = share_root() . '/.stage-' . $id;
+    $stage = share_root() . '/.stage-' . bin2hex(random_bytes(16));
     if (!mkdir($stage, 0750)) throw new RuntimeException('SharedGames must be writable by PHP.');
     $written = [];
     try {
@@ -198,11 +246,20 @@ REGEX;
                 }
             }
         }
-        $manifest = ['name' => $name, 'declarations' => $declarations, 'update' => $update, 'assets' => $assets];
+        $manifest = ['nick' => $nick, 'name' => $name, 'declarations' => $declarations, 'update' => $update, 'assets' => $assets];
         $encoded = json_encode($manifest, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $written[] = $stage . '/manifest.json';
         if (file_put_contents($stage . '/manifest.json', $encoded, LOCK_EX) !== strlen($encoded)) throw new RuntimeException('Could not save shared game.');
-        if (!rename($stage, share_root() . '/' . $id)) throw new RuntimeException('Could not publish shared game.');
+        $parent = dirname($destination);
+        if (!is_dir($parent) && !mkdir($parent, 0750)) throw new RuntimeException('Could not create creator directory.');
+        $backup = $stage . '-previous';
+        $hadPrevious = is_dir($destination);
+        if ($hadPrevious && !rename($destination, $backup)) throw new RuntimeException('Could not replace shared game.');
+        if (!rename($stage, $destination)) {
+            if ($hadPrevious) rename($backup, $destination);
+            throw new RuntimeException('Could not publish shared game.');
+        }
+        if ($hadPrevious) share_remove_snapshot($backup);
         return $id;
     } catch (Throwable $error) {
         foreach ($written as $file) { if (is_file($file)) unlink($file); }
@@ -213,9 +270,41 @@ REGEX;
 
 function share_read(string $id): array
 {
-    if (!share_valid_id($id)) throw new InvalidArgumentException('Invalid shared game link.');
-    $directory = share_root() . '/' . $id;
+    return share_locked(LOCK_SH, fn() => share_read_unlocked($id));
+}
+
+function share_read_unlocked(string $id): array
+{
+    $directory = share_directory($id);
     $file = $directory . '/manifest.json';
     if (is_link($directory) || is_link($file) || !is_file($file)) throw new RuntimeException('Shared game not found.');
     return json_decode((string)file_get_contents($file), true, 128, JSON_THROW_ON_ERROR);
+}
+
+function share_list(): array
+{
+    return share_locked(LOCK_SH, function(): array {
+        $games = [];
+        $add = static function(string $id, string $nick) use (&$games): void {
+            try {
+                $game = share_read_unlocked($id);
+                $games[] = ['id' => $id, 'nick' => $nick, 'name' => $game['name']];
+            } catch (Throwable $error) { /* Skip incomplete or invalid snapshots. */ }
+        };
+        foreach (scandir(share_root()) ?: [] as $nick) {
+            $directory = share_root() . '/' . $nick;
+            if (is_link($directory) || !is_dir($directory)) continue;
+            if (preg_match('/^[a-f0-9]{32}$/D', $nick) === 1 && is_file($directory . '/manifest.json')) {
+                $add($nick, 'Unknown creator (legacy)');
+                continue;
+            }
+            if (!api_valid_nick($nick)) continue;
+            foreach (scandir($directory) ?: [] as $name) {
+                if (api_valid_program_name($name)) $add($nick . '/' . $name, $nick);
+            }
+        }
+        usort($games, static fn(array $a, array $b): int =>
+            strnatcasecmp($a['nick'], $b['nick']) ?: strnatcasecmp($a['name'], $b['name']));
+        return $games;
+    });
 }

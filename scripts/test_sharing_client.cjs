@@ -14,6 +14,8 @@ function element(id) {
         classList: { add(c) { classes.add(c); }, remove(c) { classes.delete(c); }, contains(c) { return classes.has(c); },
             toggle(c) { if (classes.has(c)) { classes.delete(c); return false; } classes.add(c); return true; } },
         setAttribute(k,v) { this.attributes[k]=v; },
+        children: [], append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
         addEventListener(type,fn) { this.listeners[type]=fn; },
         focus() { this.focused=true; }, select() { this.selected=true; }, blur() {},
         showModal() { this.open=true; },
@@ -23,12 +25,11 @@ function element(id) {
 }
 function deferred() { let resolve; const promise = new Promise(r=>resolve=r); return {promise,resolve}; }
 
-function setup(player = false) {
+function setup(player = false, gameId = 'creator/Game') {
     const elements = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],element(m[1])]));
     const editing = ['ide-panel','main-menu','account-controls','share-dialog','btn-restore-ide'].map(id=>elements[id]);
     const buttons = ['btn-share-program','btn-save-program','btn-load-program','btn-run'].map(id=>elements[id]);
     const calls = [], copies = [];
-    const gameId = 'a'.repeat(32);
     const obj = deferred(), texture = deferred();
     let fetchImpl = async () => ({ok:true,json:async()=>({ok:true,id:gameId,name:'Game',declarations:'window.probe={frames:0}; Obj("actor.json","actor",0,0,0);',update:'window.probe.frames++;'})});
     const context = vm.createContext({
@@ -36,6 +37,7 @@ function setup(player = false) {
         document: {
             baseURI:'https://example.test/3dpl/3dplv3.html', title:'',
             getElementById(id) { assert.ok(elements[id],id); return elements[id]; },
+            createElement(tag) { return element(tag); },
             querySelectorAll(selector) { return selector.includes('button') ? buttons : editing; },
             addEventListener(type,fn) { calls.push(['document-event',type,fn]); },
             execCommand(command) { calls.push(['execCommand',command]); return true; }
@@ -48,6 +50,8 @@ function setup(player = false) {
         releaseMobileControls() { calls.push(['release-controls']); },
         setCurrentProgramName(name) { calls.push(['name',name]); }, refreshCodeEditors() {},
         requireLoggedInUser() {return true;},
+        hideAllMenus() { editing.forEach(el=>{el.style.display='none';}); },
+        confirm(message) {calls.push(['confirm',message]);return true;},
         renderer: {domElement:element('canvas')},
         listener: {context:{state:'suspended',async resume(){calls.push(['resume']);this.state='running';}}},
         playQueuedSounds() {calls.push(['play-sounds']);},
@@ -79,6 +83,7 @@ function setup(player = false) {
     vm.runInContext(section('function refreshCachedUpdateCode()', '// --- ORIGINAL TUTORIALS'),context);
     vm.runInContext(section('function applyProgramCode(', 'programFileInput.onchange'),context);
     vm.runInContext(section('async function readApiResponse(', 'function activeAccountChangedError'),context);
+    vm.runInContext(section('// --- Browse published games ---', '// --- End published games browser ---'),context);
     vm.runInContext(section('// --- Share a playable snapshot ---', "window.addEventListener('resize'"),context);
     vm.runInContext(section("document.getElementById('mobile-controller-start').addEventListener", 'mobileControlButtons.forEach(button => {\n    const setPressed'),context);
     return {context,elements,calls,copies,obj,texture,run:code=>vm.runInContext(code,context),
@@ -98,7 +103,8 @@ function setup(player = false) {
     const body=JSON.parse(request[2].body);
     assert.equal(body.scope,'creator'); assert.equal(body.declarations,'qb("cube",0,0,0);');
     assert.deepEqual(body.assets,[{library:'Objects',reference:'private-model.json'}]);
-    assert.equal(author.copies[0],'https://example.test/3dpl/play.php?share='+'a'.repeat(32));
+    assert.equal(author.copies[0],'https://example.test/3dpl/play.php?share=creator%2FGame');
+    assert.ok(!author.calls.some(c=>c[0]==='confirm'), 'First publication needs no overwrite prompt');
     assert.ok(author.elements['share-status'].textContent.includes('copied'));
     author.context.navigator.clipboard.writeText=async()=>{throw new Error('Needs user gesture');};
     await author.elements['btn-copy-share'].click();
@@ -109,6 +115,48 @@ function setup(player = false) {
     assert.ok(author.elements['share-status'].textContent.includes('Missing asset'));
     assert.equal(author.elements['btn-share-program'].disabled,false);
     assert.equal(author.elements['btn-copy-share'].disabled,true);
+
+    const overwrite = setup();
+    overwrite.fetch(async(url, options)=>{
+        const confirmed = JSON.parse(options.body).overwrite === true;
+        return {ok:confirmed, status:confirmed?201:409,json:async()=>confirmed
+            ? {ok:true,id:'creator/Game'} : {ok:false,error:'overwrite_required',message:'Already shared'}};
+    });
+    overwrite.context.confirm = message => {overwrite.calls.push(['confirm',message]);return false;};
+    await overwrite.elements['btn-share-program'].click();
+    assert.equal(overwrite.calls.filter(c=>c[0]==='fetch').length,1,'Cancel must not retry or replace');
+    assert.match(overwrite.elements['share-status'].textContent,/cancelled/);
+    assert.equal(overwrite.elements['btn-share-program'].disabled,false);
+    overwrite.context.confirm = message => {overwrite.calls.push(['confirm',message]);return true;};
+    for (let attempt=0; attempt<2; attempt++) {
+        await overwrite.elements['btn-share-program'].click();
+        assert.equal(overwrite.calls.filter(c=>c[0]==='confirm').length,attempt+2,'Warn on every subsequent share');
+        assert.equal(JSON.parse(overwrite.calls.filter(c=>c[0]==='fetch').at(-1)[2].body).overwrite,true);
+    }
+    const browser = setup();
+    browser.fetch(async()=>({ok:true,json:async()=>({ok:true,games:[
+        {id:'creator/City game',nick:'creator',name:'City game'},
+        {id:'other/Game',nick:'other',name:'<b>Game</b>'}
+    ]})}));
+    await browser.elements['btn-play-games'].click();
+    assert.equal(browser.elements['play-games-menu'].style.display,'block');
+    assert.equal(browser.elements['play-games-table'].hidden,false);
+    const rows=browser.elements['play-games-list'].children;
+    assert.equal(rows.length,2);
+    assert.equal(rows[0].children[0].textContent,'creator');
+    assert.equal(rows[0].children[1].children[0].href,'https://example.test/3dpl/play.php?share=creator%2FCity+game');
+    assert.equal(rows[1].children[1].children[0].textContent,'<b>Game</b>','Game names are plain text');
+    assert.equal(browser.calls.find(c=>c[0]==='fetch')[2].credentials,'omit');
+    browser.fetch(async()=>({ok:true,json:async()=>({ok:true,games:[]})}));
+    await browser.elements['btn-refresh-games'].click();
+    assert.equal(browser.elements['play-games-list'].children.length,0);
+    assert.match(browser.elements['play-games-status'].textContent,/No games/);
+    browser.fetch(async()=>{throw new Error('Offline');});
+    await browser.elements['btn-refresh-games'].click();
+    assert.match(browser.elements['play-games-status'].textContent,/Offline/);
+    assert.equal(browser.elements['btn-refresh-games'].disabled,false,'Catalog errors allow retry');
+    assert.match(html, /id="btn-share-program"[^>]*aria-label="Share game"><svg/);
+    assert.equal(setup(true,'a'.repeat(32)).run('sharedGameId'),'a'.repeat(32),'Legacy player bootstrap still works');
 
     const player=setup(true);
     const startup=player.context.startSharedGame();
@@ -169,7 +217,7 @@ function setup(player = false) {
     player.context.unlockSharedPlayerAudio(); await new Promise(r=>setImmediate(r));
     assert.ok(player.calls.some(c=>c[0]==='resume'));
     assert.ok(player.calls.some(c=>c[0]==='play-sounds'));
-    assert.match(player.run('programAssetUrl("Objects","private-model.json")'), /shared_asset.php\?share=[a-f0-9]{32}&library=Objects&name=private-model.json/);
+    assert.match(player.run('programAssetUrl("Objects","private-model.json")'), /shared_asset.php\?share=creator%2FGame&library=Objects&name=private-model.json/);
     await player.elements['btn-share-program'].click();
     assert.equal(player.calls.filter(c=>c[0]==='fetch').length,1,'Player cannot create a share through editing UI');
 
@@ -188,5 +236,5 @@ function setup(player = false) {
     assert.match(fs.readFileSync('play.php','utf8'),/sandbox="allow-scripts allow-pointer-lock allow-downloads"/);
     assert.match(fs.readFileSync('server_side/shared_player.php','utf8'),/sandbox allow-scripts allow-pointer-lock allow-downloads/);
     assert.ok(!fs.readFileSync('play.php','utf8').includes('allow-same-origin'));
-    console.log('PASS: Share payload and clipboard, copy fallback, share errors, anonymous auto-start after asset readiness, read-only/inert editor, controller availability, audio gesture, sandbox-compatible alerts and pause/resume, isolated frame configuration, and missing/broken games.');
+    console.log('PASS: named share links, overwrite confirmation and cancellation, public catalog and retry states, share icon, legacy links, clipboard, anonymous auto-start, read-only editor, controller, audio gesture, sandbox alerts, pause/resume, and missing/broken games.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

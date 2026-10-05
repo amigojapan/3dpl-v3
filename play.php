@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/server_side/share_common.php';
 $id = is_string($_GET['share'] ?? null) ? $_GET['share'] : '';
-if (preg_match('/^[a-f0-9]{32}$/D', $id) !== 1) {
+if (!share_valid_id($id)) {
     http_response_code(404);
     exit('This shared game link is invalid.');
 }
@@ -17,6 +18,6 @@ header('Referrer-Policy: no-referrer');
 </head>
 <body>
     <iframe title="3DPL game" sandbox="allow-scripts allow-pointer-lock allow-downloads" allow="autoplay; fullscreen"
-        src="server_side/shared_player.php?share=<?= htmlspecialchars($id, ENT_QUOTES) ?>"></iframe>
+        src="server_side/shared_player.php?share=<?= htmlspecialchars(rawurlencode($id), ENT_QUOTES) ?>"></iframe>
 </body>
 </html>

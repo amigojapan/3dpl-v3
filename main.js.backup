@@ -1,12 +1,31 @@
 import * as THREE from 'three';
 
+const sharedGameId = /^[a-f0-9]{32}$/.test(window.THREEDPL_SHARED_GAME || '')
+    ? window.THREEDPL_SHARED_GAME : '';
+const programAssets = new Map();
+let sharedPlayerReady = false;
+let sharedPlayerError = '';
+let sharedPlayerAlertOpen = false;
+
+function programAssetUrl(library, reference) {
+    if (!sharedGameId) return `${library}/${reference}`;
+    return 'server_side/shared_asset.php?' + new URLSearchParams({
+        share: sharedGameId, library, name: reference
+    });
+}
+
+function recordProgramAsset(library, reference) {
+    if (sharedGameId || !reference || /^(?:https?:|data:|blob:)/i.test(reference)) return;
+    programAssets.set(`${library}/${reference}`, { library, reference });
+}
+
 // --- State Variables ---
 let cubes = [];
 let vars = {}; // Global variables object for the user
 let sounds = {}; // Dictionary to store loaded audio objects
 let isExecuting = false;
 let clock = new THREE.Clock();
-let loggedInNick = sessionStorage.getItem('3dplLoggedInNick') || '';
+let loggedInNick = sharedGameId ? '' : sessionStorage.getItem('3dplLoggedInNick') || '';
 
 // Object Cache
 const loadedObjectCache = {};
@@ -163,7 +182,17 @@ function assignSharedTexture(material, textureName) {
         previousTexture.userData.threeDPLMaterials.delete(material);
     }
 
-    const texture = loadSharedTexture(textureName);
+    const filename = usableTextureFilename(textureName);
+    if (!filename) {
+        // Some legacy objects contain placeholders such as "w" in their
+        // TextureName field. Render those voxels with their saved color.
+        material.map = null;
+        material.transparent = material.opacity < 1;
+        material.needsUpdate = true;
+        return null;
+    }
+
+    const texture = loadSharedTexture(filename);
     material.map = texture;
     if (texture.userData.threeDPLHasTransparentPixels === undefined) {
         if (!texture.userData.threeDPLMaterials) {
@@ -187,6 +216,17 @@ function flatTextureFilename(reference) {
         : '';
 }
 
+function usableTextureFilename(reference) {
+    const value = String(reference || '').trim();
+    const directFilename = flatTextureFilename(value);
+    if (directFilename) return directFilename;
+
+    // Converted Unity objects may retain a Textures/ or Windows-style path.
+    // Resolve its safe final component inside this app's flat texture library.
+    const pathParts = value.replace(/\\/g, '/').split('/');
+    return flatTextureFilename(pathParts[pathParts.length - 1]);
+}
+
 function personalTextureResourceUrl(textureName, nick = loggedInNick) {
     const filename = flatTextureFilename(textureName);
     if (!nick || !filename) return '';
@@ -199,7 +239,7 @@ function personalTextureResourceUrl(textureName, nick = loggedInNick) {
 function staticTextureResourceUrl(textureName) {
     const filename = flatTextureFilename(textureName);
     return filename
-        ? `Textures/${encodeURIComponent(filename)}`
+        ? programAssetUrl('Textures', sharedGameId ? filename : encodeURIComponent(filename))
         : 'Textures/__invalid_texture_name__';
 }
 
@@ -219,6 +259,7 @@ function registerTextureMaterial(texture, material) {
 }
 
 function loadSharedTexture(textureName, allowPersonal = true) {
+    recordProgramAsset('Textures', textureName);
     const personalUrl = allowPersonal
         ? personalTextureResourceUrl(textureName)
         : '';
@@ -316,7 +357,7 @@ window.SetSkyNone = function() {
 };
 
 textureLoader.load(
-    'Skyboxes/sunflowers_puresky_2k.jpg',
+    programAssetUrl('Skyboxes', 'sunflowers_puresky_2k.jpg'),
     texture => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -764,7 +805,7 @@ selectTextureButton.onclick = () => {
 clearTextureButton.onclick = () => selectObjectEditorTexture('');
 textureSearch.oninput = () => renderTextureChoices(textureSearch.value);
 
-renderTextureChoices();
+if (!sharedGameId) renderTextureChoices();
 
 // --- Bird's-eye Map Editor ---
 const fallbackMapObjectNames = [
@@ -1310,7 +1351,7 @@ function normalizeObjectJSONReference(value) {
 
 function objectJSONUrl(value) {
     const reference = normalizeObjectJSONReference(value);
-    return isDirectAssetUrl(reference) ? reference : `Objects/${reference}`;
+    return isDirectAssetUrl(reference) ? reference : programAssetUrl('Objects', reference);
 }
 
 function isJSONObjectReference(value) {
@@ -1636,6 +1677,10 @@ document.getElementById('file-input-map').onchange = event => {
 
 // --- Debug UI Helpers ---
 const setDebugError = (msg) => {
+    if (sharedGameId) {
+        sharedPlayerError = String(msg).replace(/<[^>]*>/g, '');
+        showSharedPlayerStatus(sharedPlayerError, true);
+    }
     const consoleEl = document.getElementById('debug-console');
     if(consoleEl) consoleEl.innerHTML = `<span style="color: #ff5555;">${msg}</span>`;
 };
@@ -1654,6 +1699,7 @@ const authMessage = document.getElementById('auth-message');
 const accountStatus = document.getElementById('account-status');
 
 function setLoggedInNick(nick) {
+    if (sharedGameId) return;
     const normalizedNick = nick || '';
     const accountChanged = normalizedNick !== loggedInNick;
     if (accountChanged) {
@@ -1837,6 +1883,14 @@ window.addEventListener('keydown', e => {
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
     const isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || document.activeElement?.isContentEditable;
 
+    if (sharedGameId) {
+        if (sharedPlayerAlertOpen) return;
+        if (gameplayKeyCodes.has(e.code)) e.preventDefault();
+        if (sharedPlayerReady) window.Input._keys[e.code] = true;
+        unlockSharedPlayerAudio();
+        return;
+    }
+
     if (e.code === 'Escape' && authModal.classList.contains('open')) {
         e.preventDefault();
         closeAuthModal();
@@ -1904,6 +1958,13 @@ mobileControllerToggle.addEventListener('click', () => {
 
 document.getElementById('mobile-controller-start').addEventListener('click', event => {
     event.preventDefault();
+    if (sharedGameId) {
+        if (!sharedPlayerReady || sharedPlayerAlertOpen) return;
+        isExecuting = !isExecuting;
+        event.currentTarget.textContent = isExecuting ? 'PAUSE' : 'RESUME';
+        unlockSharedPlayerAudio();
+        return;
+    }
     document.getElementById('btn-run').click();
 });
 
@@ -1928,7 +1989,7 @@ mobileControlButtons.forEach(button => {
 
 function releaseEditorInput() {
     releaseMobileControls();
-    if (objectEditorMode) window.Input._keys = {};
+    if (objectEditorMode || sharedGameId) window.Input._keys = {};
     clearObjectMouseMovement();
 }
 
@@ -2089,14 +2150,16 @@ window.alpha = function(name, alphaVal) {
 
 window.tx = function(name, textureName, source, wrap) {
     wrap = wrap || 6;
-    loadSharedTexture(textureName);
+    const filename = usableTextureFilename(textureName);
+    if (!filename) return;
+    loadSharedTexture(filename);
     
     cubes.forEach(c => { 
         if (c.name === name) {
             forEachObjectMaterial(c, (material, mesh) => {
-                assignSharedTexture(material, textureName);
+                assignSharedTexture(material, filename);
                 material.needsUpdate = true;
-                mesh.userData.textureName = textureName;
+                mesh.userData.textureName = filename;
                 mesh.userData.wrap = wrap;
 
                 if (wrap === 1 || wrap === "1") {
@@ -2682,6 +2745,12 @@ async function decodeAudioResponse(response, requestedNick = '') {
 async function loadSoundBufferPersonalFirst(fileName) {
     const personalName = audioLibraryFilename(fileName);
     if (!personalName) throw new Error('The audio filename is not valid.');
+    recordProgramAsset('Audio', personalName);
+    if (sharedGameId) {
+        const response = await fetch(programAssetUrl('Audio', personalName), { credentials: 'omit' });
+        if (!response.ok) throw new Error(`Shared audio could not load: ${personalName}`);
+        return decodeAudioResponse(response);
+    }
 
     const requestedNick = loggedInNick;
     // Always ask the authenticated PHP session for a private file. This also
@@ -2992,6 +3061,7 @@ async function fetchObjectDataPersonalFirst(
 window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
     if (!filenameOrUrl) return null;
     const normalizedReference = normalizeObjectJSONReference(filenameOrUrl);
+    recordProgramAsset('Objects', normalizedReference);
     const sharedUrl = objectJSONUrl(normalizedReference);
     const personalNick = loggedInNick;
     const personalUrl = personalObjectResourceUrl(normalizedReference);
@@ -3019,18 +3089,19 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
             const opacity = cords.alpha !== undefined
                 ? finiteMapNumber(cords.alpha, 1)
                 : finiteMapNumber(cords.a, 1);
+            const textureName = usableTextureFilename(cords.TextureName);
             const material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(red / 255, green / 255, blue / 255),
                 // Unknown textures remain transparent so their PNG alpha is
                 // preserved. Untextured alpha-1 voxels can use the faster
                 // opaque render path with identical output.
-                transparent: opacity < 1 || Boolean(cords.TextureName),
+                transparent: opacity < 1 || Boolean(textureName),
                 opacity
             });
 
             let geometry = baseGeometry;
-            if (cords.TextureName) {
-                assignSharedTexture(material, cords.TextureName);
+            if (textureName) {
+                assignSharedTexture(material, textureName);
 
                 if (cords.WrapOnSides == 1) {
                     geometry = getWrappedBaseGeometry();
@@ -3044,7 +3115,7 @@ window.Obj = function(filenameOrUrl, instanceName, x, y, z) {
                 finiteMapNumber(cords.z, 0)
             );
             mesh.name = voxelName;
-            mesh.userData.textureName = cords.TextureName || "";
+            mesh.userData.textureName = textureName;
             mesh.userData.wrap = cords.WrapOnSides || 6;
             axisGroup.add(mesh);
             if (/collider/i.test(voxelName)) indexCollisionObject(mesh);
@@ -3119,7 +3190,8 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
     scene.add(axisGroup);
     cubes.push(axisGroup);
 
-    const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : 'Objects/' + filenameOrUrl;
+    recordProgramAsset('Objects', filenameOrUrl);
+    const url = filenameOrUrl.startsWith('http') ? filenameOrUrl : programAssetUrl('Objects', filenameOrUrl);
     axisGroup.userData.ready = fetch(url)
         .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
         .then(str => {
@@ -3148,7 +3220,9 @@ window.XMLObj = function(filenameOrUrl, instanceName, x, y, z) {
                 const g = parseFloat(n.getAttribute("g") || 255);
                 const b = parseFloat(n.getAttribute("b") || 255);
                 const alpha = parseFloat(n.getAttribute("alpha") || 1.0);
-                const texName = n.getAttribute("TextureName") || "";
+                const texName = usableTextureFilename(
+                    n.getAttribute("TextureName")
+                );
                 
                 const wrapStr = n.getAttribute("WrapOnSides");
                 const wrap = wrapStr ? parseInt(wrapStr) : 6;
@@ -3512,7 +3586,8 @@ window.LoadMap = function(mapJsonFile, objectName) {
         return null;
     }
 
-    const mapUrl = `Maps/${relativeMapFile}`;
+    recordProgramAsset('Maps', relativeMapFile);
+    const mapUrl = programAssetUrl('Maps', relativeMapFile);
     const personalMapName = flatPersonalJSONName(relativeMapFile);
     const personalMapNick = loggedInNick;
     const personalMapUrl = personalMapNick && personalMapName
@@ -4386,6 +4461,7 @@ function refreshCachedUpdateCode() {
 }
 
 function evalDeclarations() {
+    programAssets.clear();
     window.cs();
     window._evalStartTime = performance.now();
     clearDebug();
@@ -4603,17 +4679,17 @@ vars["move_camera"]();`
     },
     33: {
         title: "Car Simulator 6 with LoadMap collisions",
-        decl: `// TUTORIAL 33: CAR SIMULATOR 6 WITH A JSON MAP
+        // Source: Programs/Tutorial 33 Car Simulator.declarations and .update.
+        decl: `// TUTORIAL 33: CAR SIMULATOR WITH CAR SIMULATOR 5 AUDIO AND CAMERA
 // Arrow keys drive and steer. Space launches the car upward.
 // THEMAP.json and every JSON object it references must be on the server.
 vars["land"] = LoadMap("THEMAP.json", "land");
-vars["car"] = Obj("sports-car.json", "car0", 2, 1, -10);
+vars["car"] = Obj("sports-car.json", "car0", 17.38, 2.32, 32.48);
 vars["car_colliders"] = Obj(
-    "car_colliders.json", "car_colliders", 2, 1, -10);
+    "car_colliders.json", "car_colliders", 17.38, 2.32, 32.48);
 vars["car_colliders"].transform.parent = vars["car"].transform;
 
-sr("land", 0, 180, 0);
-mv("land", 0, 0, -20);
+// The original map and spawn use world coordinates with no map offset.
 sc("car0", 0.19, 0.19, 0.19);
 
 vars["tire1"] = Obj("sports-car-tires.json", "tire1", 0, 0, 0);
@@ -4646,15 +4722,25 @@ vars["tire4"].transform.parent = vars["car"].transform;
 // Six degrees per frame is twice the old steering speed of three.
 vars["turnSpeed"] = 6;
 
+// Original Car Simulator 5 engine loop and background music.
+AttachSound("car0", "car.wav");
+SetVolume("car0", 0.25);
+PlaySoundLoop("car0");
+AttachSound("camera", "NOW7.wav");
+SetVolume("camera", 0.4);
+PlaySoundLoop("camera");
+
 vars["move_camera"] = function() {
     sp("camera",
-        vars["car"].transform.position.x,
-        vars["car"].transform.position.y,
-        vars["car"].transform.position.z);
-    mv("camera", 3, 3, -30);
+        vars["car"].transform.position.x - 2,
+        vars["car"].transform.position.y + 2,
+        vars["car"].transform.position.z - 3);
+    // Unity yaw 10 looking along +Z becomes yaw 170 for the web camera.
+    sr("camera", 22, 170, 0);
 };
 
 vars["rotate_tires"] = function() {
+    SetPitch("car0", 1.7);
     sr("tire1", vars["tire1"].transform.eulerAngles.x + 45,
         vars["tire1"].transform.eulerAngles.y,
         vars["tire1"].transform.eulerAngles.z);
@@ -4676,8 +4762,10 @@ vars["drive"] = function(distance, colliderName) {
         0, 0, distance, 0.2);
 };
 
-vars["move_camera"]();`,
-        upd: `// Steering remains responsive while the large map is loading.
+vars["move_camera"]();
+`,
+        upd: `// Mobile: tap the controller icon. Use the arrow pad, WASD, R CTRL, and SPACE.
+// Steering remains responsive while the large map is loading.
 if (Input.GetKey(KeyCode.RightArrow))
     rt("car0", 0, vars["turnSpeed"], 0);
 if (Input.GetKey(KeyCode.LeftArrow))
@@ -4703,8 +4791,939 @@ if (collisionReady) {
         vars["rotate_tires"]();
 }
 
+// Restore the original idle pitch when neither driving key is held.
+if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow))
+    SetPitch("car0", 1);
+
 // Follow the car every frame.
-vars["move_camera"]();`
+vars["move_camera"]();
+`
+    },
+    34: {
+        title: "Supersmash Tokyo",
+        // Source: Programs/finalx3.declarations and .update.
+        decl: `// Load this together with finalx3.update: the update uses the state below.
+// Every building has its own health, hit shake, and voxel explosion.
+vars["fire_targets"] = [];
+vars["building"] = function(filename, name, x, y, z, healthKey) {
+    var object = Obj(filename, name, x, y, z);
+    var health = healthKey || name + "_SDC";
+    vars[health] = 30;
+    vars["fire_targets"].push({
+        name: name, object: object, health: health,
+        restPosition: object.position.clone(), restRotation: object.rotation.clone(),
+        shakeTime: 0, explosionTime: null, debris: [], destroyed: false
+    });
+    return object;
+};
+
+//TOKYO-TOWER-GRASS
+vars["TT_SDC"]=30;
+vars["TokyoTower"]=vars["building"]("TokyoTower.json","TT",0,0,0);
+//vars["TT"]=Obj("sst_TokyoTower4.json","TT",0,0,0);
+
+//SENSOUJI
+vars["SS_SDC"]=30;
+vars["Sen"]=vars["building"]("Senouzi.json","SS",22,11,95);
+
+Obj("sstmixbiggrass1.json","biggrass1",0,0,0);
+Obj("sstmixbiggrass1.json","biggrass1",12,0,0);
+Obj("sstmixbiggrass1.json","biggrass1",12,0,12);
+Obj("sstmixbiggrass1.json","biggrass1",12,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",-12,0,0);
+Obj("sstmixbiggrass1.json","biggrass1",-12,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",0,0,12);
+Obj("sstmixbiggrass1.json","biggrass1",0,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",-12,0,12);
+
+//ROADS-TOKYO-TOWER
+Obj("sstroad1.json","road1",-24,0,0);
+Obj("sstroad1.json","road1",-24,0,12);
+Obj("sstroad1.json","road1",-24,0,-12);
+
+Obj("sstcrossroad1.json","cross1",-24,0,24);
+
+Obj("sstroad1.json","road1",23,0,0);
+Obj("sstroad1.json","road1",23,0,12);
+Obj("sstroad1.json","road1",23,0,-12);
+
+Obj("sstcrossroad1.json","cross1",23,0,-24);
+
+Obj("sstroad1.json","road2",0,0,24);
+Obj("sstroad1.json","road2",12,0,24);
+Obj("sstroad1.json","road2",-12,0,24);
+
+Obj("sstcrossroad1.json","cross1",23,0,24);
+
+Obj("sstroad1.json","road2",0,0,-24);
+Obj("sstroad1.json","road2",12,0,-24);
+Obj("sstroad1.json","road2",-12,0,-24);
+
+Obj("sstcrossroad1.json","cross1",-24,0,-24);
+
+Obj("sstroad1.json","road1",-24,0,36);
+Obj("sstcrossroad1.json","cross1",-24,0,48);
+
+//HOUSE-RED-RIVER
+vars["H1_SDC"]=30;
+vars["Hou"]=vars["building"]("new_House_red1.json","H1",-4,0,40);
+Obj("sstmixbiggrass1.json","biggrass1",-12,0,36);
+Obj("sstmixbiggrass1.json","biggrass1",-12,0,48);
+Obj("sstmixbiggrass1.json","biggrass1",0,0,36);
+Obj("sstmixbiggrass1.json","biggrass1",0,0,48);
+Obj("sstbgrass1.json","grass1",6,0,53);
+Obj("sstdgrass1.json","grass1",6,0,52);
+Obj("sstdgrass1.json","grass1",6,0,51);
+Obj("sstbgrass1.json","grass1",6,0,50);
+Obj("sstdgrass1.json","grass1",6,0,49);
+Obj("sstdgrass1.json","grass1",6,0,48);
+Obj("sstbgrass1.json","grass1",6,0,47);
+Obj("sstbgrass1.json","grass1",6,0,46);
+Obj("sstdgrass1.json","grass1",6,0,45);
+Obj("sstbgrass1.json","grass1",6,0,44);
+Obj("sstdgrass1.json","grass1",6,0,43);
+Obj("sstdgrass1.json","grass1",6,0,42);
+Obj("sstbgrass1.json","grass1",6,0,41);
+Obj("sstdgrass1.json","grass1",6,0,40);
+Obj("sstdgrass1.json","grass1",6,0,39);
+Obj("sstbgrass1.json","grass1",6,0,38);
+Obj("sstdgrass1.json","grass1",6,0,37);
+Obj("sstbgrass1.json","grass1",6,0,36);
+Obj("sstbgrass1.json","grass1",6,0,35);
+Obj("sstdgrass1.json","grass1",6,0,34);
+Obj("sstbgrass1.json","grass1",6,0,33);
+Obj("sstdgrass1.json","grass1",6,0,32);
+Obj("sstdgrass1.json","grass1",6,0,31);
+Obj("sstbgrass1.json","grass1",6,0,30);
+
+
+
+//HIGHTOWER
+vars["HT_SDC"]=30;
+vars["Hig"]=vars["building"]("Hightower_A.json","Hig",-37,0,0,"HT_SDC");
+Obj("tree1.json","tree1",-37,0,12);
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,12);
+Obj("tree1.json","tree2",-37,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,-12);
+Obj("tree1.json","tree3",-37,0,-24);
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,-24);
+Obj("tree1.json","tree4",-37,0,24);
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,24);
+Obj("tree1.json","tree5",-37,0,36);
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,36);
+
+//BRIDGE
+
+//Obj("stonebridge.json","bridge1",-24,0,59);
+//Obj("stonebridge.json","bridge2",25,0,35);
+
+//RIVER
+
+Obj("sstcrossroad1.json","cross1",-36,0,48);
+
+Obj("sstriver1.json","river1",-36,0,59);
+Obj("sstriver1.json","river1",-24,0,59);
+Obj("sstriver1.json","river1",-12,0,59);
+Obj("sstriver1.json","river1",0,0,59);
+Obj("sstriver1.json","river1",12,0,59);
+Obj("sstriver1.json","river1",12,0,47);
+Obj("sstriver1.json","river1",12,0,35);
+Obj("sstriver1.json","river1",24,0,35);
+Obj("sstriver1.json","river1",36,0,35);
+Obj("sstriver1.json","river1",48,0,35);
+Obj("sstriver1.json","river1",60,0,35);
+
+//ALONG-THE-RIVER
+
+Obj("sstcrossroad1.json","cross1",-36,0,72);
+Obj("sstcrossroad1.json","cross1",-24,0,72);
+Obj("sstcrossroad1.json","cross1",-12,0,72);
+Obj("sstcrossroad1.json","cross1",0,0,72);
+Obj("sstcrossroad1.json","cross1",12,0,72);
+Obj("sstcrossroad1.json","cross1",24,0,72);
+Obj("sstcrossroad1.json","cross1",32,0,72);
+Obj("sstcrossroad1.json","cross1",44,0,72);
+Obj("sstcrossroad1.json","cross1",56,0,72);
+
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",-23,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",-11,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",1,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",13,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",25,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",37,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",49,0,84);
+Obj("sstmixbiggrass1.json","biggrass1",61,0,84);
+
+Obj("sstmixbiggrass1.json","biggrass1",-35,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",-23,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",-11,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",1,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",13,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",25,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",37,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",49,0,96);
+Obj("sstmixbiggrass1.json","biggrass1",61,0,96);
+
+
+//TREES-SENSOUJI
+Obj("sstcrossroad1.json","cross1",24,0,48);
+Obj("sstcrossroad1.json","cross1",24,0,60);
+Obj("tree1.json","tree6",36,0,59);
+Obj("tree1.json","tree7",36,0,47);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,60);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,48);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,60);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,48);
+Obj("sstmixbiggrass1.json","biggrass1",60,0,60);
+Obj("sstmixbiggrass1.json","biggrass1",60,0,48);
+
+
+
+//NEW-HOUSE-RED-BLUE-LEFT
+vars["building"]("new_House_red1.json","housered1",-34,0,95);
+vars["building"]("new_House_blue1.json","houseblue1",-12,0,95);
+
+//SENSOUJI
+//vars["SS_SDC"]=30;
+//vars["SS"]=Obj("Senouzi.json","sensouji1",22,11,95);
+
+//NEW-HOUSE-RED-BLUE-RIGHT
+vars["building"]("new_House_red1.json","housered2",60,0,95);
+vars["building"]("new_House_blue1.json","houseblue2",60,0,70);
+
+//SKYTREE
+vars["building"]("skytree3.json","skytree1",60,0,50);
+
+//HIGHTOWER-A-B
+vars["building"]("Hightower_A.json","hightower3",60,0,20);
+vars["building"]("Hightower_B.json","hightower4",60,0,0);
+vars["building"]("Hightower_A.json","hightower5",60,0,-20);
+vars["building"]("Hightower_B.json","hightower6",40,0,20);
+vars["building"]("Hightower_A.json","hightower7",40,0,0);
+vars["building"]("Hightower_B.json","hightower8",40,0,-20);
+
+Obj("sstmixbiggrass1.json","biggrass1",60,0,24);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,24);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,24);
+
+Obj("sstmixbiggrass1.json","biggrass1",60,0,12);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,12);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,12);
+
+Obj("sstmixbiggrass1.json","biggrass1",60,0,0);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,0);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,0);
+
+Obj("sstmixbiggrass1.json","biggrass1",60,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,-12);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,-12);
+
+Obj("sstmixbiggrass1.json","biggrass1",60,0,-24);
+Obj("sstmixbiggrass1.json","biggrass1",48,0,-24);
+Obj("sstmixbiggrass1.json","biggrass1",36,0,-24);
+
+an("road2",0,90,0);
+
+//Space travel
+function big_asteroid(name,x,y,z,color) {
+    qb(name,x,y,z);
+    qb(name,x-1,y,z);
+    qb(name,x,y-1,z);
+    qb(name,x,y,z-1);
+    qb(name,x+1,y,z);
+    qb(name,x,y+1,z);
+    qb(name,x,y,z+1);
+    cl(name, color);
+}
+//Asteroids
+//big_asteroid("Asteroid0",7,7,7, Color.red);
+//big_asteroid("Asteroid1",-7,-7,-7, Color.blue);
+//big_asteroid("Asteroid2",14,14,14, Color.green);
+//big_asteroid("Asteroid3",-14,-14,-14, Color.yellow);
+
+
+
+//Time Lord diversifyer
+if(new Date().getHours() > 18) {
+  SetSkyStarryNight();
+}else{
+  SetSkyNone();
+}
+
+vars["TT_SDC"]=30;
+vars["dragon_head"]=Obj("DragonHead5.json","dragon_head",0,0,0);
+((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_head"], 0,180,0);
+for(var i=0;i<6;i++){
+  vars["dragon_body"+i]=Obj("DragonTrunk2.json","dragon_body"+i,0,-5,-13*(i+1));
+  ((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_body"+i], 0,180,0);
+  //adding parent child relationship to be able to scale based on just one scale to retain same ratio
+  if(i==0){
+    vars["dragon_head"].attach(vars["dragon_body0"]);
+  }
+else{
+    vars["dragon_head"].attach(vars["dragon_body"+i]);
+  }
+}
+//vars["TokyoTower"]=Obj("TokyoTower3.json","TT",0,0,20);
+vars["dragon_tail"]=Obj("DragonTail.json","dragon_tail",0,0,-13*8);
+((object, x, y, z) => { object.rotateX(-x * Math.PI / 180); object.rotateY(-y * Math.PI / 180); object.rotateZ(-z * Math.PI / 180); })(vars["dragon_tail"], 0,180,0);
+vars["dragon_head"].attach(vars["dragon_tail"]);
+function sc_(name, x, y, z) {
+    sc(name, x, y, z);
+}
+vars["dragon_y_max"]=vars["dragon_head"].position.y+1;
+vars["dragon_y_min"]=vars["dragon_head"].position.y-1;
+vars["rad"]=0;
+
+//===========================================
+sc_("dragon_head",0.1,0.1,0.1);
+// Keep the body and its downward wave above the map's ground surface.
+sp("dragon_head", 0, 3, 0);
+vars["dragon_y_max"] = 4;
+vars["dragon_y_min"] = 2;
+// Controls: arrows drive/turn, W/S climb/descend, Space breathes fire.
+// Right Ctrl also fires for compatibility with the onscreen controller.
+vars["dragon_wave_parts"] = [];
+for (var segment = 0; segment < 6; segment++) {
+    vars["dragon_wave_parts"].push(vars["dragon_body" + segment]);
+}
+vars["dragon_wave_parts"].push(vars["dragon_tail"]);
+vars["dragon_wave_rest_y"] = vars["dragon_wave_parts"].map(function(part) {
+    return part.position.y;
+});
+vars["dragon_wave_amplitude"] = 5; // 0.5 world units after the head's 0.1 scale.
+vars["dragon_wave_speed"] = 4; // Radians per second.
+vars["fire_particles"] = [];
+vars["fire_serial"] = 0;
+vars["fire_cooldown"] = 0;
+vars["BreathOrigine"] = qb("BreathOrigine", 0, 0, 0);
+// add() keeps the following coordinates local to the scaled, rotating head.
+// DragonHead5's snout ends at local Z=-24; emit just beyond it.
+vars["dragon_head"].add(vars["BreathOrigine"]);
+vars["BreathOrigine"].position.set(0, 0, -25);
+cl("BreathOrigine", Color.black);
+alpha("BreathOrigine", 0);
+vars["TTHP"]=10;
+vars["TTBreak"]=false;
+
+// Attach and request music once during setup, never on every update frame.
+// music.mp3 is included in the shared Audio library for this tutorial.
+AttachSound("camera", "music.mp3");
+PlaySound("camera");
+`,
+        upd: `// Requires the matching finalx3.declarations (dragon waves, fire, and buildings).
+// Music is attached once in declarations so updates never restart its loading.
+// Controls: arrows drive/turn, W/S climb/descend, Space or Right Ctrl fires.
+var dragonDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var drive = Number(Input.GetKey(KeyCode.UpArrow)) - Number(Input.GetKey(KeyCode.DownArrow));
+var turn = Number(Input.GetKey(KeyCode.RightArrow)) - Number(Input.GetKey(KeyCode.LeftArrow));
+var climb = Number(Input.GetKey(KeyCode.W)) - Number(Input.GetKey(KeyCode.S));
+rt("dragon_head", 0, turn * 40 * dragonDt, 0);
+mv("dragon_head", 0, climb * 3 * dragonDt, drive * 10 * dragonDt);
+
+// Set each segment relative to its resting height, avoiding cumulative drift.
+vars["rad"] = (vars["rad"] + vars["dragon_wave_speed"] * dragonDt) % (Math.PI * 2);
+for (var i = 0; i < vars["dragon_wave_parts"].length; i++) {
+    vars["dragon_wave_parts"][i].position.y = vars["dragon_wave_rest_y"][i] +
+        Math.sin(vars["rad"] - i * Math.PI / 7) * vars["dragon_wave_amplitude"];
+}
+
+// Unity's original camera offset, facing the dragon in Three.js.
+sp("camera", vars["dragon_head"].position.x - 1,
+    vars["dragon_head"].position.y + 12, vars["dragon_head"].position.z - 30);
+an("camera", 22, 180, 0);
+
+// Keep existing flames moving along their launch direction, even after a turn
+// or releasing the fire key. Expire them so the scene cannot grow indefinitely.
+for (var flameIndex = vars["fire_particles"].length - 1; flameIndex >= 0; flameIndex--) {
+    var flame = vars["fire_particles"][flameIndex];
+    flame.object.position.addScaledVector(flame.direction, 25 * dragonDt);
+    flame.life -= dragonDt;
+    for (var targetIndex = 0; targetIndex < vars["fire_targets"].length; targetIndex++) {
+        var target = vars["fire_targets"][targetIndex];
+        if (!target.destroyed && vars[target.health] > 0 && cd(flame.object.name, target.name)) {
+            vars[target.health] -= 1;
+            target.shakeTime = 0.3;
+            flame.life = 0;
+            break;
+        }
+    }
+    if (flame.life <= 0) {
+        dl(flame.object.name);
+        vars["fire_particles"].splice(flameIndex, 1);
+    }
+}
+
+var breathingFire = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.RightControl);
+vars["fire_cooldown"] = Math.max(0, vars["fire_cooldown"] - dragonDt);
+if (breathingFire && vars["fire_cooldown"] <= 0.000001) {
+    // Refresh parent transforms before converting the mouth to world space.
+    var mouthPosition = vars["BreathOrigine"].getWorldPosition(
+        vars["dragon_head"].position.clone());
+    var fireDirection = vars["dragon_head"].localToWorld(
+        vars["dragon_head"].position.clone().set(0, 0, -26));
+    fireDirection.sub(mouthPosition).normalize();
+    var fireName = "fire" + vars["fire_serial"]++;
+    var fireObject = qb(fireName, mouthPosition.x, mouthPosition.y, mouthPosition.z);
+    sc(fireName, 0.35, 0.35, 0.35);
+    cl(fireName, Math.random() < 0.5 ? 0xf6f337 : 0xad4e1a);
+    vars["fire_particles"].push({ object: fireObject, direction: fireDirection, life: 2 });
+    vars["fire_cooldown"] = 0.1;
+} else if (!breathingFire) {
+    vars["fire_cooldown"] = 0;
+}
+
+
+// Apply the same hit shake and explosion to every registered building.
+for (var buildingIndex = 0; buildingIndex < vars["fire_targets"].length; buildingIndex++) {
+    var building = vars["fire_targets"][buildingIndex];
+    if (building.destroyed) continue;
+
+    // Restore the original transform so repeated hits never make buildings drift.
+    building.object.position.copy(building.restPosition);
+    building.object.rotation.copy(building.restRotation);
+
+    if (vars[building.health] <= 0) {
+        if (building.explosionTime === null) {
+            building.explosionTime = 0;
+            // Snapshot voxels once; their velocities remain stable during flight.
+            building.object.children.forEach(function(voxel) {
+                if (!voxel.isMesh) return;
+                building.debris.push({
+                    object: voxel,
+                    velocity: voxel.position.clone().set(
+                        (Math.random() - 0.5) * 24,
+                        5 + Math.random() * 15,
+                        (Math.random() - 0.5) * 24)
+                });
+            });
+        }
+        building.explosionTime += dragonDt;
+        for (var debrisIndex = 0; debrisIndex < building.debris.length; debrisIndex++) {
+            var fragment = building.debris[debrisIndex];
+            fragment.velocity.y -= 20 * dragonDt;
+            fragment.object.position.addScaledVector(fragment.velocity, dragonDt);
+            fragment.object.rotateX(dragonDt * 2);
+            fragment.object.rotateZ(dragonDt);
+        }
+        if (building.explosionTime >= 1.25) {
+            // Delete once, after the explosion, including empty loaded groups.
+            dl(building.name);
+            building.debris.length = 0;
+            building.destroyed = true;
+        }
+    } else if (building.shakeTime > 0) {
+        building.shakeTime = Math.max(0, building.shakeTime - dragonDt);
+        var shakeStrength = building.shakeTime / 0.3;
+        building.object.position.x += Math.sin(building.shakeTime * 80) * 0.3 * shakeStrength;
+        building.object.rotation.z += Math.sin(building.shakeTime * 65) * 0.05 * shakeStrength;
+        building.object.rotation.x += Math.cos(building.shakeTime * 75) * 0.03 * shakeStrength;
+    }
+}
+`
+    },
+    35: {
+        title: "DUNGEON 6",
+        // Source: Programs/DUNGEON 6.declarations and .update.
+        decl: `// DUNGEON 6 — 3DPL v3. Load together with DUNGEON 6.update.
+// W/S: forward/back; A/D: turn; Space: shoot.
+// Shoot a button once to move its door, the pillar, or the helicopter bridge.
+// Collect the key to lift door2, then shoot the exit lock to reach the bridge.
+// Large yellow targets are shootable switches; green means activated.
+vars["required_objects"] = [];
+vars["load_object"] = function(file, name, x, y, z) {
+    var object = Obj(file, name, x, y, z);
+    vars["required_objects"].push(object);
+    return object;
+};
+
+// Unlit targets stay bright in dark corridors and are readable from any side.
+vars["locks"] = {};
+vars["make_lock"] = function(name, x, y, z) {
+    var lock = qb(name, x, y, z);
+    lock.material.dispose();
+    lock.material = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+    sc(name, 1.15, 1.15, 1.15);
+    var ringGeometry = new THREE.RingGeometry(0.22, 0.34, 24);
+    var ringMaterial = new THREE.MeshBasicMaterial({ color: 0x151515, side: THREE.DoubleSide });
+    [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(function(axis) {
+        var normal = new THREE.Vector3(axis[0], axis[1], axis[2]);
+        var ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.position.copy(normal).multiplyScalar(0.502);
+        ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), normal);
+        lock.add(ring);
+    });
+    vars["locks"][name] = lock;
+    return lock;
+};
+
+vars["dungeon"] = LoadMap("Dungeon2.json", "dungeon0");
+vars["Camera_Colliders"]=vars["load_object"]("Camera_Coliders.json","Camera_Coliders0",0,1,-10);
+//
+vars["helicopter"]=vars["load_object"]("Futuristic_Helycopter.json","helly",-51,-6,12);
+vars["make_lock"]("btn5",-27,1,10.2);
+//
+vars["bridge"]=vars["load_object"]("ladder_to_helly.json","ladder",-30,-1,14);
+//
+vars["key"]=vars["load_object"]("dungeonkeys.json","keys",29,1,17);
+//
+vars["pillar"]=vars["load_object"]("pillars.json","pillar",27,-1,16);
+// Keep both pillar controls inside the room, in front of the X=32 wall.
+vars["make_lock"]("btn3",31,1,12);
+//
+vars["make_lock"]("btn4",31,1,22);
+//
+vars["load_object"]("key_stone.json","stone",29,0,17);
+//
+// Center the rotating blade between the corridor walls (X=-3 and X=4).
+// At this pivot height the downward blade sweeps through a standing player.
+vars["trap1"]=vars["load_object"]("trap2.json","traps",0.5,6.4,25);
+sc("traps",-0.4,-0.4,-0.4);
+//
+// Positive scale keeps the backs above the feet. Place the feet on floor Y=-0.5.
+vars["spider1"]=vars["load_object"]("spider.json","spider1",0,0.85,7);
+sc("spider1",0.3,0.3,0.3);
+//
+vars["load_object"]("spider.json","spider2",0,0.85,32);
+sc("spider2",0.3,0.3,0.3);
+//
+vars["load_object"]("spider.json","spider3",-1,0.85,36);
+sc("spider3",0.3,0.3,0.3);
+//
+vars["load_object"]("spider.json","spider4",2,0.85,36);
+sc("spider4",0.3,0.3,0.3);
+//
+vars["load_object"]("spider.json","spider5",10,0.55,16);
+sc("spider5",0.7 / 3,0.7 / 3,0.7 / 3);
+//
+vars["load_object"]("spider.json","spider6",24,0.55,17);
+sc("spider6",0.7 / 3,0.7 / 3,0.7 / 3);
+//
+vars["load_object"]("spider.json","spider7",2,0.85,7);
+sc("spider7",0.3,0.3,0.3);
+//
+vars["load_object"]("spider.json","spider8",-2,0.85,7);
+sc("spider8",0.3,0.3,0.3);
+//
+vars["door0"]=(vars["load_object"]("door1.json","door0",0,2,11));
+// Facing +Z in v3, +X is the player's left.
+vars["make_lock"]("btn0",2,1,10);
+//
+vars["door1"]=vars["load_object"]("door2.json","door1",3,0,20);
+vars["make_lock"]("btn1",3,1,21.5);
+//
+vars["door2"]=vars["load_object"]("door3.json","door2",15,-1,15);
+vars["make_lock"]("btn2",13.8,1,15.2);
+//
+vars["door4"] = vars["load_object"]("door3.json","door4",-13,1,14);
+// Exit to the helicopter bridge: put its lock on the accessible hallway side
+// of the X=-13 wall, beside the doorway rather than behind the closed gate.
+vars["make_lock"]("btn6",-12,1,20);
+
+// The Unity map contained one Dungeon2 object at the origin. LoadMap supplies
+// voxel collisions; these moving obstacles also belong to the collision map.
+vars["hardObjectsArray"] = [
+    vars["door0"], vars["door1"], vars["door2"], vars["pillar"], vars["door4"]
+];
+vars["hardObjectsArray"].forEach(function(object) {
+    vars["dungeon"].attach(object);
+});
+// These surfaces support the player's feet as well as the dungeon floor.
+vars["dungeon"].attach(vars["bridge"]);
+vars["dungeon"].attach(vars["helicopter"]);
+
+// The legacy front probe points +Z, while v3 forward is -Z. Mirror the probes,
+// reduce their size to clear the floor, and hide them from the first-person view.
+sc("Camera_Coliders0", 0.5, 0.5, -0.5);
+vars["Camera_Colliders"].visible = false;
+// This parent is scaled by 0.5: the foot probe is 0.4 x 0.2 x 0.4 in world
+// units, with its bottom 1.5 units below the camera (the starting eye height).
+vars["feet"] = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.8),
+    new THREE.MeshBasicMaterial());
+vars["feet"].name = "dungeon_feet";
+vars["feet"].position.set(0, -2.8, 0);
+vars["Camera_Colliders"].add(vars["feet"]);
+sr("Camera_Coliders0", 0, 180, 0);
+// A program-owned reticle also works in the shared player and is cleared by cs().
+vars["aim"] = qb("dungeon_aim", 0, 0, 0);
+vars["aim"].geometry = new THREE.RingGeometry(0.003, 0.005, 24);
+vars["aim"].material.dispose();
+vars["aim"].material = new THREE.MeshBasicMaterial({
+    color: 0xffffff, depthTest: false, depthWrite: false
+});
+vars["aim"].renderOrder = 10000;
+vars["aim_direction"] = new THREE.Vector3();
+vars["sync_camera"] = function() {
+    var player = vars["Camera_Colliders"];
+    sp("camera", player.position.x, player.position.y, player.position.z);
+    sr("camera", 0, -player.rotation.y * 180 / Math.PI, 0);
+    camera.getWorldDirection(vars["aim_direction"]);
+    vars["aim"].position.copy(player.position).addScaledVector(vars["aim_direction"], 0.3);
+    vars["aim"].quaternion.copy(camera.quaternion);
+};
+vars["respawn"] = function() {
+    vars["grounded"] = false;
+    sp("Camera_Coliders0", 0, 1, -10);
+    sr("Camera_Coliders0", 0, 180, 0);
+    vars["sync_camera"]();
+};
+vars["walk"] = function(distance) {
+    return move_object_with_map_collision(
+        vars["dungeon"], vars["Camera_Colliders"],
+        distance >= 0 ? "collider_front" : "collider_back",
+        0, 0, distance, 0.1);
+};
+
+// Tutorial 18's simple gravity: -0.1 per frame at 60 FPS, scaled by time.
+// Small collision steps stop the feet on actual voxels, including the bridge,
+// rather than on the large bounding box enclosing the whole dungeon.
+vars["gforce"] = -0.1;
+vars["grounded"] = false;
+vars["apply_gravity"] = function(dt) {
+    if (dt <= 0) return;
+    vars["grounded"] = !move_object_with_map_collision(
+        vars["dungeon"], vars["Camera_Colliders"], "dungeon_feet",
+        0, vars["gforce"] * 60 * dt, 0, 0.05);
+    if (vars["Camera_Colliders"].position.y < -20) vars["respawn"]();
+};
+
+// Boarding means standing inside the cabin, not near the rotor or beneath it.
+// Coordinates here are local to the unscaled helicopter model.
+vars["boarding_zone"] = new THREE.Box3(
+    new THREE.Vector3(2, 5.5, 1), new THREE.Vector3(5, 8, 5));
+vars["boarding_position"] = new THREE.Vector3();
+vars["hasWon"] = false;
+vars["check_win"] = function() {
+    if (vars["hasWon"] || !vars["grounded"]) return;
+    vars["boarding_position"].copy(vars["Camera_Colliders"].position);
+    vars["helicopter"].worldToLocal(vars["boarding_position"]);
+    if (vars["boarding_zone"].containsPoint(vars["boarding_position"])) {
+        vars["hasWon"] = true;
+        alert("game over");
+    }
+};
+
+// Every mechanism takes two seconds to reach its endpoint after one hit.
+// Door travel equals its model height, so the complete opening is cleared.
+vars["motions"] = {};
+vars["add_motion"] = function(name, object, axis, travel) {
+    var start = object.position[axis];
+    vars["motions"][name] = {
+        object: object, axis: axis, start: start, end: start + travel,
+        target: start, speed: Math.abs(travel) / 2
+    };
+};
+vars["add_motion"]("door0", vars["door0"], "y", 3);
+vars["add_motion"]("door1", vars["door1"], "y", 4);
+vars["add_motion"]("door2", vars["door2"], "y", 9);
+vars["add_motion"]("door4", vars["door4"], "y", -9);
+vars["add_motion"]("pillar", vars["pillar"], "y", 9);
+// The 15-voxel bridge extends left to meet the helicopter, then stays there.
+vars["add_motion"]("bridge", vars["bridge"], "x", -12);
+vars["trigger_motion"] = function(name, reverse) {
+    // Every route to the helicopter-room door requires actual key pickup.
+    if (name === "door4" && !vars["keyCollected"]) return;
+    var motion = vars["motions"][name];
+    motion.target = reverse ? motion.start : motion.end;
+};
+vars["advance_motions"] = function(dt) {
+    Object.keys(vars["motions"]).forEach(function(name) {
+        var motion = vars["motions"][name];
+        var current = motion.object.position[motion.axis];
+        var remaining = motion.target - current;
+        var distance = motion.speed * dt;
+        motion.object.position[motion.axis] = Math.abs(remaining) <= distance
+            ? motion.target : current + Math.sign(remaining) * distance;
+    });
+};
+
+// Use the visible blade instead of the misplaced legacy marker or a large box
+// around its entire rotation. Cache meshes only after the JSON has loaded.
+vars["trap_blade"] = null;
+vars["trap_player_box"] = new THREE.Box3();
+vars["trap_voxel_box"] = new THREE.Box3();
+vars["trap_body_size"] = new THREE.Vector3(0.6, 1.4, 0.6);
+vars["trap_body_center"] = new THREE.Vector3();
+vars["trap_hits_player"] = function() {
+    if (!vars["trap_blade"]) {
+        vars["trap_blade"] = [];
+        vars["trap1"].traverse(function(part) {
+            if (part.name === "collider_trap") {
+                part.visible = false;
+            } else if (part.isMesh && part.position.y >= 8) {
+                vars["trap_blade"].push(part);
+            }
+        });
+    }
+    vars["trap_body_center"].copy(vars["Camera_Colliders"].position);
+    vars["trap_body_center"].y -= 0.35;
+    vars["trap_player_box"].setFromCenterAndSize(
+        vars["trap_body_center"], vars["trap_body_size"]);
+    vars["trap1"].updateWorldMatrix(true, true);
+    return vars["trap_blade"].some(function(part) {
+        if (!part.geometry.boundingBox) part.geometry.computeBoundingBox();
+        vars["trap_voxel_box"].copy(part.geometry.boundingBox).applyMatrix4(part.matrixWorld);
+        return vars["trap_player_box"].intersectsBox(vars["trap_voxel_box"]);
+    });
+};
+vars["advance_trap"] = function(dt) {
+    // Small angular steps catch blade contacts even on a slow frame.
+    var steps = Math.max(1, Math.ceil(dt * 120));
+    for (var trapStep = 0; trapStep < steps; trapStep++) {
+        rt("traps", 0, 0, 100 * dt / steps);
+        if (vars["trap_hits_player"]()) {
+            vars["respawn"]();
+        }
+    }
+};
+
+vars["moveSpeed"] = 10;
+vars["turnSpeed"] = 100;
+vars["bullets"] = [];
+vars["bulletSerial"] = 0;
+vars["shotCooldown"] = 0;
+vars["shotInterval"] = 0.1;
+vars["bulletSpeed"] = 10;
+vars["keyCollected"] = false;
+vars["buttons"] = [
+    { button: "btn0", motion: "door0" },
+    { button: "btn1", motion: "door1" },
+    { button: "btn2", motion: "door2" },
+    { button: "btn3", motion: "pillar" },
+    { button: "btn4", motion: "pillar", reverse: true },
+    { button: "btn5", motion: "bridge" },
+    { button: "btn6", motion: "door4" }
+];
+vars["spiders"] = [
+    "spider1", "spider2", "spider3", "spider4",
+    "spider5", "spider6", "spider7", "spider8"
+];
+vars["shoot"] = function() {
+    var player = vars["Camera_Colliders"];
+    var name = "dungeon_bullet_" + vars["bulletSerial"]++;
+    var bullet = qb(name, player.position.x, player.position.y, player.position.z);
+    bullet.quaternion.copy(player.quaternion);
+    vars["bullets"].push({
+        object: bullet,
+        direction: bullet.position.clone().set(0, 0, -1).applyQuaternion(player.quaternion),
+        life: 8
+    });
+};
+vars["respawn"]();
+`,
+        upd: `// DUNGEON 6: wait for all surfaces before movement, gravity, or shooting.
+var dungeonDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var dungeonReady = vars["dungeon"].userData.loaded &&
+    vars["required_objects"].every(function(object) { return object.userData.loaded; });
+
+if (dungeonReady) {
+    if (Input.GetKey(KeyCode.D)) {
+        rt("Camera_Coliders0", 0, vars["turnSpeed"] * dungeonDt, 0);
+    }
+    if (Input.GetKey(KeyCode.A)) {
+        rt("Camera_Coliders0", 0, -vars["turnSpeed"] * dungeonDt, 0);
+    }
+    if (Input.GetKey(KeyCode.W)) {
+        vars["walk"](vars["moveSpeed"] * dungeonDt);
+    }
+    if (Input.GetKey(KeyCode.S)) {
+        vars["walk"](-vars["moveSpeed"] * dungeonDt);
+    }
+    vars["apply_gravity"](dungeonDt);
+    vars["sync_camera"]();
+
+    vars["advance_trap"](dungeonDt);
+    rt("keys", 0, 150 * dungeonDt, 0);
+    rt("spider1", 0, 50 * dungeonDt, 0);
+    rt("spider5", 0, 20 * dungeonDt, 0);
+    rt("spider6", 0, 190 * dungeonDt, 0);
+
+    if (ex("spider1") && cd("camera", "spider1")) {
+        vars["respawn"]();
+    }
+    if (!vars["keyCollected"] && ex("keys") && cd("camera", "keys")) {
+        dl("keys");
+        vars["keyCollected"] = true;
+        vars["trigger_motion"]("door2");
+    }
+
+    vars["shotCooldown"] = Math.max(0, vars["shotCooldown"] - dungeonDt);
+    if (Input.GetKey(KeyCode.Space) && vars["shotCooldown"] <= 0.000001) {
+        vars["shoot"]();
+        vars["shotCooldown"] = vars["shotInterval"];
+    }
+
+    // Each projectile keeps its launch direction even while its cube spins.
+    // Expire old bullets so holding Space cannot grow the scene indefinitely.
+    var buttonHits = {};
+    for (var bulletIndex = vars["bullets"].length - 1; bulletIndex >= 0; bulletIndex--) {
+        var shot = vars["bullets"][bulletIndex];
+        shot.object.position.addScaledVector(shot.direction, vars["bulletSpeed"] * dungeonDt);
+        rt(shot.object.name, 72 * dungeonDt, -2 * dungeonDt, 500 * dungeonDt);
+        shot.life -= dungeonDt;
+        for (var buttonIndex = 0; buttonIndex < vars["buttons"].length; buttonIndex++) {
+            var button = vars["buttons"][buttonIndex];
+            if (cd(shot.object.name, button.button)) {
+                buttonHits[button.button] = true;
+            }
+        }
+        for (var spiderIndex = 0; spiderIndex < vars["spiders"].length; spiderIndex++) {
+            var spider = vars["spiders"][spiderIndex];
+            if (ex(spider) && cd(shot.object.name, spider)) {
+                dl(spider);
+            }
+        }
+        if (shot.life <= 0) {
+            dl(shot.object.name);
+            vars["bullets"].splice(bulletIndex, 1);
+        }
+    }
+    // One hit starts the complete movement; repeated hits never shift endpoints.
+    for (var actionIndex = 0; actionIndex < vars["buttons"].length; actionIndex++) {
+        var action = vars["buttons"][actionIndex];
+        if (buttonHits[action.button]) {
+            vars["trigger_motion"](action.motion, action.reverse);
+        }
+    }
+    vars["advance_motions"](dungeonDt);
+    vars["check_win"]();
+    vars["buttons"].forEach(function(action) {
+        var motion = vars["motions"][action.motion];
+        var activeTarget = action.reverse ? motion.start : motion.end;
+        vars["locks"][action.button].material.color.setHex(
+            motion.target === activeTarget ? 0x55ff88 : 0xffcc00);
+    });
+}
+`
+    },
+    36: {
+        title: "Helicopter Flight Simulator 4",
+        decl: `// HELICOPET FLIGHT SIMULATOR 4 — based on tutorial 32.
+// W/S: climb/descend; A/D: turn; arrows: forward/back/sideways.
+// Space: fast lift; Z/X: roll the follow camera.
+// Load this together with the matching .update file.
+vars["flight_map"] = LoadMap("THEMAP.json", "flight_map");
+
+// Use tutorial 32's helicopter, rotor, scale, and six invisible probes.
+// Start four units above the old spawn so the smaller model clears the map.
+vars["helicopter"] = Obj(
+    "heli_no_proeller.json", "helicopter", -39.62049, 45.35633, 107.3032);
+vars["propeller"] = Obj(
+    "propeller.json", "propeller", -39.62049, 45.35633, 107.3032);
+vars["helicopter_colliders"] = Obj(
+    "helicpter_colliders.json", "helicopter_colliders", -39.62049, 45.35633, 107.3032);
+sc("helicopter", 0.25, 0.25, 0.25);
+sc("propeller", 0.25, 0.25, 0.25);
+sc("helicopter_colliders", 0.25, 0.25, 0.25);
+vars["propeller"].transform.parent = vars["helicopter"].transform;
+vars["helicopter_colliders"].transform.parent = vars["helicopter"].transform;
+
+// Tutorial 32's rates at 60 FPS; update scales them for elapsed time.
+vars["flightSpeed"] = 1;
+vars["turnSpeed"] = 5;
+vars["idleRotorSpeed"] = 15;
+vars["fastRotorSpeed"] = 30;
+vars["liftBoost"] = 100; // World units per second.
+vars["cameraRoll"] = 0;
+vars["enginePitch"] = 1;
+
+vars["move_camera"] = function() {
+    // Tutorial 32's camera follows the helicopter's heading.
+    var heading = -vars["helicopter"].rotation.y * 180 / Math.PI;
+    sp("camera", vars["helicopter"].position.x,
+        vars["helicopter"].position.y + 8, vars["helicopter"].position.z);
+    sr("camera", 18, heading, 0);
+    mv("camera", 3, 3, -30);
+    sr("camera", 18, heading, vars["cameraRoll"]);
+};
+
+vars["fly"] = function(probe, x, y, z) {
+    return move_object_with_map_collision(
+        vars["flight_map"], vars["helicopter"], probe, x, y, z, 0.2);
+};
+
+vars["rotate_propeller"] = function(amount) {
+    rt("propeller", 0, amount, 0);
+};
+
+// Preserve Simulator 4's engine and background music, attached once.
+AttachSound("helicopter", "helicopter.wav");
+SetVolume("helicopter", 0.25);
+PlaySoundLoop("helicopter");
+AttachSound("camera", "NOW1.wav");
+SetVolume("camera", 0.4);
+PlaySoundLoop("camera");
+vars["move_camera"]();
+`,
+        upd: `// Tutorial 32 controls and collision probes, with Simulator 4's audio and boost.
+var flightDt = Math.min(Math.max(Time.deltaTime, 0), 0.05);
+var frameScale = flightDt * 60;
+var speed = vars["flightSpeed"] * frameScale;
+var goingUp = Input.GetKey(KeyCode.W);
+var goingDown = Input.GetKey(KeyCode.S);
+var goingForward = Input.GetKey(KeyCode.UpArrow);
+var goingBack = Input.GetKey(KeyCode.DownArrow);
+var boosting = Input.GetKey(KeyCode.Space);
+
+// Do not move through placeholders while the map or collision probes load.
+var collisionReady = vars["flight_map"].userData.loaded &&
+    vars["helicopter"].userData.loaded && vars["propeller"].userData.loaded &&
+    vars["helicopter_colliders"].userData.loaded;
+var enginePitch = 1;
+if (collisionReady) {
+    if (goingUp) {
+        vars["fly"]("collider_top", 0, speed, 0);
+        enginePitch = 1.7;
+    }
+    if (goingDown) {
+        vars["fly"]("collider_bottom", 0, -speed, 0);
+        enginePitch = 0.5;
+    }
+    if (goingForward) {
+        vars["fly"]("collider_front", 0, 0, speed);
+        enginePitch = 1.2;
+    }
+    if (goingBack) {
+        vars["fly"]("collider_back", 0, 0, -speed);
+        enginePitch = 1.2;
+    }
+    if (Input.GetKey(KeyCode.LeftArrow)) {
+        vars["fly"]("collider_left", -speed, 0, 0);
+    }
+    if (Input.GetKey(KeyCode.RightArrow)) {
+        vars["fly"]("collider_right", speed, 0, 0);
+    }
+    if (Input.GetKey(KeyCode.A)) {
+        rt("helicopter", 0, -vars["turnSpeed"] * frameScale, 0);
+    }
+    if (Input.GetKey(KeyCode.D)) {
+        rt("helicopter", 0, vars["turnSpeed"] * frameScale, 0);
+    }
+    if (boosting) {
+        vars["fly"]("collider_top", 0, vars["liftBoost"] * flightDt, 0);
+        enginePitch = 1.7;
+    }
+}
+
+// Releasing the flight controls restores idle pitch without Unity GetKeyUp.
+if (enginePitch !== vars["enginePitch"]) {
+    SetPitch("helicopter", enginePitch);
+    vars["enginePitch"] = enginePitch;
+}
+
+// The onscreen S button also emits legacy Z; descent must not roll the camera.
+if (Input.GetKey(KeyCode.Z) && !goingDown) {
+    vars["cameraRoll"] += 120 * flightDt;
+}
+if (Input.GetKey(KeyCode.X)) {
+    vars["cameraRoll"] -= 120 * flightDt;
+}
+var rotorSpeed = (goingUp || goingDown || boosting)
+    ? vars["fastRotorSpeed"] : vars["idleRotorSpeed"];
+vars["rotate_propeller"](rotorSpeed * frameScale);
+vars["move_camera"]();
+`
     }
 };
 
@@ -4714,9 +5733,11 @@ let suppressDeclarationEvaluation = false;
 
 for (let i = 1; i <= Object.keys(tutorials).length; i++) {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.id = `tut-${i}`;
     btn.innerText = `${i}`;
     btn.title = tutorials[i].title || `Tutorial ${i}`;
+    btn.setAttribute('aria-label', `Tutorial ${i}: ${btn.title}`);
     btn.onclick = () => loadTutorial(i);
     tutContainer.appendChild(btn);
 }
@@ -4747,7 +5768,7 @@ function animate() {
     window.Time.deltaTime = dt;
     actionCooldown -= dt;
 
-    if (isExecuting) {
+    if (isExecuting && !sharedPlayerAlertOpen) {
         window._evalStartTime = performance.now();
         try { 
             eval(cachedUpdateCode);
@@ -4894,7 +5915,9 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+let craftmineLaunchToken = 0;
 const hideAllMenus = () => {
+    craftmineLaunchToken++;
     if (document.activeElement) document.activeElement.blur();
     closeMapObjectPicker();
     mapEditorLoadToken++;
@@ -5044,6 +6067,54 @@ document.getElementById('btn-obj-editor').onclick = () => {
     objectEditorMode = true;
 };
 
+// --- Craftmine launcher ---
+const craftmineButton = document.getElementById('btn-craftmine');
+craftmineButton.onclick = async () => {
+    if (sharedGameId || craftmineButton.disabled) return;
+    const token = ++craftmineLaunchToken;
+    const status = document.getElementById('craftmine-launch-status');
+    status.style.display = 'block';
+    status.textContent = 'Loading craftmine…';
+    craftmineButton.disabled = true;
+    let source;
+    try {
+        source = await Promise.all(['declarations', 'update'].map(async part => {
+            const response = await fetch(`Programs/craftmine.${part}`, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`craftmine.${part} could not load (HTTP ${response.status}).`);
+            return response.text();
+        }));
+    } catch (error) {
+        if (token === craftmineLaunchToken) status.textContent = `Unable to open craftmine: ${error.message}`;
+        return;
+    } finally {
+        craftmineButton.disabled = false;
+    }
+    // Navigating away while the files load must not unexpectedly open the game.
+    if (token !== craftmineLaunchToken) return;
+    status.style.display = 'none';
+    hideAllMenus();
+    applyProgramCode(source[0], source[1], 'craftmine');
+    if (!declarationsValid) {
+        window.cs();
+        idePanel.style.display = 'flex';
+        return;
+    }
+    document.getElementById('craftmine-menu-controls').style.display = 'flex';
+    isExecuting = true;
+    clock.getDelta();
+    renderer.domElement.focus({ preventScroll: true });
+};
+document.getElementById('btn-exit-craftmine').onclick = () => {
+    hideAllMenus();
+    window.cs();
+    document.getElementById('creative-menu').style.display = 'block';
+};
+document.getElementById('btn-craftmine-code').onclick = () => {
+    document.getElementById('craftmine-menu-controls').style.display = 'none';
+    restoreIdeButton.onclick();
+};
+// --- End craftmine launcher ---
+
 document.getElementById('btn-audio').onclick = () => {
     hideAllMenus();
     document.getElementById('audio-ui').style.display = 'flex';
@@ -5075,6 +6146,7 @@ document.getElementById('btn-exit-audio').onclick = backToMain;
 document.getElementById('btn-exit-ide').onclick = backToMain;
 
 document.getElementById('btn-run').onclick = (e) => {
+    if (sharedGameId) return;
     if (e.target) e.target.blur();
 
     if (isExecuting) {
@@ -5108,6 +6180,180 @@ editorDeclarations.on('change', () => {
 });
 editorUpdate.on('change', refreshCachedUpdateCode);
 
+// --- Share a playable snapshot ---
+const shareDialog = document.getElementById('share-dialog');
+const shareLinkInput = document.getElementById('share-link');
+const shareStatus = document.getElementById('share-status');
+const shareButton = document.getElementById('btn-share-program');
+const copyShareButton = document.getElementById('btn-copy-share');
+
+function closeShareDialog() {
+    shareDialog.classList.remove('open');
+    shareDialog.setAttribute('aria-hidden', 'true');
+    shareButton.focus();
+}
+document.getElementById('btn-close-share').onclick = closeShareDialog;
+shareDialog.addEventListener('keydown', event => {
+    if (event.code === 'Escape') closeShareDialog();
+});
+
+async function copySharedGameLink() {
+    if (!shareLinkInput.value) return;
+    try {
+        await navigator.clipboard.writeText(shareLinkInput.value);
+        shareStatus.textContent = 'Link copied. Send it to anyone to play.';
+    } catch (error) {
+        // HTTP sites and browsers requiring another gesture can still copy.
+        shareLinkInput.focus();
+        shareLinkInput.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (copyError) { /* Keep the link available for manual copying. */ }
+        shareStatus.textContent = copied
+            ? 'Link copied. Send it to anyone to play.'
+            : 'Select and copy the link above, or press Copy link.';
+    }
+}
+copyShareButton.onclick = copySharedGameLink;
+
+shareButton.onclick = async () => {
+    if (sharedGameId || !requireLoggedInUser('sharing a game')) return;
+    if (!declarationsValid) {
+        setDebugError('Fix the declaration error before sharing this game.');
+        return;
+    }
+    const name = currentProgramName || 'untitled';
+    if (!validCloudProgramName(name)) {
+        setDebugError('Save this program with a name containing letters, numbers, spaces, dots, underscores, or hyphens before sharing.');
+        return;
+    }
+    const payload = {
+        name, declarations: editorDeclarations.getValue(), update: editorUpdate.getValue(),
+        assets: [...programAssets.values()], scope: loggedInNick
+    };
+    shareDialog.classList.add('open');
+    shareDialog.setAttribute('aria-hidden', 'false');
+    shareLinkInput.value = '';
+    shareStatus.textContent = 'Creating a playable copy with the game assets…';
+    copyShareButton.disabled = true;
+    shareButton.disabled = true;
+    document.getElementById('btn-close-share').focus();
+    try {
+        const response = await fetch('server_side/share_program.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-3DPL-Share': '1' },
+            body: JSON.stringify(payload)
+        });
+        const result = await readApiResponse(response);
+        const url = new URL('play.php', document.baseURI);
+        url.searchParams.set('share', result.id);
+        shareLinkInput.value = url.href;
+        copyShareButton.disabled = false;
+        await copySharedGameLink();
+    } catch (error) {
+        shareStatus.textContent = `Could not share: ${error.message}`;
+    } finally {
+        shareButton.disabled = false;
+    }
+};
+
+// --- Isolated shared-game player ---
+function installSharedPlayerAlerts() {
+    // Native alerts are blocked in the opaque-origin sandbox. A modal HTML
+    // dialog keeps existing alert(...) calls visible without weakening isolation.
+    const dialog = document.getElementById('shared-game-alert');
+    const message = document.getElementById('shared-game-alert-message');
+    const ok = document.getElementById('shared-game-alert-ok');
+    const pending = [];
+    const releaseKeys = () => {
+        releaseMobileControls();
+        Object.keys(window.Input._keys).forEach(key => window.Input._keys[key] = false);
+    };
+    const showNext = () => {
+        sharedPlayerAlertOpen = true;
+        releaseKeys();
+        if (document.pointerLockElement) document.exitPointerLock();
+        message.textContent = pending[0];
+        dialog.showModal();
+        ok.focus();
+    };
+    ok.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => {
+        pending.shift();
+        if (pending.length) {
+            showNext();
+        } else {
+            sharedPlayerAlertOpen = false;
+            releaseKeys();
+            clock.getDelta();
+            renderer.domElement.focus({ preventScroll: true });
+        }
+    });
+    window.alert = (text = '') => {
+        pending.push(String(text));
+        if (!sharedPlayerAlertOpen) showNext();
+    };
+}
+
+function showSharedPlayerStatus(message, isError = false) {
+    const status = document.getElementById('shared-player-status');
+    status.textContent = message;
+    status.style.display = message ? 'block' : 'none';
+    status.setAttribute('role', isError ? 'alert' : 'status');
+}
+
+function unlockSharedPlayerAudio() {
+    if (!sharedGameId || !sharedPlayerReady) return;
+    if (listener.context.state === 'suspended') {
+        listener.context.resume().then(playQueuedSounds).catch(() => {});
+    } else if (listener.context.state === 'running') {
+        playQueuedSounds();
+    }
+}
+document.addEventListener('pointerdown', unlockSharedPlayerAudio, true);
+
+async function startSharedGame() {
+    installSharedPlayerAlerts();
+    editorDeclarations.setOption('readOnly', 'nocursor');
+    editorUpdate.setOption('readOnly', 'nocursor');
+    document.querySelectorAll('.menu-panel, .app-modal, #account-controls, #btn-restore-ide')
+        .forEach(element => {
+            element.setAttribute('inert', '');
+            element.setAttribute('aria-hidden', 'true');
+        });
+    document.querySelectorAll('.menu-panel button, .menu-panel input, .menu-panel select, .app-modal button, .app-modal input')
+        .forEach(element => element.disabled = true);
+    const pauseButton = document.getElementById('mobile-controller-start');
+    pauseButton.textContent = 'PAUSE';
+    pauseButton.setAttribute('aria-label', 'Pause or resume game');
+    pauseButton.disabled = true;
+    showSharedPlayerStatus('Loading game…');
+    try {
+        const response = await fetch('server_side/load_shared_program.php?' +
+            new URLSearchParams({ share: sharedGameId }), { credentials: 'omit' });
+        const game = await readApiResponse(response);
+        document.title = game.name + ' — 3DPL';
+        applyProgramCode(game.declarations, game.update, game.name);
+        if (!declarationsValid) throw new Error(sharedPlayerError || 'The game could not start.');
+        const pending = [];
+        cubes.forEach(object => object.traverse(child => {
+            if (child.userData.ready) pending.push(child.userData.ready);
+        }));
+        await Promise.all(pending);
+        await Promise.all([...sharedTextureCache.values()].map(texture => texture.userData.threeDPLReady));
+        if (sharedPlayerError) throw new Error(sharedPlayerError);
+        // Start simulation automatically; browsers unlock audio on the first input.
+        sharedPlayerReady = true;
+        isExecuting = true;
+        pauseButton.disabled = false;
+        clock.getDelta();
+        showSharedPlayerStatus('');
+        renderer.domElement.focus({ preventScroll: true });
+    } catch (error) {
+        isExecuting = false;
+        showSharedPlayerStatus(`Unable to start game: ${error.message}`, true);
+    }
+}
+
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -5115,3 +6361,4 @@ window.addEventListener('resize', () => {
 });
 
 animate();
+if (sharedGameId) startSharedGame();

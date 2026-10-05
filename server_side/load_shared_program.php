@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/share_common.php';
-// Public, immutable snapshots: no account session or private-library access.
+// Public published games: no account session or private-library access.
 header('Access-Control-Allow-Origin: *');
 api_require_method('GET');
 try {

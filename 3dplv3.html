@@ -17,6 +17,11 @@
             transform: translateX(-50%); max-width: min(90vw, 600px); padding: 12px 18px;
             background: #222e; color: white; border-radius: 8px; z-index: 2200; }
         #share-link { box-sizing: border-box; width: 100%; }
+        #btn-share-program svg { width: 20px; height: 20px; vertical-align: middle; }
+        #play-games-menu { box-sizing: border-box; width: min(640px, calc(100vw - 24px)); max-height: 85vh; overflow: auto; }
+        #play-games-table { width: 100%; border-collapse: collapse; text-align: left; }
+        #play-games-table th, #play-games-table td { padding: 10px 8px; border-bottom: 1px solid #666; overflow-wrap: anywhere; }
+        #play-games-table a { color: #a8d5ff; display: inline-block; padding: 6px 0; }
         #shared-game-alert { box-sizing: border-box; width: min(90vw, 420px);
             max-height: 80vh; overflow: auto; padding: 24px; border: 1px solid #777;
             border-radius: 12px; background: #222; color: white; pointer-events: auto; }
@@ -521,7 +526,7 @@
                     <h2 id="share-title">Share game</h2>
                     <button id="btn-close-share" type="button" aria-label="Close sharing">✕</button>
                 </div>
-                <p>Anyone with this link can play without logging in. The shared copy includes this program and its game assets.</p>
+                <p>Anyone can find this game in Play Games or play using its link without logging in. Sharing again replaces the published program and assets at the same link.</p>
                 <label for="share-link">Play link</label>
                 <input id="share-link" type="text" readonly>
                 <button id="btn-copy-share" type="button">Copy link</button>
@@ -560,6 +565,19 @@
             <h2>3DPL Web</h2>
             <button id="btn-creative">Creative Mode</button>
             <button id="btn-3dpl">3DPL Programming Mode</button>
+            <button id="btn-play-games" type="button">Play Games</button>
+        </div>
+
+        <div id="play-games-menu" class="menu-panel center-menu" style="display: none;">
+            <h2>Play Games</h2>
+            <p>Browse games shared by the community. Select a game to play.</p>
+            <button id="btn-refresh-games" type="button">Refresh games</button>
+            <button id="btn-exit-games" type="button">Back to Main Menu</button>
+            <p id="play-games-status" role="status" aria-live="polite"></p>
+            <table id="play-games-table" hidden>
+                <thead><tr><th scope="col">Nick</th><th scope="col">Game name</th></tr></thead>
+                <tbody id="play-games-list"></tbody>
+            </table>
         </div>
 
         <!-- Creative Mode Menu -->
@@ -702,7 +720,7 @@
                     <button id="btn-load-cloud-program" type="button" aria-label="Load program from my account" title="Load program from my account">☁↓</button>
                     <button id="btn-load-program" type="button" aria-label="Load program files" title="Load .declarations and .update files">📂</button>
                     <button id="btn-save-program" type="button" aria-label="Save program files" title="Save .declarations and .update files">💾</button>
-                    <button id="btn-share-program" type="button" title="Copy a playable game link">Share</button>
+                    <button id="btn-share-program" type="button" title="Share game" aria-label="Share game"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
                     <button id="btn-minimize-ide" type="button" aria-label="Minimize code window" title="Minimize">−</button>
                     <button id="btn-maximize-ide" type="button" aria-label="Maximize code window" title="Maximize" aria-pressed="false">□</button>
                 </div>
